@@ -23,6 +23,24 @@ void CHelper::Str2Wstr(const std::string &src, std::wstring &dest) {
 	return;
 }
 
+/*****************************************************************************
+wstring型をstring型に変換します
+- 引数　const std::wstring &dest：変換前入力　, std::string &src：変換後出力　
+- 戻り値　NA
+*****************************************************************************/
+void CHelper::WStr2Str(const std::wstring &src, std::string &dest){
+
+	setlocale(LC_ALL, "");
+
+	char *str = new char[src.length() + 1];
+
+	size_t ret_val;
+	wcstombs_s(&ret_val, str, src.length() + 1, src.c_str(), _TRUNCATE);
+
+	dest = str; delete[] str;
+	return;
+}
+
 /*****************************************************************************************
 指定されたDC、位置に指定されたビットマップを書き込む（等倍）
 - 引数	HDC hdc：書込先DC, HBITMAP hbmp：素材ビットマップ,

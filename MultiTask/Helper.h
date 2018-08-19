@@ -16,6 +16,7 @@ public:
 	CHelper();
 	~CHelper();
 	void Str2Wstr(const std::string &src, std::wstring &dest);
+	void WStr2Str(const std::wstring &src, std::string &dest);
 	void put_bmp_built(HDC hdc, HBITMAP hbmp, POINT dst_pt, POINT src_pt);
 	void put_bmp_stretch(HDC hdc, HBITMAP hbmp, POINT dst_pt, POINT src_pt, int retio_persent);
 	int cmnCreateShmem(LPCTSTR, DWORD, HANDLE*, LPVOID*, DWORD*);	//ã§óLÉÅÉÇÉäê›íË

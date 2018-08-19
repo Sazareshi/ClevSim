@@ -108,7 +108,7 @@ void CThreadObj::txout2msg_listbox(std::wstring str) {
 	item.iSubItem = 0;									// サブアイテムの番号
 	ListView_SetItem(inf.hWnd_msgList, &item);
 
-	//InvalidateRect(inf.hWnd_msgList, NULL, TRUE);
+//	InvalidateRect(inf.hWnd_msgList, NULL, TRUE);
 	inf.cnt_PNLlist_msg++;
 
 };
@@ -117,6 +117,7 @@ void CThreadObj::txout2msg_listbox(std::string str) {
 	txout2msg_listbox(wstr);
 	return;
 };
+
 
 LRESULT CALLBACK CThreadObj::PanelProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp) {
 
