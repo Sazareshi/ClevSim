@@ -91,7 +91,7 @@ unsigned __stdcall CCommunicator::MCprotoThread(void *pVoid)
 
 				char* pmsg = NULL;
 				int msglen;
-				while (int n_rcv = sock_handler.msg_pickup(isock, pmsg, &msglen)) {
+				while (int n_rcv = sock_handler.msg_pickup(isock, &pmsg, &msglen)) {
 					woss << L"index:" << isock << L"  A MESSEGE is discarded"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
 				};
 
@@ -107,6 +107,7 @@ unsigned __stdcall CCommunicator::MCprotoThread(void *pVoid)
 				}
 				else {
 					memcpy(&(pMCMsgMng->com_msg[0]), pmsg, msglen);
+					pMCMsgMng->com_step[0] == MC_STP_START;
 					int nRet = mc_handler.res_transaction(0);
 					if (nRet == TRANZACTION_FIN) {
 						woss << L"Response was sent"; pcomm->txout2msg_listbox(woss.str());

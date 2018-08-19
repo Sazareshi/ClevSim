@@ -244,9 +244,9 @@ int CSock::exit(){
 	return WSACleanup();
 }
 
-int CSock::msg_pickup(int index, char* buftarget, int* nread) { 
+int CSock::msg_pickup(int index, char** buftarget, int* nread) { 
 
-	buftarget = rcvbufpack[index].rbuf[rcvbufpack[index].rptr];
+	*buftarget = rcvbufpack[index].rbuf[rcvbufpack[index].rptr];
 	*nread = rcvbufpack[index].datsize[rcvbufpack[index].rptr];
 	
 	rcvbufpack[index].rptr++;
