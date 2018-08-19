@@ -214,6 +214,9 @@ int CSock::sock_recv(int index) {
 			rcvbufpack[index].wptr++;
 			if (rcvbufpack[index].wptr >= NUM_OF_RBUF) rcvbufpack[index].wptr = 0;
 		}
+		else {
+			return SOCK_ERROR;
+		}
 	}
 	else if (sock_packs[index].sock_protocol == SOCK_DGRAM) {
 		;
@@ -226,10 +229,12 @@ int CSock::sock_recv(int index) {
 }
 
 int CSock::sock_close(int index) {
-	if(sock_packs[index].socket != INVALID_SOCKET) closesocket(sock_packs[index].socket);
+	if (sock_packs[index].socket != INVALID_SOCKET) {
+		closesocket(sock_packs[index].socket);
+		WSACloseEvent(hEvents[index]);
+	}
 	sock_packs[index].current_step = SOCK_NOT_CREATED;
 	sock_packs[index].socket = INVALID_SOCKET;
-	WSACloseEvent(hEvents[index]);
 	return S_OK;
 }
 
@@ -239,7 +244,16 @@ int CSock::exit(){
 	return WSACleanup();
 }
 
-int CSock::msg_pickup(int index, const char* buf, int n) { return 1; };
+int CSock::msg_pickup(int index, char* buftarget, int* nread) { 
+
+	buftarget = rcvbufpack[index].rbuf[rcvbufpack[index].rptr];
+	*nread = rcvbufpack[index].datsize[rcvbufpack[index].rptr];
+	
+	rcvbufpack[index].rptr++;
+	if (rcvbufpack[index].rptr >= NUM_OF_RBUF) rcvbufpack[index].rptr = 0;
+
+	return rcv_check(index);
+};
 
 int CSock::rcv_check(int index) {
 	if (rcvbufpack[index].wptr >= rcvbufpack[index].rptr) return rcvbufpack[index].wptr - rcvbufpack[index].rptr;

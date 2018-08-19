@@ -18,15 +18,16 @@
 #define MC_SOCK_NOT_REGISTERED -1
 #define MC_SOCK_USE	 1
 
-#define COMPOS_READ_D100	0
-#define COMPOS_WRITE_D110	1
-#define COMPOS_READ_R0_R303	2
-#define COMPOS_READ_R304__	3
+#define POS_READ_D100	0
+#define POS_WRITE_D110	1
+#define POS_READ_R0_R303	2
+#define POS_READ_R304__	3
 
 #define SIZE_OF_FAULT_TRIGGER	304
 #define SIZE_OF_TRACE_RECORD	96
 
 #define TRANZACTION_READY	0
+#define TRANZACTION_FIN		0
 #define TRANZACTION_BUSY	-1
 #define TRANZACTION_ERROR	-2
 
@@ -120,6 +121,7 @@ typedef struct _stMCTransactionMng
 	int nCommandSet;//セットされているコマンド数
 	int com_step[MC_TRANSACTION_MAX];
 	int com_msg_len[MC_TRANSACTION_MAX];
+	int res_msg_len[MC_TRANSACTION_MAX];
 	MCCMD com_msg[MC_TRANSACTION_MAX];//コマンド電文
  	MCRES res_msg[MC_TRANSACTION_MAX];//レスポンス電文
 
@@ -141,8 +143,10 @@ class CMCtransaction
 {
 public:
 	MCMsgMng mcifmng;//MCプロトコル処理管理構造体
-	int req_transaction(int nCommand);	//トランザクション要求
+	int com_transaction(int nCommand);	//トランザクション要求
+	int res_transaction(int nCommand);	//トランザクション応答
 	int set_com_msg(int pos, int type, int writelen, ...);//コマンドメッセージセット
+	int set_res_msg(int pos, int type, int writelen, ...);//コマンドメッセージセット
 	int init();	//初期化
 	int Is_tranzaction_ready();	//コマンド送信可否判定
 

@@ -19,8 +19,19 @@ void CCommunicator::routine_work(void *param) {
 	MCMsgMng* pMCMsgMng = (MCMsgMng*)(&(mc_handler.mcifmng));			//MCプロトコル処理管理用構造体へのポインタ
 	int MC_transaction_status;
 
-	MC_transaction_status = mc_handler.req_transaction(0);
-
+	if (pMCMsgMng->sock_type == CLIENT_SOCKET) {
+		if (pMCMsgMng->sock_event_status & FD_WRITE) {
+			MC_transaction_status = mc_handler.com_transaction(0);
+			if (MC_transaction_status == TRANZACTION_READY) {
+				ws << L"Transactioin Req is Sent"; txout2msg_listbox(ws.str()); ws.str(L""); ws.clear();
+			}
+		}
+	}
+	else {
+		if (sock_handler.rcv_check > 0) {
+			ws << L"Command received"; txout2msg_listbox(ws.str()); ws.str(L""); ws.clear();
+		}
+	}
 	ws << L"Routine work activated!" << *(inf.psys_counter);tweet2owner(ws.str()); ws.str(L""); ws.clear();
 
 };
@@ -32,13 +43,13 @@ unsigned __stdcall CCommunicator::MCprotoThread(void *pVoid)
 	MCMsgMng* pMCMsgMng = (MCMsgMng*)(&(mc_handler.mcifmng));			//MCプロトコル処理管理用構造体へのポインタ
 	CCommunicator* pcomm = (CCommunicator*)pVoid;	//呼び出し元インスタンスのポインタ メインウィンドウへのメッセージ表示他用
 
-	///# Cient ソケットを用意してConnect要求まで   Server ソケットを用意してAccept待ちまで
+	///# ソケットを用意して Cient:Connect要求まで   Server:Accept待ちまで
 	pMCMsgMng->sock_index = pcomm->start_MCsock(pMCMsgMng->sock_ipaddr, pMCMsgMng->sock_port, pMCMsgMng->sock_protocol, pMCMsgMng->sock_type);
 	pMCMsgMng->hsock_event = sock_handler.hEvents[pMCMsgMng->sock_index];
 	
 	while (pcomm->thread_end == FALSE) {
 		dwRet = WSAWaitForMultipleEvents(MC_SOCK_USE, &(pMCMsgMng ->hsock_event), FALSE, MC_EVENT_TIMEOUT, FALSE);
-		if (dwRet != WSA_WAIT_FAILED) {
+		if (dwRet != WSA_WAIT_FAILED) {//TimeOutイベントではない
 			event_index = dwRet - WSA_WAIT_EVENT_0;		//発生したイベントのインデックス
 			isock = pMCMsgMng->sock_index;	//発生したイベントのソケットのインデクス
 			
@@ -69,23 +80,39 @@ unsigned __stdcall CCommunicator::MCprotoThread(void *pVoid)
 						woss << L"index:" << isock << L"  Connection Aborted iErrorCode  " << errCode; pcomm->txout2msg_listbox(woss.str()); //woss.str(L""); woss.clear();
 					}
 				}
-
 			}
 			if (events.lNetworkEvents & FD_READ) {
+
 				errCode = events.iErrorCode[FD_READ_BIT];
 				pMCMsgMng->sock_event_status |= FD_READ;
 				sock_handler.sock_recv(isock);
-				woss << L"index:" << isock << L"  Read OK"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
-				pMCMsgMng->sock_event_status &= ~FD_READ;
+				woss << L"index:" << isock << L"  FD_READ Triggerred "; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
 				sock_handler.rcvbufpack;//デバッグ時モニタ用
 
-				for (int ires = 0; ires < pMCMsgMng->nCommandSet; ires++) {
-					if (pMCMsgMng->com_step[ires] == MC_STP_WAIT_RES) {
-						pMCMsgMng->com_step[ires] = MC_STP_IDLE;
-						woss << L"index:" << isock  << L"  Res OK RCV Buf -> " << sock_handler.rcvbufpack[isock].wptr ; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
-						break;
+				char* pmsg = NULL;
+				int msglen;
+				while (int n_rcv = sock_handler.msg_pickup(isock, pmsg, &msglen)) {
+					woss << L"index:" << isock << L"  A MESSEGE is discarded"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+				};
+
+				if (pMCMsgMng->sock_type == CLIENT_SOCKET) {//クライアント
+					for (int ires = 0; ires < pMCMsgMng->nCommandSet; ires++) {
+						if (pMCMsgMng->com_step[ires] == MC_STP_WAIT_RES) {
+							memcpy(&(pMCMsgMng->res_msg[0]), pmsg, msglen);
+							pMCMsgMng->com_step[ires] = MC_STP_IDLE;
+							woss << L"index:" << isock << L"  Res OK RCV Buf -> " << sock_handler.rcvbufpack[isock].wptr; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+							break;
+						}
 					}
 				}
+				else {
+					memcpy(&(pMCMsgMng->com_msg[0]), pmsg, msglen);
+					int nRet = mc_handler.res_transaction(0);
+					if (nRet == TRANZACTION_FIN) {
+						woss << L"Response was sent"; pcomm->txout2msg_listbox(woss.str());
+					}
+				}
+				pMCMsgMng->sock_event_status &= ~FD_READ;
 			}
 			if (events.lNetworkEvents & FD_WRITE) {
 				errCode = events.iErrorCode[FD_WRITE_BIT];
@@ -94,7 +121,7 @@ unsigned __stdcall CCommunicator::MCprotoThread(void *pVoid)
 				for (icom = 0; icom < pMCMsgMng->nCommandSet; icom++) {
 					if (pMCMsgMng->com_step[icom] == MC_STP_START) {
 						sock_handler.sock_send(isock, (const char*)(&pMCMsgMng->com_msg[icom].cmd0401), pMCMsgMng->com_msg_len[icom]);
-						pMCMsgMng->com_step[icom] = MC_STP_IDLE;
+						pMCMsgMng->com_step[icom] = MC_STP_WAIT_RES;
 						woss << L"index:" << isock << L"  Write OK"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
 						break;
 					}
@@ -103,15 +130,41 @@ unsigned __stdcall CCommunicator::MCprotoThread(void *pVoid)
 			}
 			if (events.lNetworkEvents & FD_CLOSE) {
 				errCode = events.iErrorCode[FD_CLOSE_BIT];
-				pMCMsgMng->sock_event_status |= FD_CLOSE;
 				sock_handler.sock_close(isock);
+				pMCMsgMng->sock_event_status = FD_CLOSE;
+
+
 				woss << L"index:" << isock << L"  FD_CLOSE is triggered"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+
+				if (pMCMsgMng->sock_type == CLIENT_SOCKET) {//クライアントでは再接続指向
+					pMCMsgMng->sock_index = pcomm->start_MCsock(pMCMsgMng->sock_ipaddr, pMCMsgMng->sock_port, pMCMsgMng->sock_protocol, pMCMsgMng->sock_type);
+					pMCMsgMng->hsock_event = sock_handler.hEvents[pMCMsgMng->sock_index];
+					isock = pMCMsgMng->sock_index;
+					if (sock_handler.sock_packs[isock].current_step == WAIT_CONNECTION) {
+						woss << L"   Retry and Waiting Connection again"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+						sock_handler.sock_packs[pMCMsgMng->sock_index].current_step = WAIT_CONNECTION;
+						pMCMsgMng->sock_event_status &= ~FD_CLOSE;
+					}
+					else {
+						woss << L"index:" << isock << L"  Connection Aborted iErrorCode  " << sock_handler.sock_err[isock].wErrCode; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+						sock_handler.sock_close(isock);
+					}
+				}
+				else {
+					pMCMsgMng->sock_index = pcomm->start_MCsock(pMCMsgMng->sock_ipaddr, pMCMsgMng->sock_port, pMCMsgMng->sock_protocol, pMCMsgMng->sock_type);
+					pMCMsgMng->hsock_event = sock_handler.hEvents[pMCMsgMng->sock_index];
+					isock = pMCMsgMng->sock_index;
+					pMCMsgMng->sock_event_status &= ~FD_CLOSE;
+					woss << L"   Retry Listening again"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+				}
 			}
 			if (events.lNetworkEvents & FD_ACCEPT) {
 				errCode = events.iErrorCode[FD_ACCEPT_BIT];
 				pMCMsgMng->sock_event_status |= FD_ACCEPT;
 				woss << L"index:" << isock << L"  FD_ACCEPT is triggered"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
-				;
+				if (sock_handler.sock_accept(isock) == S_OK) {
+					woss << L"index:" << isock << L"  Switch to new socket"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+				}
 			}
 		}
 		else {
@@ -129,9 +182,6 @@ void CCommunicator::init_task(void* pobj) {
 	unsigned ThreadID;
 	HANDLE hThread;
 	
-	///# MCプロトコル処理オブジェクトの初期化
-	mc_handler.init();
-
 	///# INIファイル読み込み
 	wchar_t tbuf[32];
 	DWORD	str_num = GetPrivateProfileString(COMM_SECT_OF_INIFILE, MC_PROTOKEY_OF_TYPE, L"C", tbuf, sizeof(tbuf), PATH_OF_INIFILE);
@@ -154,7 +204,10 @@ void CCommunicator::init_task(void* pobj) {
 
 	//mc_handler.mcifmng.sock_ipaddr = "192.168.3.2";//IPADDR_MCSERVER;
 	//mc_handler.mcifmng.sock_port = NPORT_MCSERVER;
-			
+
+	///# その他　MCプロトコル処理オブジェクトの初期化
+	mc_handler.init();
+
 	//MCプロトコル処理実行
 	hThread = (HANDLE) _beginthreadex(
 		NULL,					//Security
@@ -195,6 +248,9 @@ unsigned CCommunicator::start_MCsock(PCSTR ipaddr, USHORT port,int protocol, int
 		woss << L"Creat Sock OK index = " << ID << L",  Proto:" << protocol << L",  Type:" << type << L",  IP:" << ipaddr << L",  PORT:" << port ; txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
 		sock_handler.sock_packs[ID].current_step = SOCK_PREPARED;
 	}
+	else {
+		sock_handler.sock_packs[ID].current_step = SOCK_NOT_CREATED;
+	}
 
 	r = sock_handler.make_connection(ID);
 	if ((protocol == SOCK_STREAM )&& (type == CLIENT_SOCKET)) {
@@ -205,6 +261,8 @@ unsigned CCommunicator::start_MCsock(PCSTR ipaddr, USHORT port,int protocol, int
 		else {
 			sock_handler.GetSockMsg(r, sock_handler.sock_err[ID].errmsg, SOCK_ERR_MSG_MAX);
 			woss << L"Connection Preparation Failed:" << sock_handler.sock_err[ID].errmsg; txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+			sock_handler.sock_close(ID);
+			sock_handler.sock_err[ID].wErrCode = r;
 		}
 	}
 	else if ((protocol == SOCK_STREAM) && (type == SERVER_SOCKET)) {
@@ -215,6 +273,7 @@ unsigned CCommunicator::start_MCsock(PCSTR ipaddr, USHORT port,int protocol, int
 		else {
 			sock_handler.GetSockMsg(r, sock_handler.sock_err[ID].errmsg, SOCK_ERR_MSG_MAX);
 			woss << L"Connection Preparation Failed:" << sock_handler.sock_err[ID].errmsg; txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+			sock_handler.sock_close(ID);
 		}
 	}
 	else {

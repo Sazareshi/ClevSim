@@ -77,7 +77,7 @@ public:
 	static HRESULT make_connection(int index);
 	static int exit();
 	static HRESULT GetSockMsg(int nError, LPWSTR pszMessage, DWORD dwSize);
-	static int msg_pickup(int index, const char* buf, int n);
+	static int msg_pickup(int index, char* buftarget, int* nread);
 	static int rcv_check(int index);
 };
 
