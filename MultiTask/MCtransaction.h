@@ -146,9 +146,10 @@ public:
 	int com_transaction(int nCommand);	//トランザクション要求
 	int res_transaction(int nCommand);	//トランザクション応答
 	int set_com_msg(int pos, int type, int writelen, ...);//コマンドメッセージセット
-	int set_res_msg(int pos, int type, int writelen, ...);//コマンドメッセージセット
+	int set_res_msg(int pos, int type, const char* pdata, int writelen, ...);//コマンドメッセージセット
 	int init();	//初期化
 	int Is_tranzaction_ready();	//コマンド送信可否判定
+	int check_com(const char* pch);	//コマンド内容確認　戻り値は、受信コマンド配列のインデックス
 
 public:
 	CMCtransaction();

@@ -28,7 +28,7 @@ void CCommunicator::routine_work(void *param) {
 		}
 	}
 	else {
-		if (sock_handler.rcv_check > 0) {
+		if (sock_handler.rcv_check(0) > 0) {
 			ws << L"Command received"; txout2msg_listbox(ws.str()); ws.str(L""); ws.clear();
 		}
 	}
@@ -98,7 +98,7 @@ unsigned __stdcall CCommunicator::MCprotoThread(void *pVoid)
 				if (pMCMsgMng->sock_type == CLIENT_SOCKET) {//クライアント
 					for (int ires = 0; ires < pMCMsgMng->nCommandSet; ires++) {
 						if (pMCMsgMng->com_step[ires] == MC_STP_WAIT_RES) {
-							memcpy(&(pMCMsgMng->res_msg[0]), pmsg, msglen);
+							memcpy(&(pMCMsgMng->res_msg[ires]), pmsg, msglen);
 							pMCMsgMng->com_step[ires] = MC_STP_IDLE;
 							woss << L"index:" << isock << L"  Res OK RCV Buf -> " << sock_handler.rcvbufpack[isock].wptr; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
 							break;
@@ -106,9 +106,10 @@ unsigned __stdcall CCommunicator::MCprotoThread(void *pVoid)
 					}
 				}
 				else {
-					memcpy(&(pMCMsgMng->com_msg[0]), pmsg, msglen);
-					pMCMsgMng->com_step[0] == MC_STP_START;
-					int nRet = mc_handler.res_transaction(0);
+					int com_index = mc_handler.check_com(pmsg);//コマンド判定
+					memcpy(&(pMCMsgMng->com_msg[com_index]), pmsg, msglen);
+					pMCMsgMng->com_step[com_index] = MC_STP_WAIT_RES;
+					int nRet = mc_handler.res_transaction(com_index);
 					if (nRet == TRANZACTION_FIN) {
 						woss << L"Response was sent"; pcomm->txout2msg_listbox(woss.str());
 					}
@@ -195,7 +196,7 @@ void CCommunicator::init_task(void* pobj) {
 
 	///# MCプロトコルで利用するソケットのIPとポートセット
 	wstring wstr;
-	str_num = GetPrivateProfileString(COMM_SECT_OF_INIFILE, MC_PROTOKEY_OF_IP, L"0.0.0.0", tbuf, sizeof(tbuf), PATH_OF_INIFILE);
+	str_num = GetPrivateProfileString(COMM_SECT_OF_INIFILE, MC_PROTOKEY_OF_IP, L"192.168.100.1", tbuf, sizeof(tbuf), PATH_OF_INIFILE);
 	wstr += tbuf;
 	CHelper helper; helper.WStr2Str(wstr, mc_handler.mcifmng.sock_ip_str);
 	mc_handler.mcifmng.sock_ipaddr = mc_handler.mcifmng.sock_ip_str.c_str();
