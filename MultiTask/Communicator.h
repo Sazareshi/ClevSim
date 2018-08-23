@@ -17,12 +17,15 @@ public:
 	~CCommunicator();
 	void routine_work(void *param);
 	static unsigned __stdcall MCprotoThread(void *pVoid);
+	static LRESULT COM_PROC(HWND,UINT,WPARAM,LPARAM);
 	unsigned start_MCsock(PCSTR ipaddr, USHORT port, int protocol, int type);
 	void init_task(void* pobj);
 	BOOL thread_end;
+	HWND CreateOwnWindow(HWND h_parent_wnd);
 
 private:
 	static CSock sock_handler;
 	int	index_MCsock;
+
 };
 

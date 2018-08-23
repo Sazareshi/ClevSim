@@ -83,38 +83,38 @@ unsigned __stdcall CCommunicator::MCprotoThread(void *pVoid)
 			}
 			if (events.lNetworkEvents & FD_READ) {
 
-				errCode = events.iErrorCode[FD_READ_BIT];
-				pMCMsgMng->sock_event_status |= FD_READ;
-				sock_handler.sock_recv(isock);
-				woss << L"index:" << isock << L"  FD_READ Triggerred "; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
-				sock_handler.rcvbufpack;//デバッグ時モニタ用
+errCode = events.iErrorCode[FD_READ_BIT];
+pMCMsgMng->sock_event_status |= FD_READ;
+sock_handler.sock_recv(isock);
+woss << L"index:" << isock << L"  FD_READ Triggerred "; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+sock_handler.rcvbufpack;//デバッグ時モニタ用
 
-				char* pmsg = NULL;
-				int msglen;
-				while (int n_rcv = sock_handler.msg_pickup(isock, &pmsg, &msglen)) {
-					woss << L"index:" << isock << L"  A MESSEGE is discarded"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
-				};
+char* pmsg = NULL;
+int msglen;
+while (int n_rcv = sock_handler.msg_pickup(isock, &pmsg, &msglen)) {
+	woss << L"index:" << isock << L"  A MESSEGE is discarded"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+};
 
-				if (pMCMsgMng->sock_type == CLIENT_SOCKET) {//クライアント
-					for (int ires = 0; ires < pMCMsgMng->nCommandSet; ires++) {
-						if (pMCMsgMng->com_step[ires] == MC_STP_WAIT_RES) {
-							memcpy(&(pMCMsgMng->res_msg[ires]), pmsg, msglen);
-							pMCMsgMng->com_step[ires] = MC_STP_IDLE;
-							woss << L"index:" << isock << L"  Res OK RCV Buf -> " << sock_handler.rcvbufpack[isock].wptr; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
-							break;
-						}
-					}
-				}
-				else {
-					int com_index = mc_handler.check_com(pmsg);//コマンド判定
-					memcpy(&(pMCMsgMng->com_msg[com_index]), pmsg, msglen);
-					pMCMsgMng->com_step[com_index] = MC_STP_WAIT_RES;
-					int nRet = mc_handler.res_transaction(com_index);
-					if (nRet == TRANZACTION_FIN) {
-						woss << L"Response was sent"; pcomm->txout2msg_listbox(woss.str());
-					}
-				}
-				pMCMsgMng->sock_event_status &= ~FD_READ;
+if (pMCMsgMng->sock_type == CLIENT_SOCKET) {//クライアント
+	for (int ires = 0; ires < pMCMsgMng->nCommandSet; ires++) {
+		if (pMCMsgMng->com_step[ires] == MC_STP_WAIT_RES) {
+			memcpy(&(pMCMsgMng->res_msg[ires]), pmsg, msglen);
+			pMCMsgMng->com_step[ires] = MC_STP_IDLE;
+			woss << L"index:" << isock << L"  Res OK RCV Buf -> " << sock_handler.rcvbufpack[isock].wptr; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+			break;
+		}
+	}
+}
+else {
+	int com_index = mc_handler.check_com(pmsg);//コマンド判定
+	memcpy(&(pMCMsgMng->com_msg[com_index]), pmsg, msglen);
+	pMCMsgMng->com_step[com_index] = MC_STP_WAIT_RES;
+	int nRet = mc_handler.res_transaction(com_index);
+	if (nRet == TRANZACTION_FIN) {
+		woss << L"Response was sent"; pcomm->txout2msg_listbox(woss.str());
+	}
+}
+pMCMsgMng->sock_event_status &= ~FD_READ;
 			}
 			if (events.lNetworkEvents & FD_WRITE) {
 				errCode = events.iErrorCode[FD_WRITE_BIT];
@@ -178,6 +178,25 @@ unsigned __stdcall CCommunicator::MCprotoThread(void *pVoid)
 	sock_handler.exit();
 
 	return 1;
+};
+
+LRESULT CCommunicator::COM_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
+	switch (msg) {
+	case WM_COMMAND:
+		switch (LOWORD(wp)){
+			case WM_INITDIALOG:
+				break;
+			default:
+				return FALSE;
+		}break;
+	default:
+		return FALSE;
+	}
+	return TRUE;
+};
+
+HWND  CCommunicator::CreateOwnWindow(HWND h_parent_wnd) {
+	return NULL;
 };
 
 void CCommunicator::init_task(void* pobj) {
