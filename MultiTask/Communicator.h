@@ -21,11 +21,19 @@ public:
 	unsigned start_MCsock(PCSTR ipaddr, USHORT port, int protocol, int type);
 	void init_task(void* pobj);
 	BOOL thread_end;
-	HWND CreateOwnWindow(HWND h_parent_wnd);
+
+	void set_panel_tip_txt();//タブパネルのStaticテキストを設定
+
+	static CCommunicator* pComInst;
+	LRESULT CALLBACK PanelProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp);
+	HWND CreateWorkWindow(HWND h_parent_wnd);
 
 private:
 	static CSock sock_handler;
 	int	index_MCsock;
+
+protected:
+
 
 };
 

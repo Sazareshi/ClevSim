@@ -137,7 +137,6 @@ int CMCtransaction::init() {
 		set_res_msg(POS_READ_R0_R303, MC_TYP_READ_R, str.c_str(), 8);
 		set_res_msg(POS_READ_R304__, MC_TYP_READ_R, str.c_str(), 8);
 	}
-
 	//セットされているコマンドの数
 	mcifmng.nCommandSet = 4;
 	//コマンドの実行ステップ初期化
