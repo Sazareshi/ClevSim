@@ -4,7 +4,8 @@
 
 
 CMCtransaction CCommunicator::mc_handler;
-CSock CCommunicator::sock_handler;
+CSock sock_handler;
+CCommunicator* CCommunicator:: pComInst = NULL;//スタティック関数操作用インスタンスポインタ
 
 CCommunicator::CCommunicator(){
 	thread_end = FALSE;
@@ -28,7 +29,7 @@ void CCommunicator::routine_work(void *param) {
 		}
 	}
 	else {
-		if (sock_handler.rcv_check > 0) {
+		if (sock_handler.rcv_check(0) > 0) {
 			ws << L"Command received"; txout2msg_listbox(ws.str()); ws.str(L""); ws.clear();
 		}
 	}
@@ -83,37 +84,38 @@ unsigned __stdcall CCommunicator::MCprotoThread(void *pVoid)
 			}
 			if (events.lNetworkEvents & FD_READ) {
 
-				errCode = events.iErrorCode[FD_READ_BIT];
-				pMCMsgMng->sock_event_status |= FD_READ;
-				sock_handler.sock_recv(isock);
-				woss << L"index:" << isock << L"  FD_READ Triggerred "; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
-				sock_handler.rcvbufpack;//デバッグ時モニタ用
+errCode = events.iErrorCode[FD_READ_BIT];
+pMCMsgMng->sock_event_status |= FD_READ;
+sock_handler.sock_recv(isock);
+woss << L"index:" << isock << L"  FD_READ Triggerred "; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+sock_handler.rcvbufpack;//デバッグ時モニタ用
 
-				char* pmsg = NULL;
-				int msglen;
-				while (int n_rcv = sock_handler.msg_pickup(isock, &pmsg, &msglen)) {
-					woss << L"index:" << isock << L"  A MESSEGE is discarded"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
-				};
+char* pmsg = NULL;
+int msglen;
+while (int n_rcv = sock_handler.msg_pickup(isock, &pmsg, &msglen)) {
+	woss << L"index:" << isock << L"  A MESSEGE is discarded"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+};
 
-				if (pMCMsgMng->sock_type == CLIENT_SOCKET) {//クライアント
-					for (int ires = 0; ires < pMCMsgMng->nCommandSet; ires++) {
-						if (pMCMsgMng->com_step[ires] == MC_STP_WAIT_RES) {
-							memcpy(&(pMCMsgMng->res_msg[0]), pmsg, msglen);
-							pMCMsgMng->com_step[ires] = MC_STP_IDLE;
-							woss << L"index:" << isock << L"  Res OK RCV Buf -> " << sock_handler.rcvbufpack[isock].wptr; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
-							break;
-						}
-					}
-				}
-				else {
-					memcpy(&(pMCMsgMng->com_msg[0]), pmsg, msglen);
-					pMCMsgMng->com_step[0] == MC_STP_START;
-					int nRet = mc_handler.res_transaction(0);
-					if (nRet == TRANZACTION_FIN) {
-						woss << L"Response was sent"; pcomm->txout2msg_listbox(woss.str());
-					}
-				}
-				pMCMsgMng->sock_event_status &= ~FD_READ;
+if (pMCMsgMng->sock_type == CLIENT_SOCKET) {//クライアント
+	for (int ires = 0; ires < pMCMsgMng->nCommandSet; ires++) {
+		if (pMCMsgMng->com_step[ires] == MC_STP_WAIT_RES) {
+			memcpy(&(pMCMsgMng->res_msg[ires]), pmsg, msglen);
+			pMCMsgMng->com_step[ires] = MC_STP_IDLE;
+			woss << L"index:" << isock << L"  Res OK RCV Buf -> " << sock_handler.rcvbufpack[isock].wptr; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+			break;
+		}
+	}
+}
+else {
+	int com_index = mc_handler.check_com(pmsg);//コマンド判定
+	memcpy(&(pMCMsgMng->com_msg[com_index]), pmsg, msglen);
+	pMCMsgMng->com_step[com_index] = MC_STP_WAIT_RES;
+	int nRet = mc_handler.res_transaction(com_index);
+	if (nRet == TRANZACTION_FIN) {
+		woss << L"Response was sent"; pcomm->txout2msg_listbox(woss.str());
+	}
+}
+pMCMsgMng->sock_event_status &= ~FD_READ;
 			}
 			if (events.lNetworkEvents & FD_WRITE) {
 				errCode = events.iErrorCode[FD_WRITE_BIT];
@@ -179,9 +181,38 @@ unsigned __stdcall CCommunicator::MCprotoThread(void *pVoid)
 	return 1;
 };
 
+LRESULT CCommunicator::COM_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
+	switch (msg) {
+	case WM_COMMAND:
+		switch (LOWORD(wp)){
+			case WM_INITDIALOG:
+				break;
+			case IDC_COMM_CLOSE:
+				pComInst->inf.hWnd_work = NULL;
+				DestroyWindow(hWnd);
+				break;
+			default:
+				return FALSE;
+		}break;
+	default:
+		return FALSE;
+	}
+	return TRUE;
+};
+
+HWND  CCommunicator::CreateWorkWindow(HWND h_parent_wnd) {
+
+	if (pComInst->inf.hWnd_work == NULL) {
+		inf.hWnd_work = CreateDialog(inf.hInstance, L"IDD_COMM_DLG", inf.hWnd_parent, (DLGPROC)COM_PROC);
+	}
+	return NULL;
+};
+
 void CCommunicator::init_task(void* pobj) {
 	unsigned ThreadID;
 	HANDLE hThread;
+	pComInst = (CCommunicator *)pobj;//スタティック変数にインスタンスポインタ登録
+	inf.hWnd_work = NULL;
 	
 	///# INIファイル読み込み
 	wchar_t tbuf[32];
@@ -195,7 +226,7 @@ void CCommunicator::init_task(void* pobj) {
 
 	///# MCプロトコルで利用するソケットのIPとポートセット
 	wstring wstr;
-	str_num = GetPrivateProfileString(COMM_SECT_OF_INIFILE, MC_PROTOKEY_OF_IP, L"0.0.0.0", tbuf, sizeof(tbuf), PATH_OF_INIFILE);
+	str_num = GetPrivateProfileString(COMM_SECT_OF_INIFILE, MC_PROTOKEY_OF_IP, L"192.168.100.1", tbuf, sizeof(tbuf), PATH_OF_INIFILE);
 	wstr += tbuf;
 	CHelper helper; helper.WStr2Str(wstr, mc_handler.mcifmng.sock_ip_str);
 	mc_handler.mcifmng.sock_ipaddr = mc_handler.mcifmng.sock_ip_str.c_str();
@@ -283,3 +314,239 @@ unsigned CCommunicator::start_MCsock(PCSTR ipaddr, USHORT port,int protocol, int
 
 	return ID;
 }
+
+LRESULT CALLBACK CCommunicator::PanelProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp) {
+
+	switch (msg) {
+	case WM_COMMAND:
+		switch (LOWORD(wp)) {
+		case IDC_TASK_FUNC_RADIO1:
+		case IDC_TASK_FUNC_RADIO2:
+		case IDC_TASK_FUNC_RADIO3:
+		case IDC_TASK_FUNC_RADIO4:
+		case IDC_TASK_FUNC_RADIO5:
+		case IDC_TASK_FUNC_RADIO6:
+			inf.panel_func_id = LOWORD(wp); set_panel_tip_txt(); set_PNLparam_value(0.0, 0.0, 0.0, 0.0, 0.0, 0.0); break;
+
+		case IDC_TASK_ITEM_RADIO1:
+		case IDC_TASK_ITEM_RADIO2:
+		case IDC_TASK_ITEM_RADIO3:
+		case IDC_TASK_ITEM_RADIO4:
+		case IDC_TASK_ITEM_RADIO5:
+		case IDC_TASK_ITEM_RADIO6:
+			inf.panel_type_id = LOWORD(wp); set_panel_tip_txt();  SetFocus(GetDlgItem(inf.hWnd_opepane, IDC_TASK_EDIT1));
+			if ((inf.panel_func_id == IDC_TASK_FUNC_RADIO1) && (inf.panel_type_id == IDC_TASK_ITEM_RADIO1)) {
+				if (inf.hWnd_work == NULL) CreateWorkWindow(inf.hWnd_parent);
+			}
+			break;
+		case IDSET: {
+			wstring wstr, wstr_tmp;
+
+			//サンプルとしていろいろな型で読み込んで表示している
+			wstr += L"Param 1(d):";
+			int n = GetDlgItemText(hDlg, IDC_TASK_EDIT1, (LPTSTR)wstr_tmp.c_str(), 128);
+			if (n) wstr_tmp = to_wstring(stod(wstr_tmp));	wstr = wstr + wstr_tmp.c_str();
+
+			wstr += L",  Param 2(i):";
+			n = GetDlgItemText(hDlg, IDC_TASK_EDIT2, (LPTSTR)wstr_tmp.c_str(), 128);
+			if (n) wstr_tmp = to_wstring(stoi(wstr_tmp));	wstr = wstr + wstr_tmp.c_str();
+
+			wstr += L",  Param 3(f):";
+			n = GetDlgItemText(hDlg, IDC_TASK_EDIT3, (LPTSTR)wstr_tmp.c_str(), 128);
+			if (n) wstr_tmp = to_wstring(stof(wstr_tmp));	wstr = wstr + wstr_tmp.c_str();
+
+			wstr += L",  Param 4(l):";
+			n = GetDlgItemText(hDlg, IDC_TASK_EDIT4, (LPTSTR)wstr_tmp.c_str(), 128);
+			if (n) wstr_tmp = to_wstring(stol(wstr_tmp));	wstr = wstr + wstr_tmp.c_str();
+
+			wstr += L",  Param 5(c):";
+			n = GetDlgItemText(hDlg, IDC_TASK_EDIT5, (LPTSTR)wstr_tmp.c_str(), 128);
+			wstr += wstr_tmp.c_str();
+
+			wstr += L",   Param 6(c):";
+			n = GetDlgItemText(hDlg, IDC_TASK_EDIT6, (LPTSTR)wstr_tmp.c_str(), 128);
+			wstr += wstr_tmp.c_str();
+
+			txout2msg_listbox(wstr);
+
+
+		}break;
+		case IDRESET: {
+			set_PNLparam_value(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+
+		}break;
+
+		case IDC_TASK_OPTION_CHECK1:
+			SendMessage(GetDlgItem(hDlg, IDC_TASK_OPTION_CHECK2), BM_SETCHECK, BST_UNCHECKED, 0L);
+			if (IsDlgButtonChecked(hDlg, IDC_TASK_OPTION_CHECK1) == BST_CHECKED) inf.work_select = THREAD_WORK_OPTION1;
+			else inf.work_select = THREAD_WORK_ROUTINE;
+			break;
+
+		case IDC_TASK_OPTION_CHECK2:
+			SendMessage(GetDlgItem(hDlg, IDC_TASK_OPTION_CHECK1), BM_SETCHECK, BST_UNCHECKED, 0L);
+			if (IsDlgButtonChecked(hDlg, IDC_TASK_OPTION_CHECK2) == BST_CHECKED) inf.work_select = THREAD_WORK_OPTION2;
+			else inf.work_select = THREAD_WORK_ROUTINE;
+			break;
+		}
+	}
+	return 0;
+};
+
+void CCommunicator::set_panel_tip_txt()
+{
+	wstring wstr_type; wstring wstr;
+	switch (inf.panel_func_id) {
+	case IDC_TASK_FUNC_RADIO1: {
+		wstr = L"Type for Func1 \n\r 1:Open Inf Wnd 2:?? 3:?? \n\r 4:?? 5:?? 6:??";
+		switch (inf.panel_type_id) {
+		case IDC_TASK_ITEM_RADIO1:
+			wstr_type += L"Param of type1 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO2:
+			wstr_type += L"Param of type2 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO3:
+			wstr_type += L"Param of type3 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO4:
+			wstr_type += L"Param of type4 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO5:
+			wstr_type += L"Param of type5 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO6:
+			wstr_type += L"Param of type6 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		default:break;
+		}
+	}break;
+	case IDC_TASK_FUNC_RADIO2: {
+		wstr = L"Type for Func2 \n\r 1:?? 2:?? 3:?? \n\r 4:?? 5:?? 6:??";
+		switch (inf.panel_type_id) {
+		case IDC_TASK_ITEM_RADIO1:
+			wstr_type += L"Param of type1 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO2:
+			wstr_type += L"Param of type2 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO3:
+			wstr_type += L"Param of type3 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO4:
+			wstr_type += L"Param of type4 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO5:
+			wstr_type += L"Param of type5 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO6:
+			wstr_type += L"Param of type6 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		default:break;
+		}
+	}break;
+	case IDC_TASK_FUNC_RADIO3: {
+		wstr = L"Type for Func3 \n\r 1:?? 2:?? 3:?? \n\r 4:?? 5:?? 6:??";
+		switch (inf.panel_type_id) {
+		case IDC_TASK_ITEM_RADIO1:
+			wstr_type += L"Param of type1 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO2:
+			wstr_type += L"Param of type2 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO3:
+			wstr_type += L"Param of type3 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO4:
+			wstr_type += L"Param of type4 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO5:
+			wstr_type += L"Param of type5 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO6:
+			wstr_type += L"Param of type6 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		default:break;
+		}
+	}break;
+	case IDC_TASK_FUNC_RADIO4: {
+		wstr = L"Type for Func4 \n\r 1:?? 2:?? 3:?? \n\r 4:?? 5:?? 6:??";
+		switch (inf.panel_type_id) {
+		case IDC_TASK_ITEM_RADIO1:
+			wstr_type += L"Param of type1 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO2:
+			wstr_type += L"Param of type2 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO3:
+			wstr_type += L"Param of type3 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO4:
+			wstr_type += L"Param of type4 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO5:
+			wstr_type += L"Param of type5 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO6:
+			wstr_type += L"Param of type6 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		default:break;
+		}
+	}break;
+	case IDC_TASK_FUNC_RADIO5: {
+		wstr = L"Type for Func5 \n\r 1:?? 2:?? 3:?? \n\r 4:?? 5:?? 6:??";
+		switch (inf.panel_type_id) {
+		case IDC_TASK_ITEM_RADIO1:
+			wstr_type += L"Param of type1 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO2:
+			wstr_type += L"Param of type2 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO3:
+			wstr_type += L"Param of type3 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO4:
+			wstr_type += L"Param of type4 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO5:
+			wstr_type += L"Param of type5 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO6:
+			wstr_type += L"Param of type6 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		default:break;
+		}
+	}break;
+	case IDC_TASK_FUNC_RADIO6: {
+		wstr = L"Type for Func6 \n\r 1:?? 2:?? 3:?? \n\r 4:?? 5:?? 6:??";
+		switch (inf.panel_type_id) {
+		case IDC_TASK_ITEM_RADIO1:
+			wstr_type += L"Param of type1 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO2:
+			wstr_type += L"Param of type2 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO3:
+			wstr_type += L"Param of type3 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO4:
+			wstr_type += L"Param of type4 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO5:
+			wstr_type += L"Param of type5 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		case IDC_TASK_ITEM_RADIO6:
+			wstr_type += L"Param of type6 \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+			break;
+		default:break;
+		}
+	}break;
+	default: {
+		wstr = L"Type for Func? \n\r 1:?? 2:?? 3:?? \n\r 4:?? 5:?? 6:??";
+		wstr_type += L"(Param of type?) \n\r 1:?? 2:??  3:?? \n\r 4:?? 5:?? 6:??";
+	}break;
+	}
+
+	SetWindowText(GetDlgItem(inf.hWnd_opepane, IDC_STATIC_TASKSET3), wstr.c_str());
+	SetWindowText(GetDlgItem(inf.hWnd_opepane, IDC_STATIC_TASKSET4), wstr_type.c_str());
+}
+

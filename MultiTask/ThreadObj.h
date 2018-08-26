@@ -68,6 +68,11 @@ typedef struct {
 	HWND			hWnd_msgList;					//自メインウィンドウのメッセージ表示用リストコントロールへのハンドル
 	HWND			hWnd_work;						//自専用作業用ウィンドウのハンドル
 
+	HINSTANCE		hInstance;
+
+	PVOID			pSmem;							//自管理共有メモリのポインタ
+	HANDLE			hSmem_mutex;						//共有メモリ管理用ミューテックのハンドル
+
     //-操作パネル関連
 	int				cnt_PNLlist_msg = 0;			//パネルメッセージリストのカウント数
 	int				panel_func_id = 1;				//パネルfunctionボタンの選択内容
@@ -102,12 +107,14 @@ public:
 
 	virtual void output_name() { const type_info &t = typeid(this); std::cout << "My type is " << t.name() << std::endl; }
 
-	virtual HWND CreateOwnWindow(HWND h_parent_wnd);
+	virtual HWND CreateWorkWindow(HWND h_parent_wnd);
 
-	virtual LRESULT CALLBACK PanelProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp);
+
 	virtual void set_panel_tip_txt();//タブパネルのStaticテキストを設定
 	virtual void set_panel_pb_txt() { return; };//タブパネルのFunctionボタンのStaticテキストを設定
 	virtual void set_PNLparam_value(float p1, float p2, float p3, float p4, float p5, float p6);//パラメータ初期表示値設定
+	
+	virtual LRESULT CALLBACK PanelProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp);
 
 protected:
 	CHelper tool;

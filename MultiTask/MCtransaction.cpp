@@ -18,7 +18,7 @@ int CMCtransaction::set_com_msg(int pos, int type, int writelen, ...)//‘‚«‚Şƒ
 	mcifmng.com_msg[pos].cmd0401.common_header.accessRoute_pcno = 0xff;//PC”Ô†
 	mcifmng.com_msg[pos].cmd0401.common_header.accessRoute_unitio[0] = 0xff;//ƒ†ƒjƒbƒgIO
 	mcifmng.com_msg[pos].cmd0401.common_header.accessRoute_unitio[1] = 0x03;//ƒ†ƒjƒbƒgIO
-	mcifmng.com_msg[pos].cmd0401.common_header.accessRoute_unitio[2] = 0x00;//ƒ†ƒjƒbƒgIO
+	mcifmng.com_msg[pos].cmd0401.common_header.accessRoute_unitio[2] = 0x00;//ƒ†ƒjƒbƒg‹Ç”Ô
 
 	//ŒÂ•ÊƒƒbƒZ[ƒW	
 	va_start(arguments, writelen);//ˆø”‚Ì‰Šú‰» writelen‚æ‚èŒã‚ë‚Ì‘Sˆø”‚ğƒŠƒXƒg‚ÉŠi”[
@@ -26,7 +26,7 @@ int CMCtransaction::set_com_msg(int pos, int type, int writelen, ...)//‘‚«‚Şƒ
 	if (type & (MC_TYP_READ_D | MC_TYP_READ_R | MC_TYP_WRITE_D | MC_TYP_WRITE_R)) {
 
 		//—v‹ƒf[ƒ^’·	
-		*((PUINT16)(mcifmng.com_msg[pos].cmd1401.data_len)) = 2 + 10 + writelen; //ŠÄ‹ƒ^ƒCƒ} (2byte)+ —v‹ƒf[ƒ^(10+writelen byte) 
+		*((PUINT16)(mcifmng.com_msg[pos].cmd1401.data_len)) = 2 + 10 + writelen; //ŠÄ‹ƒ^ƒCƒ} (2byte)+ —v‹ƒf[ƒ^(10(ƒRƒ}ƒ“ƒhƒwƒbƒ_j+writelen byteiİ’è’lj) 
 
 		 //ŠÄ‹ƒ^ƒCƒ}[@1•b=250msx4	
 		mcifmng.com_msg[pos].cmd0401.wait_time[0] = 0x04;
@@ -75,12 +75,12 @@ int CMCtransaction::set_com_msg(int pos, int type, int writelen, ...)//‘‚«‚Şƒ
 	return 0;
 }
 
-int CMCtransaction::set_res_msg(int pos, int type, int writelen, ...)//‘‚«‚ŞƒŒƒWƒXƒ^‚ÌƒoƒCƒg”
+int CMCtransaction::set_res_msg(int pos, int type, const char* pdata, int writelen, ...)//‘‚«‚ŞƒŒƒWƒXƒ^‚ÌƒoƒCƒg”
 {
 	va_list arguments;
 
 	//‹¤’Êƒwƒbƒ_
-	mcifmng.res_msg[pos].res0401.common_header.subheader[0] = 0x50;//ƒTƒuƒwƒbƒ_
+	mcifmng.res_msg[pos].res0401.common_header.subheader[0] = 0xd0;//ƒTƒuƒwƒbƒ_
 	mcifmng.res_msg[pos].res0401.common_header.subheader[1] = 0x00;//ƒTƒuƒwƒbƒ_
 	mcifmng.res_msg[pos].res0401.common_header.accessRoute_nwno = 0x00;//ƒlƒbƒgƒ[ƒN”Ô†
 	mcifmng.res_msg[pos].res0401.common_header.accessRoute_pcno = 0xff;//PC”Ô†
@@ -88,44 +88,20 @@ int CMCtransaction::set_res_msg(int pos, int type, int writelen, ...)//‘‚«‚Şƒ
 	mcifmng.res_msg[pos].res0401.common_header.accessRoute_unitio[1] = 0x03;//ƒ†ƒjƒbƒgIO
 	mcifmng.res_msg[pos].res0401.common_header.accessRoute_unitio[2] = 0x00;//ƒ†ƒjƒbƒgIO
 
-																			//ŒÂ•ÊƒƒbƒZ[ƒW	
-	va_start(arguments, writelen);//ˆø”‚Ì‰Šú‰» writelen‚æ‚èŒã‚ë‚Ì‘Sˆø”‚ğƒŠƒXƒg‚ÉŠi”[
+	//‰“šƒf[ƒ^’·	
+	*((PUINT16)(mcifmng.res_msg[pos].res0401.data_len)) = 2 + writelen; //I—¹ƒR[ƒh (2byte)+ ‰“šƒf[ƒ^(writelen byte) 
 
-	if (type & (MC_TYP_READ_D | MC_TYP_READ_R | MC_TYP_WRITE_D | MC_TYP_WRITE_R)) {
+	//I—¹ƒR[ƒh 0x0000	
+	mcifmng.res_msg[pos].res0401.end_code[0] = 0x00;
+	mcifmng.res_msg[pos].res0401.end_code[1] = 0x00;
 
-		//—v‹ƒf[ƒ^’·	
-		*((PUINT16)(mcifmng.res_msg[pos].res1401.data_len)) = 2 + 10 + writelen; //ŠÄ‹ƒ^ƒCƒ} (2byte)+ —v‹ƒf[ƒ^(10+writelen byte) 
-
-																				 //ŠÄ‹ƒ^ƒCƒ}[@1•b=250msx4	
-		mcifmng.res_msg[pos].res0401.end_code[0] = 0x00;
-		mcifmng.res_msg[pos].res0401.end_code[1] = 0x00;
-
-		//ƒRƒ}ƒ“ƒh
-		if (type & (MC_TYP_WRITE_D | MC_TYP_WRITE_R)) {
-			mcifmng.res_msg[pos].res1401.err_accessRoute_nwno = 0x01;
-			mcifmng.res_msg[pos].res1401.err_accessRoute_pcno = 0x14;
-		}
-		else if (type & (MC_TYP_READ_D | MC_TYP_READ_R))
-		{
-			mcifmng.res_msg[pos].res1401.err_accessRoute_nwno = 0x01;
-			mcifmng.res_msg[pos].res1401.err_accessRoute_pcno = 0x14;
-		}
-		else;
-		//ƒTƒuƒRƒ}ƒ“ƒh
-		mcifmng.res_msg[pos].res1401.err_cmd[0] = 0x00;
-		mcifmng.res_msg[pos].res1401.err_cmd[1] = 0x00;
-
-
-		//‘‚«‚İƒf[ƒ^
-		if (type & (MC_TYP_WRITE_D | MC_TYP_WRITE_R)) {
-			BYTE* pch = va_arg(arguments, BYTE*);
-			for (int i = 0; i < writelen; i++, pch++) mcifmng.com_msg[pos].cmd1401.data[i] = *pch;//ƒf[ƒ^’·‚Ì’·‚¢•û‚Ì’è‹`‚Å‘‚«‚İ
-		}
-		//ƒ\ƒPƒbƒg‘—M—pƒf[ƒ^’·
-		mcifmng.com_msg_len[pos] = sizeof(MCComHeader) + 2 + 2 + 10 + writelen;
-	}
-
-	va_end(arguments);//ˆø”‚Ì‰Šú‰» type‚æ‚èŒã‚ë‚Ì‘Sˆø”‚ğƒŠƒXƒg‚ÉŠi”[
+	//‰“šƒf[ƒ^ƒZƒbƒg
+	for (int i = 0; i < writelen; i++) mcifmng.res_msg[pos].res0401.data[i] = *(pdata+i);
+	//ƒ\ƒPƒbƒg‘—M—pƒf[ƒ^’·
+	mcifmng.res_msg_len[pos] = sizeof(MCComHeader) + 2 + 2 + writelen;//2+2 = —v‹ƒf[ƒ^’·•”AI—¹ƒR[ƒh•”
+	
+	va_start(arguments, writelen);//ˆø”‚Ì‰Šú‰» writelen‚æ‚èŒã‚ë‚Ì‘Sˆø”‚ğƒŠƒXƒg‚ÉŠi”[@Šg’£—p
+	va_end(arguments);//ˆø”‚Ì‰Šú‰» writelen‚æ‚èŒã‚ë‚Ì‘Sˆø”‚ğƒŠƒXƒg‚ÉŠi”[
 	return 0;
 }
 
@@ -137,7 +113,7 @@ int CMCtransaction::init() {
 	mcifmng.sock_event_status = 0;
 		
 	if(mcifmng.sock_type == CLIENT_SOCKET){
-	//ƒRƒ}ƒ“ƒhƒƒbƒZ[ƒWì¬
+	//ƒRƒ}ƒ“ƒhƒƒbƒZ[ƒWì¬ set_com_msg(ƒRƒ}ƒ“ƒh”z—ñNo, ƒRƒ}ƒ“ƒhƒ^ƒCƒv, 0,100,7);
 		//D100“Ç‚İo‚µ—v‹@com_msg[0]
 		set_com_msg(POS_READ_D100, MC_TYP_READ_D, 0,100,7);
 
@@ -150,17 +126,17 @@ int CMCtransaction::init() {
 	}
 	else {
 		//ƒŒƒXƒ|ƒ“ƒXƒƒbƒZ[ƒWì¬
+		std::string str = "responce";
 		//D100“Ç‚İo‚µ‰“š@res_msg[0]
-		set_res_msg(POS_READ_D100, MC_TYP_READ_D, 0, 100, 7);
+		set_res_msg(POS_READ_D100, MC_TYP_READ_D, str.c_str(), 8);
 
 		//D110‘‚«‚İ—v‹‰“š@res_msg[1]
-		set_res_msg(POS_WRITE_D110, MC_TYP_WRITE_D, 9, 110, 7, mcifmng.com_msg[POS_WRITE_D110].cmd1401.data);
+		set_res_msg(POS_WRITE_D110, MC_TYP_WRITE_D, str.c_str(), 8);
 
 		//RƒŒƒWƒXƒ^“Ç‚İo‚µ‰“š@res_msg[2] res_msg[3]
-		set_res_msg(POS_READ_R0_R303, MC_TYP_READ_R, 0, 0, SIZE_OF_FAULT_TRIGGER);
-		set_res_msg(POS_READ_R304__, MC_TYP_READ_R, 304, SIZE_OF_TRACE_RECORD);
+		set_res_msg(POS_READ_R0_R303, MC_TYP_READ_R, str.c_str(), 8);
+		set_res_msg(POS_READ_R304__, MC_TYP_READ_R, str.c_str(), 8);
 	}
-
 	//ƒZƒbƒg‚³‚ê‚Ä‚¢‚éƒRƒ}ƒ“ƒh‚Ì”
 	mcifmng.nCommandSet = 4;
 	//ƒRƒ}ƒ“ƒh‚ÌÀsƒXƒeƒbƒv‰Šú‰»
@@ -170,7 +146,7 @@ int CMCtransaction::init() {
 
 };	
 
-
+//ƒRƒ}ƒ“ƒh‘—M‰Â”Û”»’è
 int CMCtransaction::Is_tranzaction_ready() {
 
 	for (int i = 0; i < mcifmng.nCommandSet; i++) {
@@ -179,7 +155,11 @@ int CMCtransaction::Is_tranzaction_ready() {
 
 	return TRANZACTION_READY;
 };
-;	//ƒRƒ}ƒ“ƒh‘—M‰Â”Û”»’è
+
+//ƒRƒ}ƒ“ƒh‘—M‰Â”Û”»’è
+int CMCtransaction::check_com(const char* pch) {
+	return 0;
+};
 
 	//ƒgƒ‰ƒ“ƒUƒNƒVƒ‡ƒ“—v‹ó•t
 int CMCtransaction::com_transaction(int nCommand) {
@@ -203,7 +183,7 @@ int CMCtransaction::res_transaction(int nCommand) {
 	CSock sock_handler;
 	int stat;
 
-	if (mcifmng.com_step[nCommand] == MC_STP_START) {
+	if (mcifmng.com_step[nCommand] == MC_STP_WAIT_RES) {
 		if (mcifmng.com_msg_len[nCommand] != sock_handler.sock_send(mcifmng.sock_index, (const char*)(&(mcifmng.res_msg[nCommand].res0401)), mcifmng.res_msg_len[nCommand])) {
 			stat = TRANZACTION_ERROR;
 			mcifmng.com_step[nCommand] = MC_STP_IDLE;

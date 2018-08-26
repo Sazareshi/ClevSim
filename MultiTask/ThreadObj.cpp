@@ -130,15 +130,16 @@ LRESULT CALLBACK CThreadObj::PanelProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp
 		case IDC_TASK_FUNC_RADIO4:
 		case IDC_TASK_FUNC_RADIO5:
 		case IDC_TASK_FUNC_RADIO6:
-			inf.panel_func_id = LOWORD(wp); set_panel_tip_txt(); set_PNLparam_value(0.0, 0.0, 0.0, 0.0, 0.0, 0.0); break;
-
+			inf.panel_func_id = LOWORD(wp);
 		case IDC_TASK_ITEM_RADIO1: 
 		case IDC_TASK_ITEM_RADIO2: 
 		case IDC_TASK_ITEM_RADIO3: 
 		case IDC_TASK_ITEM_RADIO4: 
 		case IDC_TASK_ITEM_RADIO5:
 		case IDC_TASK_ITEM_RADIO6: 
-			inf.panel_type_id = LOWORD(wp);set_panel_tip_txt();  SetFocus(GetDlgItem(inf.hWnd_opepane, IDC_TASK_EDIT1)); break;
+			inf.panel_type_id = LOWORD(wp);set_panel_tip_txt();  SetFocus(GetDlgItem(inf.hWnd_opepane, IDC_TASK_EDIT1));
+			
+			break;
 
 		case IDSET: {
 			wstring wstr,wstr_tmp;
@@ -192,9 +193,10 @@ LRESULT CALLBACK CThreadObj::PanelProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp
 	}
 	return 0;
 };
-HWND CThreadObj::CreateOwnWindow(HWND h_parent_wnd) {
-
-	return inf.hWnd_work;
+HWND CThreadObj::CreateWorkWindow(HWND h_parent_wnd) {
+	wostringstream wsl;  wsl << L"Work Window Open from ThreadObj!" ;
+	txout2msg_listbox(wsl.str()); 
+	return NULL;
 };
 
 void CThreadObj::set_PNLparam_value(float p1, float p2, float p3, float p4, float p5, float p6) {
