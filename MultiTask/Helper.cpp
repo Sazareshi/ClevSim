@@ -112,7 +112,7 @@ int CHelper::cmnCreateShmem(LPCTSTR szName, DWORD dwSize, HANDLE* hMapFile, LPVO
 	else {
 		if (GetLastError() == ERROR_ALREADY_EXISTS)	*dwExist = ON;
 		// ファイル・ビューを作成(共有メモリのハンドル, アクセスの種類, ファイル オフセット(上位32ビット), ファイル オフセット(下位32ビット), マップするバイト数→0はファイルﾙマッピングオブジェクト全体)
-		*pMapTop = MapViewOfFile(*hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+		*pMapTop = MapViewOfFile(*hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, dwSize);
 		if (*pMapTop == NULL) {
 			CloseHandle(*hMapFile);	// 共有メモリを閉じる
 			*hMapFile = NULL; *pMapTop = NULL;

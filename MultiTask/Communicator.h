@@ -31,7 +31,9 @@ public:
 private:
 	static CSock sock_handler;
 	int	index_MCsock;
-
+	HWND hrcvmsg_work;
+	HWND hsndmsg_work;
+	void rcvmsgout2wwnd(const wstring wstr);
 protected:
 
 

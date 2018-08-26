@@ -33,8 +33,7 @@ void CCommunicator::routine_work(void *param) {
 			ws << L"Command received"; txout2msg_listbox(ws.str()); ws.str(L""); ws.clear();
 		}
 	}
-	ws << L"Routine work activated!" << *(inf.psys_counter);tweet2owner(ws.str()); ws.str(L""); ws.clear();
-
+	ws << L"Routine work activated!" << *(inf.psys_counter); tweet2owner(ws.str()); ws.str(L""); ws.clear();
 };
 
 unsigned __stdcall CCommunicator::MCprotoThread(void *pVoid)
@@ -78,44 +77,46 @@ unsigned __stdcall CCommunicator::MCprotoThread(void *pVoid)
 						sock_handler.sock_packs[pMCMsgMng->sock_index].current_step = WAIT_CONNECTION;
 					}
 					else {
-						woss << L"index:" << isock << L"  Connection Aborted iErrorCode  " << errCode; pcomm->txout2msg_listbox(woss.str()); //woss.str(L""); woss.clear();
+						woss << L"index:" << isock << L"  Connection Aborted iErrorCode  " << errCode; pcomm->txout2msg_listbox(woss.str()); 
 					}
 				}
 			}
 			if (events.lNetworkEvents & FD_READ) {
 
-errCode = events.iErrorCode[FD_READ_BIT];
-pMCMsgMng->sock_event_status |= FD_READ;
-sock_handler.sock_recv(isock);
-woss << L"index:" << isock << L"  FD_READ Triggerred "; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
-sock_handler.rcvbufpack;//デバッグ時モニタ用
+				errCode = events.iErrorCode[FD_READ_BIT];
+				pMCMsgMng->sock_event_status |= FD_READ;
+				sock_handler.sock_recv(isock);
+				woss << L"index:" << isock << L"  FD_READ Triggerred "; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+				sock_handler.rcvbufpack;//デバッグ時モニタ用
 
-char* pmsg = NULL;
-int msglen;
-while (int n_rcv = sock_handler.msg_pickup(isock, &pmsg, &msglen)) {
-	woss << L"index:" << isock << L"  A MESSEGE is discarded"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
-};
+				char* pmsg = NULL;
+				int msglen;
+				while (int n_rcv = sock_handler.msg_pickup(isock, &pmsg, &msglen)) {
+				woss << L"index:" << isock << L"  A MESSEGE is discarded"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+				};
+				woss << pmsg; pcomm->rcvmsgout2wwnd(woss.str()); woss.str(L""); woss.clear();
+				
 
-if (pMCMsgMng->sock_type == CLIENT_SOCKET) {//クライアント
-	for (int ires = 0; ires < pMCMsgMng->nCommandSet; ires++) {
-		if (pMCMsgMng->com_step[ires] == MC_STP_WAIT_RES) {
-			memcpy(&(pMCMsgMng->res_msg[ires]), pmsg, msglen);
-			pMCMsgMng->com_step[ires] = MC_STP_IDLE;
-			woss << L"index:" << isock << L"  Res OK RCV Buf -> " << sock_handler.rcvbufpack[isock].wptr; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
-			break;
-		}
-	}
-}
-else {
-	int com_index = mc_handler.check_com(pmsg);//コマンド判定
-	memcpy(&(pMCMsgMng->com_msg[com_index]), pmsg, msglen);
-	pMCMsgMng->com_step[com_index] = MC_STP_WAIT_RES;
-	int nRet = mc_handler.res_transaction(com_index);
-	if (nRet == TRANZACTION_FIN) {
-		woss << L"Response was sent"; pcomm->txout2msg_listbox(woss.str());
-	}
-}
-pMCMsgMng->sock_event_status &= ~FD_READ;
+				if (pMCMsgMng->sock_type == CLIENT_SOCKET) {//クライアント
+					for (int ires = 0; ires < pMCMsgMng->nCommandSet; ires++) {
+						if (pMCMsgMng->com_step[ires] == MC_STP_WAIT_RES) {
+							memcpy(&(pMCMsgMng->res_msg[ires]), pmsg, msglen);
+							pMCMsgMng->com_step[ires] = MC_STP_IDLE;
+							woss << L"index:" << isock << L"  Res OK RCV Buf -> " << sock_handler.rcvbufpack[isock].wptr; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+							break;
+						}
+					}
+				}
+				else {
+					int com_index = mc_handler.check_com(pmsg);//コマンド判定
+					memcpy(&(pMCMsgMng->com_msg[com_index]), pmsg, msglen);
+					pMCMsgMng->com_step[com_index] = MC_STP_WAIT_RES;
+					int nRet = mc_handler.res_transaction(com_index);
+					if (nRet == TRANZACTION_FIN) {
+						woss << L"Response was sent"; pcomm->txout2msg_listbox(woss.str());
+					}
+				}
+				pMCMsgMng->sock_event_status &= ~FD_READ;
 			}
 			if (events.lNetworkEvents & FD_WRITE) {
 				errCode = events.iErrorCode[FD_WRITE_BIT];
@@ -129,7 +130,6 @@ pMCMsgMng->sock_event_status &= ~FD_READ;
 						break;
 					}
 				}
-				;
 			}
 			if (events.lNetworkEvents & FD_CLOSE) {
 				errCode = events.iErrorCode[FD_CLOSE_BIT];
@@ -204,6 +204,10 @@ HWND  CCommunicator::CreateWorkWindow(HWND h_parent_wnd) {
 
 	if (pComInst->inf.hWnd_work == NULL) {
 		inf.hWnd_work = CreateDialog(inf.hInstance, L"IDD_COMM_DLG", inf.hWnd_parent, (DLGPROC)COM_PROC);
+		if (inf.hWnd_work != NULL) {
+			hrcvmsg_work = GetDlgItem(inf.hWnd_work, IDC_COMM_RCVMSG);
+			hsndmsg_work = GetDlgItem(inf.hWnd_work, IDC_COMM_SENT_MSG);;
+		}
 	}
 	return NULL;
 };
@@ -549,4 +553,9 @@ void CCommunicator::set_panel_tip_txt()
 	SetWindowText(GetDlgItem(inf.hWnd_opepane, IDC_STATIC_TASKSET3), wstr.c_str());
 	SetWindowText(GetDlgItem(inf.hWnd_opepane, IDC_STATIC_TASKSET4), wstr_type.c_str());
 }
+
+void CCommunicator::rcvmsgout2wwnd(const wstring wstr) {
+	if (inf.hWnd_work != NULL) SetWindowText(hrcvmsg_work, wstr.c_str()); return;
+}; 
+
 
