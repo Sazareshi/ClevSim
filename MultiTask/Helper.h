@@ -21,4 +21,7 @@ public:
 	void put_bmp_stretch(HDC hdc, HBITMAP hbmp, POINT dst_pt, POINT src_pt, int retio_persent);
 	int cmnCreateShmem(LPCTSTR, DWORD, HANDLE*, LPVOID*, DWORD*);	//‹¤—Lƒƒ‚ƒŠİ’è
 	int	cmnDeleteShMem(HANDLE*, LPVOID*);							//‹¤—Lƒƒ‚ƒŠ‰ğœ
+
+	wstring warray2wstr16(WORD* w, int len);
+	wstring carray2wstr16(char* c, int len);
 };

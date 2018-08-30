@@ -109,7 +109,8 @@ int CMCtransaction::init() {
 	
 	//ソケット用データクリア
 	mcifmng.sock_index = MC_SOCK_NOT_REGISTERED;
-	mcifmng.hsock_event = WSA_INVALID_EVENT;
+	mcifmng.hsock_event[INDEX_SOCK_SYS_EVENTS] = WSA_INVALID_EVENT;
+	mcifmng.hsock_event[INDEX_SOCK_SND_EVENT] = WSA_INVALID_EVENT;
 	mcifmng.sock_event_status = 0;
 		
 	if(mcifmng.sock_type == CLIENT_SOCKET){

@@ -34,6 +34,7 @@ void CCommunicator::routine_work(void *param) {
 		}
 	}
 	ws << L"Routine work activated!" << *(inf.psys_counter); tweet2owner(ws.str()); ws.str(L""); ws.clear();
+
 };
 
 unsigned __stdcall CCommunicator::MCprotoThread(void *pVoid)
@@ -42,13 +43,15 @@ unsigned __stdcall CCommunicator::MCprotoThread(void *pVoid)
 	wostringstream woss;
 	MCMsgMng* pMCMsgMng = (MCMsgMng*)(&(mc_handler.mcifmng));			//MCプロトコル処理管理用構造体へのポインタ
 	CCommunicator* pcomm = (CCommunicator*)pVoid;	//呼び出し元インスタンスのポインタ メインウィンドウへのメッセージ表示他用
+	CHelper helper;
 
 	///# ソケットを用意して Cient:Connect要求まで   Server:Accept待ちまで
 	pMCMsgMng->sock_index = pcomm->start_MCsock(pMCMsgMng->sock_ipaddr, pMCMsgMng->sock_port, pMCMsgMng->sock_protocol, pMCMsgMng->sock_type);
-	pMCMsgMng->hsock_event = sock_handler.hEvents[pMCMsgMng->sock_index];
+	pMCMsgMng->hsock_event[INDEX_SOCK_SYS_EVENTS] = sock_handler.hEvents[pMCMsgMng->sock_index];
+	pMCMsgMng->hsock_event[INDEX_SOCK_SND_EVENT] = sock_handler.sndbufpack[pMCMsgMng->sock_index].hsock_snd_event;
 	
 	while (pcomm->thread_end == FALSE) {
-		dwRet = WSAWaitForMultipleEvents(MC_SOCK_USE, &(pMCMsgMng ->hsock_event), FALSE, MC_EVENT_TIMEOUT, FALSE);
+		dwRet = WSAWaitForMultipleEvents(MC_SOCK_USE_EVENTS, &(pMCMsgMng ->hsock_event[0]), FALSE, MC_EVENT_TIMEOUT, FALSE);
 		if (dwRet != WSA_WAIT_FAILED) {//TimeOutイベントではない
 			event_index = dwRet - WSA_WAIT_EVENT_0;		//発生したイベントのインデックス
 			isock = pMCMsgMng->sock_index;	//発生したイベントのソケットのインデクス
@@ -56,6 +59,9 @@ unsigned __stdcall CCommunicator::MCprotoThread(void *pVoid)
 			//どのイベントが発生したかを判別する
 			WSANETWORKEVENTS events;
 			DWORD errCode;
+			if (dwRet == INDEX_SOCK_SND_EVENT) {//メッセージ送信OKイベント
+				pcomm->sndmsgout2wwnd(helper.carray2wstr16(sock_handler.sndbufpack[pMCMsgMng->sock_index].sbuf[0], sock_handler.sndbufpack[pMCMsgMng->sock_index].datsize[0]));
+			}
 
 			dwRet = WSAEnumNetworkEvents(sock_handler.sock_packs[isock].socket, sock_handler.hEvents[isock], &events);
 			if (dwRet == SOCKET_ERROR) {
@@ -94,8 +100,7 @@ unsigned __stdcall CCommunicator::MCprotoThread(void *pVoid)
 				while (int n_rcv = sock_handler.msg_pickup(isock, &pmsg, &msglen)) {
 				woss << L"index:" << isock << L"  A MESSEGE is discarded"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
 				};
-				woss << pmsg; pcomm->rcvmsgout2wwnd(woss.str()); woss.str(L""); woss.clear();
-				
+				pcomm->rcvmsgout2wwnd(helper.carray2wstr16(pmsg, msglen));
 
 				if (pMCMsgMng->sock_type == CLIENT_SOCKET) {//クライアント
 					for (int ires = 0; ires < pMCMsgMng->nCommandSet; ires++) {
@@ -141,7 +146,7 @@ unsigned __stdcall CCommunicator::MCprotoThread(void *pVoid)
 
 				if (pMCMsgMng->sock_type == CLIENT_SOCKET) {//クライアントでは再接続指向
 					pMCMsgMng->sock_index = pcomm->start_MCsock(pMCMsgMng->sock_ipaddr, pMCMsgMng->sock_port, pMCMsgMng->sock_protocol, pMCMsgMng->sock_type);
-					pMCMsgMng->hsock_event = sock_handler.hEvents[pMCMsgMng->sock_index];
+					pMCMsgMng->hsock_event[INDEX_SOCK_SYS_EVENTS] = sock_handler.hEvents[pMCMsgMng->sock_index];
 					isock = pMCMsgMng->sock_index;
 					if (sock_handler.sock_packs[isock].current_step == WAIT_CONNECTION) {
 						woss << L"   Retry and Waiting Connection again"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
@@ -155,7 +160,7 @@ unsigned __stdcall CCommunicator::MCprotoThread(void *pVoid)
 				}
 				else {
 					pMCMsgMng->sock_index = pcomm->start_MCsock(pMCMsgMng->sock_ipaddr, pMCMsgMng->sock_port, pMCMsgMng->sock_protocol, pMCMsgMng->sock_type);
-					pMCMsgMng->hsock_event = sock_handler.hEvents[pMCMsgMng->sock_index];
+					pMCMsgMng->hsock_event[INDEX_SOCK_SYS_EVENTS] = sock_handler.hEvents[pMCMsgMng->sock_index];
 					isock = pMCMsgMng->sock_index;
 					pMCMsgMng->sock_event_status &= ~FD_CLOSE;
 					woss << L"   Retry Listening again"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
@@ -555,7 +560,14 @@ void CCommunicator::set_panel_tip_txt()
 }
 
 void CCommunicator::rcvmsgout2wwnd(const wstring wstr) {
-	if (inf.hWnd_work != NULL) SetWindowText(hrcvmsg_work, wstr.c_str()); return;
+	if (inf.hWnd_work != NULL) 
+		SetWindowText(hrcvmsg_work, wstr.c_str()); 
+	return;
 }; 
+void CCommunicator::sndmsgout2wwnd(const wstring wstr) {
+	if (inf.hWnd_work != NULL) 
+		SetWindowText(hsndmsg_work, wstr.c_str()); 
+	return;
+};
 
 

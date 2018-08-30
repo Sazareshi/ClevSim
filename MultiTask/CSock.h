@@ -24,7 +24,9 @@
 #define BUF_OVERFLOW			-3
 
 #define NUM_OF_RBUF				16
+#define NUM_OF_SBUF				1
 #define SIZE_OF_RBUF			4096
+#define SIZE_OF_SBUF			4096
 
 
 typedef struct _stErrStatus
@@ -45,6 +47,15 @@ typedef struct _stRcvBufPack
 	unsigned wptr;
 }StRCVBUFPACK, *LPStRCVBUFPACK;
 
+typedef struct _stSndBufPack
+{
+	char sbuf[NUM_OF_SBUF][SIZE_OF_SBUF];//ring buffer
+	unsigned datsize[NUM_OF_RBUF];
+	unsigned rptr;
+	unsigned wptr;
+	HANDLE hsock_snd_event;//データ送信通知用イベントハンドル
+}StSNDBUFPACK, *LPStSNDVBUFPACK;
+
 typedef struct _stSockPack
 {
 	int sock_type;//CLIENT_SOCKET or SERVER_SOCKET
@@ -60,6 +71,7 @@ public:
 	static StSOCKPACKAGE sock_packs[SOCKET_MAX_NUM];
 	static StSOCKERR sock_err[SOCKET_MAX_NUM];
 	static StRCVBUFPACK rcvbufpack[SOCKET_MAX_NUM];
+	static StSNDBUFPACK sndbufpack[SOCKET_MAX_NUM];
 	static WSAEVENT hEvents[SOCKET_MAX_NUM];
 	static BOOL init_ok;
 

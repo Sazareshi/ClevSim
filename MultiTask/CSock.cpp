@@ -10,6 +10,7 @@ CSock::~CSock() {}
 StSOCKPACKAGE CSock::sock_packs[SOCKET_MAX_NUM];
 StSOCKERR CSock::sock_err[SOCKET_MAX_NUM];
 StRCVBUFPACK CSock::rcvbufpack[SOCKET_MAX_NUM];
+StSNDBUFPACK CSock::sndbufpack[SOCKET_MAX_NUM];
 WSAEVENT  CSock::hEvents[SOCKET_MAX_NUM];
 BOOL CSock::init_ok;
 
@@ -82,6 +83,7 @@ int CSock::create(int * index, IN_ADDR ip_addr, USHORT port, int protocol, int t
 		sock_packs[si].current_step = SOCK_NOT_CREATED;
 		return SOCK_ERROR;
 	}
+	sndbufpack[si].hsock_snd_event = CreateEvent(NULL, FALSE, FALSE, NULL);
 
 
 	//ソケットを非ブロッキングにし、ネットワークイベントを関連付ける
@@ -195,7 +197,7 @@ int CSock::sock_accept(int index) {
 
 
 int CSock::sock_send(int index, const char* buf, int length) {
-	int nRet;
+	int nRet=0;
 	if(sock_packs[index].sock_protocol == SOCK_STREAM)
 		nRet = send(sock_packs[index].socket, buf, length, 0);
 	else if (sock_packs[index].sock_protocol == SOCK_DGRAM) {
@@ -203,6 +205,11 @@ int CSock::sock_send(int index, const char* buf, int length) {
 	}
 	else return APP_ERROR;
 
+	if (nRet != 0) {
+		memcpy(sndbufpack[index].sbuf[0], buf, length);
+		sndbufpack[index].datsize[0] = length;
+		PulseEvent(sndbufpack[index].hsock_snd_event);
+	}
 	return nRet;
 }
 
@@ -233,6 +240,7 @@ int CSock::sock_close(int index) {
 		closesocket(sock_packs[index].socket);
 		WSACloseEvent(hEvents[index]);
 	}
+	if (sndbufpack[index].hsock_snd_event != NULL) CloseHandle(sndbufpack[index].hsock_snd_event);
 	sock_packs[index].current_step = SOCK_NOT_CREATED;
 	sock_packs[index].socket = INVALID_SOCKET;
 	return S_OK;

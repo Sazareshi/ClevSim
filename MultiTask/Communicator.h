@@ -34,6 +34,7 @@ private:
 	HWND hrcvmsg_work;
 	HWND hsndmsg_work;
 	void rcvmsgout2wwnd(const wstring wstr);
+	void sndmsgout2wwnd(const wstring wstr);
 protected:
 
 

@@ -16,7 +16,9 @@
 #define MC_TYP_WRITE_R	8
 
 #define MC_SOCK_NOT_REGISTERED -1
-#define MC_SOCK_USE	 1
+#define MC_SOCK_USE_EVENTS	 2
+#define INDEX_SOCK_SYS_EVENTS	 0
+#define INDEX_SOCK_SND_EVENT	 1
 
 #define POS_READ_D100	0
 #define POS_WRITE_D110	1
@@ -125,7 +127,7 @@ typedef struct _stMCTransactionMng
 	MCCMD com_msg[MC_TRANSACTION_MAX];//コマンド電文
  	MCRES res_msg[MC_TRANSACTION_MAX];//レスポンス電文
 
-	HANDLE hsock_event;//非同期処理用イベントハンドル
+	HANDLE hsock_event[MC_SOCK_USE_EVENTS];//非同期処理用イベントハンドル
 	int sock_index;//CSockfより割り当てられたソケットのインデックス
 	int sock_protocol;//利用するソケットのプロトコル　TCP/UDP
 	int sock_type;//利用するソケットのType　Server/Client
