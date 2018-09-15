@@ -3,23 +3,36 @@
 #include "Helper.h"
 
 
-CMCtransaction CCommunicator::mc_handler;
+CMCtransaction	CCommunicator::mc_handler;
+CNamedPipe		CCommunicator::npip_handler;
+StCOMLAMPPACK	CCommunicator::st_com_lamp;
+HWND CCommunicator::hlistbox_work;
+
 CSock sock_handler;
 CCommunicator* CCommunicator:: pComInst = NULL;//スタティック関数操作用インスタンスポインタ
 
 CCommunicator::CCommunicator(){
-	thread_end = FALSE;
+	mc_handler.mcifmng.thread_end = FALSE;
+	npip_handler.ifmng.thread_end = FALSE;
+
+	st_com_lamp.ifname[SOCK_T_S] = L"SOCK_T_S";
+	st_com_lamp.ifname[SOCK_T_C] = L"SOCK_T_C";
+	st_com_lamp.ifname[SOCK_U_S] = L"SOCK_U_S";
+	st_com_lamp.ifname[SOCK_U_C] = L"SOCK_U_C";
+	st_com_lamp.ifname[PIPE_S] = L"PIPE_S";
+	st_com_lamp.ifname[PIPE_C] = L"PIPE_C";
 }
 
 CCommunicator::~CCommunicator(){
-	thread_end = TRUE;
+	mc_handler.mcifmng.thread_end = TRUE;
+	npip_handler.ifmng.thread_end = TRUE;
 	Sleep(100);
 }
 
 void CCommunicator::routine_work(void *param) {
+	//MCプロトコル
 	MCMsgMng* pMCMsgMng = (MCMsgMng*)(&(mc_handler.mcifmng));			//MCプロトコル処理管理用構造体へのポインタ
 	int MC_transaction_status;
-
 	if (pMCMsgMng->sock_type == CLIENT_SOCKET) {
 		if (pMCMsgMng->sock_event_status & FD_WRITE) {
 			MC_transaction_status = mc_handler.com_transaction(0);
@@ -33,6 +46,14 @@ void CCommunicator::routine_work(void *param) {
 			ws << L"Command received"; txout2msg_listbox(ws.str()); ws.str(L""); ws.clear();
 		}
 	}
+	
+	//PIPE
+	//PulseEvent(npip_handler.ifmng.hevent_exit);
+	//npip_handler.ifmng.sbufpack[0].datsize[0] = 1 * sizeof(TCHAR);
+	//npip_handler.ifmng.sbufpack[0].sbuf[0][0] = L'a';
+	//PulseEvent(npip_handler.ifmng.hevent_testsend);
+
+	//COMMON
 	ws << L"Routine work activated!" << *(inf.psys_counter); tweet2owner(ws.str()); ws.str(L""); ws.clear();
 
 };
@@ -50,7 +71,7 @@ unsigned __stdcall CCommunicator::MCprotoThread(void *pVoid)
 	pMCMsgMng->hsock_event[INDEX_SOCK_SYS_EVENTS] = sock_handler.hEvents[pMCMsgMng->sock_index];
 	pMCMsgMng->hsock_event[INDEX_SOCK_SND_EVENT] = sock_handler.sndbufpack[pMCMsgMng->sock_index].hsock_snd_event;
 	
-	while (pcomm->thread_end == FALSE) {
+	while (pMCMsgMng->thread_end == FALSE) {
 		dwRet = WSAWaitForMultipleEvents(MC_SOCK_USE_EVENTS, &(pMCMsgMng ->hsock_event[0]), FALSE, MC_EVENT_TIMEOUT, FALSE);
 		if (dwRet != WSA_WAIT_FAILED) {//TimeOutイベントではない
 			event_index = dwRet - WSA_WAIT_EVENT_0;		//発生したイベントのインデックス
@@ -186,19 +207,198 @@ unsigned __stdcall CCommunicator::MCprotoThread(void *pVoid)
 	return 1;
 };
 
+unsigned __stdcall CCommunicator::NamedPipeThread(void *pVoid)
+{
+	wostringstream woss;
+	CCommunicator* pcomm = (CCommunicator*)pVoid;	//呼び出し元インスタンスのポインタ メインウィンドウへのメッセージ表示他用
+	CHelper helper;
+	DWORD dwResult;
+
+	///# パイプの準備
+	npip_handler.PreparePipe(pcomm->inf.hWnd_parent, npip_handler.ifmng.pipe_type);
+	
+	while (npip_handler.ifmng.thread_end  == FALSE) {
+
+		DWORD dwEventNo = WaitForMultipleObjects(PIPE_EVENT_NUM, npip_handler.ifmng.hEventArray, FALSE, PIPE_EVENT_TIMEOUT) - WAIT_OBJECT_0;
+
+		if (dwEventNo == WAIT_TIMEOUT) {
+//			woss << L"No PIPE Event: TimeOut"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+			
+			if (npip_handler.ifmng.pipe_type == SERVER_PIPE) {
+				for (int i = 0; i < PIPE_MAX_CLIENT; i++) {
+					npip_handler.set_pip_status(i, PIP_EVENT_TIMEOUT);
+					if (npip_handler.ifmng.pip_status[i] != 0) {
+						if (npip_handler.ifmng.pip_status[i] &= PIP_EVENT_IO_CONNECTED) st_com_lamp.tx_color[PIPE_S][i] = st_com_lamp.rx_color[PIPE_S][i] = COLID_COM_YELLOW;
+						else st_com_lamp.tx_color[PIPE_S][i] = st_com_lamp.rx_color[PIPE_S][i] = COLID_COM_GRAY;
+					}
+					else {
+						st_com_lamp.tx_color[PIPE_S][i] = st_com_lamp.rx_color[PIPE_S][i] = COLID_COM_GRAY;
+					}
+				}
+			}
+			else if (npip_handler.ifmng.pipe_type == CLIENT_PIPE) {
+				if (npip_handler.ifmng.pip_status[0] != 0) {
+					if (npip_handler.ifmng.pip_status[0] &= PIP_EVENT_IO_CONNECTED) st_com_lamp.tx_color[PIPE_C][0] = st_com_lamp.rx_color[PIPE_C][0] = COLID_COM_YELLOW;
+					else st_com_lamp.tx_color[PIPE_C][0] = st_com_lamp.rx_color[PIPE_C][0] = COLID_COM_GRAY;
+				}
+				else {
+					st_com_lamp.tx_color[PIPE_C][0] = st_com_lamp.rx_color[PIPE_C][0] = COLID_COM_GRAY;
+				}
+			}
+			else;
+			SendMessage(pcomm->inf.hWnd_work, MSGID_SET_WORK_LAMP, 0, 0);
+		}
+		else if (dwEventNo >= PIPE_EVENTARRAY_NUM) {//exit event
+			woss << L"PIPE_Event: Invalid responce from WaitForMultipleObjects"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+			for (int i = 0; i < PIPE_MAX_CLIENT; i++) {
+				npip_handler.set_pip_status(i, PIP_EVENT_ERROR);
+				st_com_lamp.tx_color[PIPE_S][i] = st_com_lamp.rx_color[PIPE_S][i] = COLID_COM_RED;
+				st_com_lamp.tx_color[PIPE_C][i] = st_com_lamp.rx_color[PIPE_C][i] = COLID_COM_RED;
+			}
+			SendMessage(pcomm->inf.hWnd_work, MSGID_SET_WORK_LAMP, 0, 0);
+			break;
+		}
+		else if (dwEventNo == PIPE_EVENT_EXIT) {//exit event
+			woss << L"PIPE_Event: Exit"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+			break;
+		}
+		else if (dwEventNo == PIPE_EVENT_TEST) {//test event
+			woss << L"PIPE_Event: Test Send"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+
+			HANDLE hpip = npip_handler.ifmng.hOPipe[0];
+			TCHAR * tbuf = npip_handler.ifmng.sbufpack[0].sbuf[npip_handler.ifmng.sbufpack[0].wptr];
+			DWORD dwTransferred = npip_handler.ifmng.sbufpack[0].datsize[0];
+			TCHAR szBuf[256];
+			
+			WriteFile(hpip, tbuf, dwTransferred, &dwResult, NULL);
+			npip_handler.set_pip_status(0, PIP_EVENT_MSGSND);
+
+			wsprintf(szBuf, TEXT("No%d: %dバイト送信しました。 \n%s"), 0, dwTransferred, tbuf);
+			SendMessage(npip_handler.ifmng.hmsg_listbox, LB_INSERTSTRING, 0, (LPARAM)szBuf);
+
+			if (npip_handler.ifmng.pipe_type == SERVER_PIPE) {
+				if (npip_handler.ifmng.pip_status[0] &= PIP_EVENT_IO_CONNECTED) st_com_lamp.tx_color[PIPE_S][0] = COLID_COM_GREEN;
+			}
+			else if (npip_handler.ifmng.pipe_type == CLIENT_PIPE) {
+				if (npip_handler.ifmng.pip_status[0] &= PIP_EVENT_IO_CONNECTED) st_com_lamp.tx_color[PIPE_C][0] = COLID_COM_GREEN;
+			}
+			else;
+			SendMessage(pcomm->inf.hWnd_work, MSGID_SET_WORK_LAMP, 0, 0);
+		}
+		else if ((dwEventNo >= 0) && (dwEventNo < PIPE_MAX_CLIENT)) {//read/write event
+			if (npip_handler.ifmng.event_type[dwEventNo] & PIP_EVENT_IN_CONNECTED) {
+				woss << L"PIPE_Event: IN_CONNECTED"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+				st_com_lamp.rx_color[PIPE_C][dwEventNo] = COLID_COM_DGREEN;
+				st_com_lamp.rx_color[PIPE_S][dwEventNo] = COLID_COM_DGREEN;
+				npip_handler.ifmng.event_type[dwEventNo] &= ~PIP_EVENT_IN_CONNECTED;
+			}
+			if (npip_handler.ifmng.event_type[dwEventNo] & PIP_EVENT_OUT_CONNECTED) {
+				woss << L"PIPE_Event: OUT_CONNECTED"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+				st_com_lamp.tx_color[PIPE_C][dwEventNo] = COLID_COM_DGREEN;
+				st_com_lamp.tx_color[PIPE_S][dwEventNo] = COLID_COM_DGREEN;
+				npip_handler.ifmng.event_type[dwEventNo] &= ~PIP_EVENT_OUT_CONNECTED;
+			}
+			if (npip_handler.ifmng.event_type[dwEventNo] & PIP_EVENT_MSGSND) {
+				woss << L"PIPE_Event: MSG_SENT"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+				npip_handler.ifmng.pip_status[dwEventNo] &= ~PIP_EVENT_MSGSND;
+				st_com_lamp.tx_color[PIPE_C][dwEventNo] = COLID_COM_GREEN;
+				st_com_lamp.tx_color[PIPE_S][dwEventNo] = COLID_COM_GREEN;
+				npip_handler.ifmng.event_type[dwEventNo] &= ~PIP_EVENT_MSGSND;
+			}
+			if (npip_handler.ifmng.event_type[dwEventNo] & PIP_EVENT_MSGRCV) {
+				woss << L"PIPE_Event: MSG_RECEIVED"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+				
+				wstring wstr = npip_handler.ifmng.rbufpack[dwEventNo].rbuf[npip_handler.ifmng.rbufpack[dwEventNo].rptr];
+				pcomm->rcvmsgout2wwnd(wstr); wstr.clear();
+				npip_handler.ifmng.pip_status[dwEventNo] &= ~PIP_EVENT_MSGRCV;
+				st_com_lamp.rx_color[PIPE_C][dwEventNo] = COLID_COM_GREEN;
+				st_com_lamp.rx_color[PIPE_S][dwEventNo] = COLID_COM_GREEN;
+				npip_handler.ifmng.event_type[dwEventNo] &= ~PIP_EVENT_MSGRCV;
+
+			}
+			if (npip_handler.ifmng.event_type[dwEventNo] & PIP_EVENT_DISCONNECTED) {
+				woss << L"PIPE_Event: DISCONNECTED"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+				st_com_lamp.tx_color[PIPE_C][dwEventNo] = COLID_COM_GRAY;
+				st_com_lamp.tx_color[PIPE_S][dwEventNo] = COLID_COM_GRAY;
+				st_com_lamp.rx_color[PIPE_C][dwEventNo] = COLID_COM_GRAY;
+				st_com_lamp.rx_color[PIPE_S][dwEventNo] = COLID_COM_GRAY;
+				npip_handler.ifmng.event_type[dwEventNo] &= ~PIP_EVENT_DISCONNECTED;
+			}
+		//	npip_handler.ifmng.event_type[dwEventNo] = 0;
+			SendMessage(pcomm->inf.hWnd_work, MSGID_SET_WORK_LAMP, 0, 0);
+		}
+		else {
+			woss << L"PIPE_Event: Unexpected event No."<< dwEventNo; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+		}
+
+		if (npip_handler.ifmng.pipe_type == SERVER_PIPE) {//サーバー側
+	
+		}
+		else {//クライアント側
+
+		}
+	
+	}
+	
+	return 0;
+};
+
 LRESULT CCommunicator::COM_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
+	PAINTSTRUCT ps;
+	TCHAR edit_wstr[1024];
+
 	switch (msg) {
-	case WM_COMMAND:
-		switch (LOWORD(wp)){
-			case WM_INITDIALOG:
-				break;
-			case IDC_COMM_CLOSE:
-				pComInst->inf.hWnd_work = NULL;
-				DestroyWindow(hWnd);
-				break;
-			default:
-				return FALSE;
+	case WM_COMMAND:{
+		switch (LOWORD(wp)) {
+		case IDC_BUTTON_COM_MSGSEND: {
+			DWORD nwRet = GetWindowText(GetDlgItem(hWnd, IDC_COMM_SENT_MSG), npip_handler.ifmng.sbufpack[0].sbuf[0], sizeof(edit_wstr));
+			npip_handler.ifmng.sbufpack[0].datsize[0] = nwRet * sizeof(TCHAR);
+			npip_handler.ifmng.sbufpack[0].sbuf[0][nwRet] = L'\0';
+
+			PulseEvent(npip_handler.ifmng.hevent_testsend);
 		}break;
+		case IDC_BUTTON_COM_IFSEL: {
+			st_com_lamp.i_disp_if++;
+			if (st_com_lamp.i_disp_if >= NUM_OF_IF_ACT)st_com_lamp.i_disp_if = 0;
+			update_lamp();
+		}break;
+		case IDC_COMM_CLOSE: {
+			pComInst->inf.hWnd_work = NULL;
+			DestroyWindow(hWnd);
+		}break;
+		default: return FALSE;
+		}
+	}break;
+	case WM_INITDIALOG: {
+		st_com_lamp.hdc = GetDC(hWnd);
+		st_com_lamp.hBrushRed = CreateSolidBrush(RGB(255, 0, 0));
+		st_com_lamp.hBrushGreen = CreateSolidBrush(RGB(0, 255, 0));
+		st_com_lamp.hBrushGray = (HBRUSH)GetStockObject(GRAY_BRUSH);
+		st_com_lamp.hBrushYellow = CreateSolidBrush(RGB(255, 255, 0));
+		st_com_lamp.hBrushNull = (HBRUSH)GetStockObject(NULL_BRUSH);
+		st_com_lamp.hBrushDGreen = CreateSolidBrush(RGB(0, 150, 0));
+
+		hlistbox_work = GetDlgItem(hWnd, IDC_LIST_COM1);
+		st_com_lamp.hifpb_work = GetDlgItem(hWnd, IDC_BUTTON_COM_IFSEL);
+		SendMessage(hlistbox_work, LB_INSERTSTRING, (WPARAM)0, (LPARAM)L"Message From Threads");
+		npip_handler.ifmng.hmsg_listbox = mc_handler.mcifmng.hmsg_listbox = hlistbox_work;
+	}break;
+	case MSGID_SET_WORK_LAMP: {
+		update_lamp();
+	}break;
+	case WM_PAINT:{
+		BeginPaint(hWnd, &ps);
+		update_lamp();
+		EndPaint(hWnd, &ps);
+		break;
+	}
+	case WM_DESTROY:{
+		DeleteObject(st_com_lamp.hBrushRed);
+		DeleteObject(st_com_lamp.hBrushGreen);
+		DeleteObject(st_com_lamp.hBrushYellow);
+		DeleteObject(st_com_lamp.hBrushDGreen);
+		break;
+	}
 	default:
 		return FALSE;
 	}
@@ -211,7 +411,8 @@ HWND  CCommunicator::CreateWorkWindow(HWND h_parent_wnd) {
 		inf.hWnd_work = CreateDialog(inf.hInstance, L"IDD_COMM_DLG", inf.hWnd_parent, (DLGPROC)COM_PROC);
 		if (inf.hWnd_work != NULL) {
 			hrcvmsg_work = GetDlgItem(inf.hWnd_work, IDC_COMM_RCVMSG);
-			hsndmsg_work = GetDlgItem(inf.hWnd_work, IDC_COMM_SENT_MSG);;
+			hsndmsg_work = GetDlgItem(inf.hWnd_work, IDC_COMM_SENT_MSG);
+			hlistbox_work = GetDlgItem(inf.hWnd_work, IDC_LIST_COM1);
 		}
 	}
 	return NULL;
@@ -219,15 +420,23 @@ HWND  CCommunicator::CreateWorkWindow(HWND h_parent_wnd) {
 
 void CCommunicator::init_task(void* pobj) {
 	unsigned ThreadID;
-	HANDLE hThread;
 	pComInst = (CCommunicator *)pobj;//スタティック変数にインスタンスポインタ登録
 	inf.hWnd_work = NULL;
 	
 	///# INIファイル読み込み
 	wchar_t tbuf[32];
 	DWORD	str_num = GetPrivateProfileString(COMM_SECT_OF_INIFILE, MC_PROTOKEY_OF_TYPE, L"C", tbuf, sizeof(tbuf), PATH_OF_INIFILE);
-	if (tbuf[0] == L'C')mc_handler.mcifmng.sock_type = CLIENT_SOCKET;
-	else mc_handler.mcifmng.sock_type = SERVER_SOCKET;
+	if (tbuf[0] == L'C') {
+		mc_handler.mcifmng.sock_type = CLIENT_SOCKET;
+		st_com_lamp.dispif[0]=SOCK_T_C;
+	}
+	else if (tbuf[0] == L'S') {
+		mc_handler.mcifmng.sock_type = SERVER_SOCKET;
+		st_com_lamp.dispif[0]=SOCK_T_S;
+	}
+	else {
+		mc_handler.mcifmng.sock_type = NON_SOCKET;
+	}
 
 	str_num = GetPrivateProfileString(COMM_SECT_OF_INIFILE, MC_PROTOKEY_OF_PROTO, L"TCP", tbuf, sizeof(tbuf), PATH_OF_INIFILE);
 	if (wcscmp(tbuf, L"TCP") == 0)mc_handler.mcifmng.sock_protocol = SOCK_STREAM;
@@ -245,27 +454,70 @@ void CCommunicator::init_task(void* pobj) {
 
 	//mc_handler.mcifmng.sock_ipaddr = "192.168.3.2";//IPADDR_MCSERVER;
 	//mc_handler.mcifmng.sock_port = NPORT_MCSERVER;
+	
+	//PIPE
+	str_num = GetPrivateProfileString(COMM_SECT_OF_INIFILE, PIP_PROTOKEY_OF_TYPE, L"N", tbuf, sizeof(tbuf), PATH_OF_INIFILE);
+	if (tbuf[0] == L'C') { 
+		npip_handler.ifmng.pipe_type = CLIENT_PIPE; 
+		st_com_lamp.dispif[1] = PIPE_C;
+	}
+	else if (tbuf[0] == L'S') { 
+		npip_handler.ifmng.pipe_type = SERVER_PIPE;
+		st_com_lamp.dispif[1] = PIPE_S;
+	}
+	else npip_handler.ifmng.pipe_type = NON_PIPE;
+
+	str_num = GetPrivateProfileString(COMM_SECT_OF_INIFILE, PIP_PROTOKEY_OF_INNAME, L"//./pipe/PipeIn", tbuf, sizeof(tbuf), PATH_OF_INIFILE);
+	npip_handler.ifmng.in_pipe_name = tbuf;
+
+	str_num = GetPrivateProfileString(COMM_SECT_OF_INIFILE, PIP_PROTOKEY_OF_OUTNAME, L"//./pipe/PipeOut", tbuf, sizeof(tbuf), PATH_OF_INIFILE);
+	npip_handler.ifmng.out_pipe_name = tbuf;
+
+	CreateWorkWindow(inf.hWnd_parent);
 
 	///# その他　MCプロトコル処理オブジェクトの初期化
 	mc_handler.init();
 
-	//MCプロトコル処理実行
-	hThread = (HANDLE) _beginthreadex(
-		NULL,					//Security
-		0,						//Stack size
-		MCprotoThread,			//スレッド関数
-		pobj,					//自タスクのオブジェクトへのポインタ
-		0,						//初期フラグ
-		&ThreadID				//スレッドIDを受け取るアドレス
-	);
+	//MCプロトコル処理実行スレッド
+	if(mc_handler.mcifmng.sock_type != NON_SOCKET)
+		hThreadMC = (HANDLE) _beginthreadex(
+			NULL,					//Security
+			0,						//Stack size
+			MCprotoThread,			//スレッド関数
+			pobj,					//自タスクのオブジェクトへのポインタ
+			0,						//初期フラグ
+			&ThreadID				//スレッドIDを受け取るアドレス
+		);
+	
 
-	if (hThread == 0) {
-		ws << L"Failed MCprotoThread starting"; txout2msg_listbox(ws.str()); ws.str(L""); ws.clear();
+	if (hThreadMC == 0) {
+		ws << L"MCprotoThread not working"; txout2msg_listbox(ws.str()); ws.str(L""); ws.clear();
 	}
 	else {
 		ws << L"MCprotoThread started"; txout2msg_listbox(ws.str()); ws.str(L""); ws.clear();
-		CloseHandle(hThread);
+		CloseHandle(hThreadMC);
 	}
+
+	//パイプ処理実行スレッド
+	if(npip_handler.ifmng.pipe_type != NON_PIPE)
+		hThreadPIP = (HANDLE)_beginthreadex(
+			NULL,					//Security
+			0,						//Stack size
+			NamedPipeThread,
+			pobj,
+			0,
+			&ThreadID
+		);
+
+	if (hThreadPIP == 0) {
+		ws << L"Failed PipeThread starting"; txout2msg_listbox(ws.str()); ws.str(L""); ws.clear();
+	}
+	else {
+		ws << L"PipeThread started"; txout2msg_listbox(ws.str()); ws.str(L""); ws.clear();
+		CloseHandle(hThreadPIP);
+	}
+
+	
 
 }
 
@@ -570,4 +822,27 @@ void CCommunicator::sndmsgout2wwnd(const wstring wstr) {
 	return;
 };
 
+void CCommunicator::update_lamp() {
+	int code = st_com_lamp.dispif[st_com_lamp.i_disp_if];
+	SetWindowText(st_com_lamp.hifpb_work, st_com_lamp.ifname[code]);
+	for (int i = 0; i < NUM_OF_CLIENT; i++) {
+		SelectObject(st_com_lamp.hdc, sel_lmp_brush(st_com_lamp.tx_color[code][i]));
+		Ellipse(st_com_lamp.hdc, st_com_lamp.tx_ellipse_pos[i][0], st_com_lamp.tx_ellipse_pos[i][1], st_com_lamp.tx_ellipse_pos[i][2], st_com_lamp.tx_ellipse_pos[i][3]);
+		SelectObject(st_com_lamp.hdc, sel_lmp_brush(st_com_lamp.rx_color[code][i]));
+		Ellipse(st_com_lamp.hdc, st_com_lamp.rx_ellipse_pos[i][0], st_com_lamp.rx_ellipse_pos[i][1], st_com_lamp.rx_ellipse_pos[i][2], st_com_lamp.rx_ellipse_pos[i][3]);
+	}
+	return;
+}
+HBRUSH CCommunicator::sel_lmp_brush(int code) {
+	switch (code) {
+	case COLID_COM_NULL: return st_com_lamp.hBrushNull;
+	case COLID_COM_YELLOW: return st_com_lamp.hBrushYellow;
+	case COLID_COM_RED: return st_com_lamp.hBrushRed;
+	case COLID_COM_GREEN: return st_com_lamp.hBrushGreen;
+	case COLID_COM_GRAY: return st_com_lamp.hBrushGray;
+	case COLID_COM_DGREEN: return st_com_lamp.hBrushDGreen;
+	default: return st_com_lamp.hBrushNull;
+	}
+	
+};
 

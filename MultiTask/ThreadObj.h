@@ -6,6 +6,8 @@
 
 using namespace std;
 
+extern LPWSTR pszInifile;
+
 //#ƒ^ƒXƒNğŒİ’è•”
 #define TARGET_RESOLUTION			1
 #define SYSTEM_TICK_ms				25

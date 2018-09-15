@@ -33,7 +33,9 @@
 #define TRANZACTION_BUSY	-1
 #define TRANZACTION_ERROR	-2
 
-
+#define IPADDR_MCSERVER "192.168.200.10"
+#define NPORT_MCSERVER 30000
+#define MC_EVENT_TIMEOUT 5000 //ソケット状態確認周期
 
 //共通ヘッダ
 typedef struct _stMCCommonHeader
@@ -138,7 +140,8 @@ typedef struct _stMCTransactionMng
 	int seq_no;//トランザクションのシーケンス番号
 	int active_com;//実行中のコマンド電文
 	HWND hwnd;//トランザクションの完了通知先ウィンドウ
-
+	BOOL thread_end;
+	HWND hmsg_listbox;			//メッセージ表示用リストボックスハンドル
 }MCMsgMng, LPMCMsgMng;
 
 class CMCtransaction

@@ -5,7 +5,8 @@
 
 #define CLIENT_SOCKET			0
 #define SERVER_SOCKET			1
-#define SOCKET_MAX_NUM			16
+#define NON_SOCKET				-1
+#define SOCKET_MAX_NUM			4
 #define SOCK_ERR_MSG_MAX		128
 
 #define NOT_INITIALIZED			0
@@ -23,7 +24,7 @@
 #define SOCK_ERROR				-2
 #define BUF_OVERFLOW			-3
 
-#define NUM_OF_RBUF				16
+#define NUM_OF_RBUF				8
 #define NUM_OF_SBUF				1
 #define SIZE_OF_RBUF			4096
 #define SIZE_OF_SBUF			4096

@@ -168,7 +168,6 @@ wstring CHelper::carray2wstr16(char* c, int len) {
 	ws << std::hex;
 	for (int i = 0; i < len; i++) {
 		ws << setw(2) << setfill(L'0') << (0x00ff &(WORD)(*(c + i)));
-		//ws << setw(2) << (0x00ff & (WORD)(*(c + i)));
 	}
 	return ws.str();
 };

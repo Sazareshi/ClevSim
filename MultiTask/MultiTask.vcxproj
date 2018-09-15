@@ -163,6 +163,7 @@
     <ClInclude Include="Communicator.h" />
     <ClInclude Include="CSock.h" />
     <ClInclude Include="MCtransaction.h" />
+    <ClInclude Include="NamedPipe.h" />
     <ClInclude Include="ThreadObj.h" />
     <ClInclude Include="Helper.h" />
     <ClInclude Include="MultiTaskMain.h" />
@@ -174,6 +175,7 @@
     <ClCompile Include="Communicator.cpp" />
     <ClCompile Include="CSock.cpp" />
     <ClCompile Include="MCtransaction.cpp" />
+    <ClCompile Include="NamedPipe.cpp" />
     <ClCompile Include="ThreadObj.cpp" />
     <ClCompile Include="Helper.cpp" />
     <ClCompile Include="MultiTaskMain.cpp" />
