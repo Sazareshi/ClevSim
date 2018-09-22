@@ -52,7 +52,7 @@ int CSock::wsa_init() {
 int CSock::create(int * index, IN_ADDR ip_addr, USHORT port, int protocol, int type) {
 	
 	int si;
-	for (si = 0; si < SOCKET_MAX_NUM; si++) {
+	for (si = 0; si < SOCKET_MAX_NUM; si++) {//空きソケット管理構造体を探す
 		if (sock_packs[si].socket == INVALID_SOCKET) break;
 	}
 
@@ -77,15 +77,14 @@ int CSock::create(int * index, IN_ADDR ip_addr, USHORT port, int protocol, int t
 
 	//ソケットで使用するイベントオブジェクトを作成する
 	hEvents[si] = WSACreateEvent();
-	if (hEvents[si] == WSA_INVALID_EVENT) {
+	sndbufpack[si].hsock_snd_event = CreateEvent(NULL, FALSE, FALSE, NULL);//アプリケーションからの送信起動イベントセット
+	if ((hEvents[si] == WSA_INVALID_EVENT)|| (sndbufpack[si].hsock_snd_event == WSA_INVALID_EVENT)) {
 		closesocket(sock_packs[si].socket);
 		sock_packs[si].socket = INVALID_SOCKET;
 		sock_packs[si].current_step = SOCK_NOT_CREATED;
 		return SOCK_ERROR;
 	}
-	sndbufpack[si].hsock_snd_event = CreateEvent(NULL, FALSE, FALSE, NULL);
-
-
+	
 	//ソケットを非ブロッキングにし、ネットワークイベントを関連付ける
 	int nRet;
 	if (protocol == SOCK_STREAM) {
@@ -113,14 +112,38 @@ HRESULT CSock::make_connection(int index) {
 	int nRet;
 	switch (sock_packs[index].sock_type) {
 		case CLIENT_SOCKET:{
-			nRet = connect(sock_packs[index].socket, (LPSOCKADDR)&sock_packs[index].sa, sizeof(SOCKADDR_IN));
-			if (nRet == SOCKET_ERROR) {
-				sock_err[index].wErrCode = WSAGetLastError();
+			if(sock_packs[index].sock_protocol== SOCK_STREAM){
+				nRet = connect(sock_packs[index].socket, (LPSOCKADDR)&sock_packs[index].sa, sizeof(SOCKADDR_IN));
+				if (nRet == SOCKET_ERROR) {
+					sock_err[index].wErrCode = WSAGetLastError();
 
-				if (sock_err[index].wErrCode == WSAEWOULDBLOCK) {
-					return sock_err[index].wErrCode;
+					if (sock_err[index].wErrCode == WSAEWOULDBLOCK) {
+						return sock_err[index].wErrCode;
+					}
+					else {
+						closesocket(sock_packs[index].socket);
+						WSACloseEvent(hEvents[index]);
+						sock_packs[index].socket = INVALID_SOCKET;
+						sock_packs[index].current_step = SOCK_NOT_CREATED;
+						hEvents[index] = hEvents[SOCKET_MAX_NUM];
+						return sock_err[index].wErrCode;
+					}
 				}
 				else {
+					sock_packs[index].current_step = CONNECTED;
+				}
+			}
+			else {
+				//送信先アドレスセット
+				memcpy(&(sock_packs[index].sa_target), &(sock_packs[index].sa), sizeof(SOCKADDR_IN));
+				sock_packs[index].current_step = WAIT_CONNECTION;
+			}
+		}break;
+		case SERVER_SOCKET: {
+			if (sock_packs[index].sock_protocol == SOCK_STREAM) {
+				nRet = bind(sock_packs[index].socket, (LPSOCKADDR)&sock_packs[index].sa, sizeof(SOCKADDR_IN));
+				if (nRet == SOCKET_ERROR) {
+					sock_err[index].wErrCode = WSAGetLastError();
 					closesocket(sock_packs[index].socket);
 					WSACloseEvent(hEvents[index]);
 					sock_packs[index].socket = INVALID_SOCKET;
@@ -128,40 +151,42 @@ HRESULT CSock::make_connection(int index) {
 					hEvents[index] = hEvents[SOCKET_MAX_NUM];
 					return sock_err[index].wErrCode;
 				}
-			}
-			else {
-				sock_packs[index].current_step = CONNECTED;
-			}
-		}break;
-		case SERVER_SOCKET: {
-			nRet = bind(sock_packs[index].socket, (LPSOCKADDR)&sock_packs[index].sa, sizeof(SOCKADDR_IN));
-			if (nRet == SOCKET_ERROR) {
-				sock_err[index].wErrCode = WSAGetLastError();
-				closesocket(sock_packs[index].socket);
-				WSACloseEvent(hEvents[index]);
-				sock_packs[index].socket = INVALID_SOCKET;
-				sock_packs[index].current_step = SOCK_NOT_CREATED;
-				hEvents[index] = hEvents[SOCKET_MAX_NUM];
-				return sock_err[index].wErrCode;
-			}
-			else {
-				sock_packs[index].current_step = BINDED;
-			}
+				else {
+					sock_packs[index].current_step = BINDED;
+				}
 
-			nRet = listen(sock_packs[index].socket, SOMAXCONN);
-			if (nRet == SOCKET_ERROR) {
-				sock_err[index].wErrCode = WSAGetLastError();
-				closesocket(sock_packs[index].socket);
-				WSACloseEvent(hEvents[index]);
-				sock_packs[index].socket = INVALID_SOCKET;
-				sock_packs[index].current_step = SOCK_NOT_CREATED;
-				hEvents[index] = hEvents[SOCKET_MAX_NUM];
-				return sock_err[index].wErrCode;
+				nRet = listen(sock_packs[index].socket, SOMAXCONN);
+				if (nRet == SOCKET_ERROR) {
+					sock_err[index].wErrCode = WSAGetLastError();
+					closesocket(sock_packs[index].socket);
+					WSACloseEvent(hEvents[index]);
+					sock_packs[index].socket = INVALID_SOCKET;
+					sock_packs[index].current_step = SOCK_NOT_CREATED;
+					hEvents[index] = hEvents[SOCKET_MAX_NUM];
+					return sock_err[index].wErrCode;
+				}
+				else {
+					sock_packs[index].current_step = LISTENING;
+				}
 			}
 			else {
-				sock_packs[index].current_step = LISTENING;
-			}
+				nRet = bind(sock_packs[index].socket, (LPSOCKADDR)&sock_packs[index].sa, sizeof(SOCKADDR_IN));
+				if (nRet == SOCKET_ERROR) {
+					sock_err[index].wErrCode = WSAGetLastError();
+					closesocket(sock_packs[index].socket);
+					WSACloseEvent(hEvents[index]);
+					sock_packs[index].socket = INVALID_SOCKET;
+					sock_packs[index].current_step = SOCK_NOT_CREATED;
+					hEvents[index] = hEvents[SOCKET_MAX_NUM];
+					return sock_err[index].wErrCode;
+				}
+				else {
+					sock_packs[index].current_step = LISTENING;
+					//送信先アドレスを一旦自アドレスにセット
+					memcpy(&(sock_packs[index].sa_target), &(sock_packs[index].sa), sizeof(SOCKADDR_IN));
+				}
 
+			}
 		}break;
 		default: return SOCKET_ERROR;
 	};
@@ -195,26 +220,28 @@ int CSock::sock_accept(int index) {
 	return S_OK;
 }
 
-
 int CSock::sock_send(int index, const char* buf, int length) {
 	int nRet=0;
 	if(sock_packs[index].sock_protocol == SOCK_STREAM)
 		nRet = send(sock_packs[index].socket, buf, length, 0);
 	else if (sock_packs[index].sock_protocol == SOCK_DGRAM) {
-		;
+		nRet = sendto(sock_packs[index].socket, buf, length, 0,(sockaddr*)(&sock_packs[index].sa_target),sizeof(sockaddr) );
 	}
 	else return APP_ERROR;
 
-	if (nRet != 0) {
+	if (nRet == length) {
 		memcpy(sndbufpack[index].sbuf[0], buf, length);
 		sndbufpack[index].datsize[0] = length;
 		PulseEvent(sndbufpack[index].hsock_snd_event);
+	}
+	else {
+		return SOCKET_ERROR;
 	}
 	return nRet;
 }
 
 int CSock::sock_recv(int index) {
-	int nRet;
+	int nRet,addr_len;
 	if (sock_packs[index].sock_protocol == SOCK_STREAM) {
 		if (nRet = recv(sock_packs[index].socket, rcvbufpack[index].rbuf[rcvbufpack[index].wptr], SIZE_OF_RBUF, 0)) {
 			rcvbufpack[index].datsize[rcvbufpack[index].wptr] = nRet;
@@ -226,7 +253,22 @@ int CSock::sock_recv(int index) {
 		}
 	}
 	else if (sock_packs[index].sock_protocol == SOCK_DGRAM) {
-		;
+		addr_len = sizeof(SOCKADDR);
+		if (sock_packs[index].sock_type == SERVER_SOCKET)
+			nRet = recvfrom(sock_packs[index].socket, rcvbufpack[index].rbuf[rcvbufpack[index].wptr], SIZE_OF_RBUF, 0,(SOCKADDR*)&sock_packs[index].sa_target, &addr_len);
+		else
+			nRet = recvfrom(sock_packs[index].socket, rcvbufpack[index].rbuf[rcvbufpack[index].wptr], SIZE_OF_RBUF, 0,(SOCKADDR*)&sock_packs[index].sa, &addr_len);
+
+		if (nRet) {
+			rcvbufpack[index].datsize[rcvbufpack[index].wptr] = nRet;
+			rcvbufpack[index].wptr++;
+			if (rcvbufpack[index].wptr >= NUM_OF_RBUF) rcvbufpack[index].wptr = 0;
+
+			sock_packs[index].current_step = CONNECTED;
+		}
+		else {
+			return SOCK_ERROR;
+		}
 	}
 	else return APP_ERROR;
 
@@ -267,7 +309,6 @@ int CSock::rcv_check(int index) {
 	if (rcvbufpack[index].wptr >= rcvbufpack[index].rptr) return rcvbufpack[index].wptr - rcvbufpack[index].rptr;
 	else return rcvbufpack[index].wptr + 1 + (NUM_OF_RBUF - rcvbufpack[index].rptr);
 };
-
 
 HRESULT CSock::GetSockMsg(int nError, LPWSTR pszMessage, DWORD dwSize)
 {

@@ -62,6 +62,7 @@ typedef struct _stNpipMng
 	StPRCVBUFPACK rbufpack[PIPE_MAX_CLIENT];
 	HANDLE hIPipe[PIPE_MAX_CLIENT];
 	HANDLE hOPipe[PIPE_MAX_CLIENT];
+	WORD if_index;//全インターフェイスの中の識別インデックス
 }NpipMng, *LPNpipMng;
 
 typedef struct _PipData

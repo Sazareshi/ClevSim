@@ -64,6 +64,8 @@ typedef struct _stSockPack
 	int current_step;
 	SOCKET socket;
 	SOCKADDR_IN sa;
+	SOCKADDR_IN sa_target;
+
 }StSOCKPACKAGE, *LPStSOCKPACKAGE;
 
 class CSock

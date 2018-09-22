@@ -4,6 +4,7 @@
 
 
 CMCtransaction	CCommunicator::mc_handler;
+CUDPtransaction	CCommunicator::udp_handler;
 CNamedPipe		CCommunicator::npip_handler;
 StCOMLAMPPACK	CCommunicator::st_com_lamp;
 HWND CCommunicator::hlistbox_work;
@@ -14,6 +15,7 @@ CCommunicator* CCommunicator:: pComInst = NULL;//ÉXÉ^ÉeÉBÉbÉNä÷êîëÄçÏópÉCÉìÉXÉ^É
 CCommunicator::CCommunicator(){
 	mc_handler.mcifmng.thread_end = FALSE;
 	npip_handler.ifmng.thread_end = FALSE;
+	udp_handler.udpifmng.thread_end = FALSE;
 
 	st_com_lamp.ifname[SOCK_T_S] = L"SOCK_T_S";
 	st_com_lamp.ifname[SOCK_T_C] = L"SOCK_T_C";
@@ -73,13 +75,17 @@ unsigned __stdcall CCommunicator::MCprotoThread(void *pVoid)
 	
 	while (pMCMsgMng->thread_end == FALSE) {
 		dwRet = WSAWaitForMultipleEvents(MC_SOCK_USE_EVENTS, &(pMCMsgMng ->hsock_event[0]), FALSE, MC_EVENT_TIMEOUT, FALSE);
-		if (dwRet != WSA_WAIT_FAILED) {//TimeOutÉCÉxÉìÉgÇ≈ÇÕÇ»Ç¢
+		if (dwRet != WSA_WAIT_FAILED) {//ErrorÇ≈ÇÕÇ»Ç¢
 			event_index = dwRet - WSA_WAIT_EVENT_0;		//î≠ê∂ÇµÇΩÉCÉxÉìÉgÇÃÉCÉìÉfÉbÉNÉX
 			isock = pMCMsgMng->sock_index;	//î≠ê∂ÇµÇΩÉCÉxÉìÉgÇÃÉ\ÉPÉbÉgÇÃÉCÉìÉfÉNÉX
 			
 			//Ç«ÇÃÉCÉxÉìÉgÇ™î≠ê∂ÇµÇΩÇ©Çîªï Ç∑ÇÈ
 			WSANETWORKEVENTS events;
 			DWORD errCode;
+
+			if (dwRet == WAIT_TIMEOUT) {//É^ÉCÉÄÉAÉEÉgÉCÉxÉìÉg
+				continue;
+			}
 			if (dwRet == INDEX_SOCK_SND_EVENT) {//ÉÅÉbÉZÅ[ÉWëóêMOKÉCÉxÉìÉg
 				pcomm->sndmsgout2wwnd(helper.carray2wstr16(sock_handler.sndbufpack[pMCMsgMng->sock_index].sbuf[0], sock_handler.sndbufpack[pMCMsgMng->sock_index].datsize[0]));
 			}
@@ -343,6 +349,137 @@ unsigned __stdcall CCommunicator::NamedPipeThread(void *pVoid)
 	return 0;
 };
 
+unsigned __stdcall CCommunicator::UDPThread(void *pVoid)
+{
+	DWORD dwRet, event_index, isock;
+	wostringstream woss;
+	UDPMsgMng* pUDPMsgMng = (UDPMsgMng*)(&(udp_handler.udpifmng));//UDPÉvÉçÉgÉRÉãèàóùä«óùópç\ë¢ëÃÇ÷ÇÃÉ|ÉCÉìÉ^
+	CCommunicator* pcomm = (CCommunicator*)pVoid;	//åƒÇ—èoÇµå≥ÉCÉìÉXÉ^ÉìÉXÇÃÉ|ÉCÉìÉ^ ÉÅÉCÉìÉEÉBÉìÉhÉEÇ÷ÇÃÉÅÉbÉZÅ[ÉWï\é¶ëºóp
+	CHelper helper;
+
+	///# É\ÉPÉbÉgÇópà”ÇµÇƒ Cient:ëóêMêÊÉAÉhÉåÉXÉZÉbÉgÇ‹Ç≈   Server:bindÇ‹Ç≈
+	pUDPMsgMng->sock_index = pcomm->start_UDPsock(pUDPMsgMng->sock_ipaddr, pUDPMsgMng->sock_port, pUDPMsgMng->sock_type);
+	pUDPMsgMng->hsock_event[INDEX_SOCK_SYS_EVENTS] = sock_handler.hEvents[pUDPMsgMng->sock_index];
+	pUDPMsgMng->hsock_event[INDEX_SOCK_SND_EVENT] = sock_handler.sndbufpack[pUDPMsgMng->sock_index].hsock_snd_event;
+
+	while (pUDPMsgMng->thread_end == FALSE) {
+		dwRet = WSAWaitForMultipleEvents(UDP_SOCK_USE_EVENTS, &(pUDPMsgMng->hsock_event[0]), FALSE, UDP_EVENT_TIMEOUT, FALSE);
+		if (dwRet != WSA_WAIT_FAILED) {//ErrorÇ≈ÇÕÇ»Ç¢
+			event_index = dwRet - WSA_WAIT_EVENT_0;		//î≠ê∂ÇµÇΩÉCÉxÉìÉgÇÃÉCÉìÉfÉbÉNÉX
+			isock = pUDPMsgMng->sock_index;	//î≠ê∂ÇµÇΩÉCÉxÉìÉgÇÃÉ\ÉPÉbÉgÇÃÉCÉìÉfÉNÉX
+
+			//Ç«ÇÃÉCÉxÉìÉgÇ™î≠ê∂ÇµÇΩÇ©Çîªï Ç∑ÇÈ
+			WSANETWORKEVENTS events;
+			DWORD errCode;
+			if (dwRet == WAIT_TIMEOUT) {//É^ÉCÉÄÉAÉEÉgÉCÉxÉìÉg
+				if (st_com_lamp.tx_color[SOCK_U_C][0] != COLID_COM_WHITE) {
+					st_com_lamp.tx_color[SOCK_U_C][0] = COLID_COM_YELLOW;
+					st_com_lamp.tx_color[SOCK_U_S][0] = COLID_COM_YELLOW;
+					st_com_lamp.rx_color[SOCK_U_C][0] = COLID_COM_YELLOW;
+					st_com_lamp.rx_color[SOCK_U_S][0] = COLID_COM_YELLOW;
+					SendMessage(pcomm->inf.hWnd_work, MSGID_SET_WORK_LAMP, 0, 0);
+				}
+				continue;
+			}
+
+			if (dwRet == INDEX_SOCK_SND_EVENT) {//ÉÅÉbÉZÅ[ÉWëóêMóvãÅÉCÉxÉìÉg
+				if (udp_handler.com_transaction(UDP_REQ_DATA) == UDP_TRANZACTION_READY) {
+					woss << L"UDP_Event: MSG SENT"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+					pcomm->sndmsgout2wwnd(helper.carray2wstr16(sock_handler.sndbufpack[isock].sbuf[0], sock_handler.sndbufpack[isock].datsize[0]));
+					st_com_lamp.tx_color[SOCK_U_C][0] = COLID_COM_GREEN;
+					st_com_lamp.tx_color[SOCK_U_S][0] = COLID_COM_GREEN;
+					if (st_com_lamp.rx_color[SOCK_U_C][0] == COLID_COM_YELLOW) {
+						st_com_lamp.rx_color[SOCK_U_C][0] = COLID_COM_GRAY;
+						st_com_lamp.rx_color[SOCK_U_S][0] = COLID_COM_GRAY;
+					}
+				}
+				else {
+					woss << L"UDP_ERROR: MSG SENT"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+				}
+			}
+
+			dwRet = WSAEnumNetworkEvents(sock_handler.sock_packs[isock].socket, sock_handler.hEvents[isock], &events);
+	
+			if (dwRet == SOCKET_ERROR) {
+				;
+			}
+
+			if (events.lNetworkEvents & FD_READ) {
+
+				st_com_lamp.rx_color[SOCK_U_C][0] = COLID_COM_GREEN;
+				st_com_lamp.rx_color[SOCK_U_S][0] = COLID_COM_GREEN;
+				
+				errCode = events.iErrorCode[FD_READ_BIT];
+				pUDPMsgMng->sock_event_status |= FD_READ;
+				sock_handler.sock_recv(isock);
+				woss << L"index:" << isock << L"  FD_READ Triggerred "; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+				sock_handler.rcvbufpack;//ÉfÉoÉbÉOéûÉÇÉjÉ^óp
+
+				char* pmsg = NULL;
+				int msglen;
+				while (int n_rcv = sock_handler.msg_pickup(isock, &pmsg, &msglen)) {//ÉäÉìÉOÉoÉbÉtÉ@Ç…ó≠Ç‹Ç¡ÇƒÇ¢ÇÈÉÅÉbÉZÅ[ÉWÇÕì«Ç›îÚÇŒÇ∑
+					woss << L"index:" << isock << L"  A MESSEGE is discarded"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+				};
+				pcomm->rcvmsgout2wwnd(helper.carray2wstr16(pmsg, msglen));
+
+				Sleep(1000);
+				
+				if (*pmsg == UDP_COM_REQ_DATA) {//éÛêMÉÅÉbÉZÅ[ÉWÅ@ÉfÅ[É^óvãÅ
+					udp_handler.udpifmng.com_step[UDP_REQ_DATA] = UDP_STP_WAIT_RES;
+					udp_handler.udpifmng.msg_seqno[UDP_REQ_DATA] = ((LPUDPCMD)pmsg)->seqno;
+
+					if (udp_handler.res_transaction(UDP_REQ_DATA) == UDP_TRANZACTION_READY) {
+						woss << L"UDP_Event: MSG SENT"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+						pcomm->sndmsgout2wwnd(helper.carray2wstr16(sock_handler.sndbufpack[isock].sbuf[0], sock_handler.sndbufpack[isock].datsize[0]));
+						st_com_lamp.tx_color[SOCK_U_C][0] = COLID_COM_GREEN;
+						st_com_lamp.tx_color[SOCK_U_S][0] = COLID_COM_GREEN;
+						if (st_com_lamp.rx_color[SOCK_U_C][0] == COLID_COM_YELLOW) {
+							st_com_lamp.rx_color[SOCK_U_C][0] = COLID_COM_GRAY;
+							st_com_lamp.rx_color[SOCK_U_S][0] = COLID_COM_GRAY;
+						}
+					}
+					else {
+						woss << L"UDP_ERROR: MSG SENT"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+					}
+
+				}
+				else if(*pmsg == UDP_RES_REQ_DATA) {
+					if (udp_handler.com_transaction(UDP_REQ_DATA) == UDP_TRANZACTION_READY) {
+						woss << L"UDP_Event: MSG SENT"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+						pcomm->sndmsgout2wwnd(helper.carray2wstr16(sock_handler.sndbufpack[isock].sbuf[0], sock_handler.sndbufpack[isock].datsize[0]));
+						st_com_lamp.tx_color[SOCK_U_C][0] = COLID_COM_GREEN;
+						st_com_lamp.tx_color[SOCK_U_S][0] = COLID_COM_GREEN;
+						if (st_com_lamp.rx_color[SOCK_U_C][0] == COLID_COM_YELLOW) {
+							st_com_lamp.rx_color[SOCK_U_C][0] = COLID_COM_GRAY;
+							st_com_lamp.rx_color[SOCK_U_S][0] = COLID_COM_GRAY;
+						}
+					}
+					else {
+						woss << L"UDP_ERROR: MSG SENT"; pcomm->txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+					}
+				}
+				else;
+
+				pUDPMsgMng->sock_event_status &= ~FD_READ;
+			}
+
+			if (events.lNetworkEvents & FD_WRITE) {
+				errCode = events.iErrorCode[FD_WRITE_BIT];
+				pUDPMsgMng->sock_event_status |= FD_WRITE;
+			}
+
+			SendMessage(pcomm->inf.hWnd_work, MSGID_SET_WORK_LAMP, 0, 0);
+		}
+		else {
+			;
+		}
+	}
+
+	sock_handler.exit();
+
+	return 1;
+};
+
 LRESULT CCommunicator::COM_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 	PAINTSTRUCT ps;
 	TCHAR edit_wstr[1024];
@@ -356,10 +493,13 @@ LRESULT CCommunicator::COM_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 			npip_handler.ifmng.sbufpack[0].sbuf[0][nwRet] = L'\0';
 
 			PulseEvent(npip_handler.ifmng.hevent_testsend);
+			PulseEvent(sock_handler.sndbufpack[udp_handler.udpifmng.sock_index].hsock_snd_event);
+
+
 		}break;
 		case IDC_BUTTON_COM_IFSEL: {
 			st_com_lamp.i_disp_if++;
-			if (st_com_lamp.i_disp_if >= NUM_OF_IF_ACT)st_com_lamp.i_disp_if = 0;
+			if (st_com_lamp.i_disp_if >= st_com_lamp.num_of_act)st_com_lamp.i_disp_if = 0;
 			update_lamp();
 		}break;
 		case IDC_COMM_CLOSE: {
@@ -377,11 +517,12 @@ LRESULT CCommunicator::COM_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 		st_com_lamp.hBrushYellow = CreateSolidBrush(RGB(255, 255, 0));
 		st_com_lamp.hBrushNull = (HBRUSH)GetStockObject(NULL_BRUSH);
 		st_com_lamp.hBrushDGreen = CreateSolidBrush(RGB(0, 150, 0));
+		st_com_lamp.hBrushWhite = (HBRUSH)GetStockObject(WHITE_BRUSH);
 
 		hlistbox_work = GetDlgItem(hWnd, IDC_LIST_COM1);
 		st_com_lamp.hifpb_work = GetDlgItem(hWnd, IDC_BUTTON_COM_IFSEL);
-		SendMessage(hlistbox_work, LB_INSERTSTRING, (WPARAM)0, (LPARAM)L"Message From Threads");
-		npip_handler.ifmng.hmsg_listbox = mc_handler.mcifmng.hmsg_listbox = hlistbox_work;
+		//SendMessage(hlistbox_work, LB_INSERTSTRING, (WPARAM)0, (LPARAM)L"Message From Threads");
+		npip_handler.ifmng.hmsg_listbox = mc_handler.mcifmng.hmsg_listbox = udp_handler.udpifmng.hmsg_listbox = hlistbox_work;
 	}break;
 	case MSGID_SET_WORK_LAMP: {
 		update_lamp();
@@ -420,19 +561,27 @@ HWND  CCommunicator::CreateWorkWindow(HWND h_parent_wnd) {
 
 void CCommunicator::init_task(void* pobj) {
 	unsigned ThreadID;
+	unsigned IF_index=0;
 	pComInst = (CCommunicator *)pobj;//ÉXÉ^ÉeÉBÉbÉNïœêîÇ…ÉCÉìÉXÉ^ÉìÉXÉ|ÉCÉìÉ^ìoò^
 	inf.hWnd_work = NULL;
+
 	
 	///# INIÉtÉ@ÉCÉãì«Ç›çûÇ›
 	wchar_t tbuf[32];
+
+	//MC Protocol
 	DWORD	str_num = GetPrivateProfileString(COMM_SECT_OF_INIFILE, MC_PROTOKEY_OF_TYPE, L"C", tbuf, sizeof(tbuf), PATH_OF_INIFILE);
 	if (tbuf[0] == L'C') {
 		mc_handler.mcifmng.sock_type = CLIENT_SOCKET;
-		st_com_lamp.dispif[0]=SOCK_T_C;
+		st_com_lamp.dispif[IF_index]=SOCK_T_C;
+		mc_handler.mcifmng.if_index = IF_index;
+		IF_index++;
 	}
 	else if (tbuf[0] == L'S') {
 		mc_handler.mcifmng.sock_type = SERVER_SOCKET;
-		st_com_lamp.dispif[0]=SOCK_T_S;
+		st_com_lamp.dispif[IF_index]=SOCK_T_S;
+		mc_handler.mcifmng.if_index = IF_index;
+		IF_index++;
 	}
 	else {
 		mc_handler.mcifmng.sock_type = NON_SOCKET;
@@ -459,11 +608,15 @@ void CCommunicator::init_task(void* pobj) {
 	str_num = GetPrivateProfileString(COMM_SECT_OF_INIFILE, PIP_PROTOKEY_OF_TYPE, L"N", tbuf, sizeof(tbuf), PATH_OF_INIFILE);
 	if (tbuf[0] == L'C') { 
 		npip_handler.ifmng.pipe_type = CLIENT_PIPE; 
-		st_com_lamp.dispif[1] = PIPE_C;
+		st_com_lamp.dispif[IF_index] = PIPE_C;
+		npip_handler.ifmng.if_index = IF_index;
+		IF_index++;
 	}
 	else if (tbuf[0] == L'S') { 
 		npip_handler.ifmng.pipe_type = SERVER_PIPE;
-		st_com_lamp.dispif[1] = PIPE_S;
+		st_com_lamp.dispif[IF_index] = PIPE_S;
+		npip_handler.ifmng.if_index = IF_index;
+		IF_index++;
 	}
 	else npip_handler.ifmng.pipe_type = NON_PIPE;
 
@@ -473,10 +626,44 @@ void CCommunicator::init_task(void* pobj) {
 	str_num = GetPrivateProfileString(COMM_SECT_OF_INIFILE, PIP_PROTOKEY_OF_OUTNAME, L"//./pipe/PipeOut", tbuf, sizeof(tbuf), PATH_OF_INIFILE);
 	npip_handler.ifmng.out_pipe_name = tbuf;
 
+	//UDP
+	str_num = GetPrivateProfileString(COMM_SECT_OF_INIFILE, UDP_PROTOKEY_OF_TYPE, L"C", tbuf, sizeof(tbuf), PATH_OF_INIFILE);
+	if (tbuf[0] == L'C') {
+		udp_handler.udpifmng.sock_type = CLIENT_SOCKET;
+		st_com_lamp.dispif[IF_index] = SOCK_U_C;
+		udp_handler.udpifmng.if_index = IF_index;
+		IF_index++;
+	}
+	else if (tbuf[0] == L'S') {
+		udp_handler.udpifmng.sock_type = SERVER_SOCKET;
+		st_com_lamp.dispif[IF_index] = SOCK_U_S;
+		udp_handler.udpifmng.if_index = IF_index;
+		IF_index++;
+	}
+	else {
+		udp_handler.udpifmng.sock_type = NON_SOCKET;
+	}
+
+	udp_handler.udpifmng.sock_protocol = SOCK_DGRAM;
+
+	///# UDPÉvÉçÉgÉRÉãÇ≈óòópÇ∑ÇÈÉ\ÉPÉbÉgÇÃIPÇ∆É|Å[ÉgÉZÉbÉg
+	wstr.clear();
+	str_num = GetPrivateProfileString(COMM_SECT_OF_INIFILE, UDP_PROTOKEY_OF_IP, L"192.168.100.1", tbuf, sizeof(tbuf), PATH_OF_INIFILE);
+	wstr += tbuf;
+	helper.WStr2Str(wstr, udp_handler.udpifmng.sock_ip_str);
+	udp_handler.udpifmng.sock_ipaddr = udp_handler.udpifmng.sock_ip_str.c_str();
+
+	str_num = GetPrivateProfileString(COMM_SECT_OF_INIFILE, UDP_PROTOKEY_OF_PORT, L"30000", tbuf, sizeof(tbuf), PATH_OF_INIFILE);
+	udp_handler.udpifmng.sock_port = _wtoi(tbuf);
+
+	st_com_lamp.num_of_act = IF_index;
+	
+	///# çÏã∆ÉEÉBÉìÉhÉEÉNÉäÉGÉCÉg
 	CreateWorkWindow(inf.hWnd_parent);
 
 	///# ÇªÇÃëºÅ@MCÉvÉçÉgÉRÉãèàóùÉIÉuÉWÉFÉNÉgÇÃèâä˙âª
 	mc_handler.init();
+	udp_handler.init();
 
 	//MCÉvÉçÉgÉRÉãèàóùé¿çsÉXÉåÉbÉh
 	if(mc_handler.mcifmng.sock_type != NON_SOCKET)
@@ -510,15 +697,32 @@ void CCommunicator::init_task(void* pobj) {
 		);
 
 	if (hThreadPIP == 0) {
-		ws << L"Failed PipeThread starting"; txout2msg_listbox(ws.str()); ws.str(L""); ws.clear();
+		ws << L"PipeThread not working"; txout2msg_listbox(ws.str()); ws.str(L""); ws.clear();
 	}
 	else {
 		ws << L"PipeThread started"; txout2msg_listbox(ws.str()); ws.str(L""); ws.clear();
 		CloseHandle(hThreadPIP);
 	}
 
-	
+	//UDPèàóùé¿çsÉXÉåÉbÉh
+	if (udp_handler.udpifmng.sock_type != NON_SOCKET)
+		hThreadUDP = (HANDLE)_beginthreadex(
+			NULL,					//Security
+			0,						//Stack size
+			UDPThread,				//ÉXÉåÉbÉhä÷êî
+			pobj,					//é©É^ÉXÉNÇÃÉIÉuÉWÉFÉNÉgÇ÷ÇÃÉ|ÉCÉìÉ^
+			0,						//èâä˙ÉtÉâÉO
+			&ThreadID				//ÉXÉåÉbÉhIDÇéÛÇØéÊÇÈÉAÉhÉåÉX
+		);
 
+
+	if (hThreadUDP == 0) {
+		ws << L"UDPThread not working"; txout2msg_listbox(ws.str()); ws.str(L""); ws.clear();
+	}
+	else {
+		ws << L"UDPThread started"; txout2msg_listbox(ws.str()); ws.str(L""); ws.clear();
+		CloseHandle(hThreadUDP);
+	}
 }
 
 unsigned CCommunicator::start_MCsock(PCSTR ipaddr, USHORT port,int protocol, int type) {
@@ -530,48 +734,87 @@ unsigned CCommunicator::start_MCsock(PCSTR ipaddr, USHORT port,int protocol, int
 
 	if (sock_handler.init_ok == NOT_INITIALIZED) {
 		if (sock_handler.wsa_init() == S_OK) {
-			woss << L"WSA Start OK"; txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+			woss << L"MC WSA Start OK"; txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
 			sock_handler.init_ok = WSA_INITIAL_OK;
+		}
+		else {
+			return SOCKET_ERROR;
 		}
 	}
 
 	int r = inet_pton(AF_INET, ipaddr, &(sa.S_un.S_addr));
 
 	if (sock_handler.create(&ID, sa, port, protocol, type) == S_OK) {
-		woss << L"Creat Sock OK index = " << ID << L",  Proto:" << protocol << L",  Type:" << type << L",  IP:" << ipaddr << L",  PORT:" << port ; txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+		woss << L"MC Creat Sock OK index = " << ID << L",  Proto:" << protocol << L",  Type:" << type << L",  IP:" << ipaddr << L",  PORT:" << port ; txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
 		sock_handler.sock_packs[ID].current_step = SOCK_PREPARED;
 	}
 	else {
-		sock_handler.sock_packs[ID].current_step = SOCK_NOT_CREATED;
+		return SOCKET_ERROR;//sock_handler.sock_packs[ID].current_step = SOCK_NOT_CREATED;
 	}
 
 	r = sock_handler.make_connection(ID);
 	if ((protocol == SOCK_STREAM )&& (type == CLIENT_SOCKET)) {
 		if (r == S_OK || r == WSAEWOULDBLOCK) {
-			woss << L"index:" << ID << L"  Waiting Connection"; txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+			woss << L"index:" << ID << L"  MC Waiting Connection"; txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
 			sock_handler.sock_packs[ID].current_step = WAIT_CONNECTION;
 		}
 		else {
 			sock_handler.GetSockMsg(r, sock_handler.sock_err[ID].errmsg, SOCK_ERR_MSG_MAX);
-			woss << L"Connection Preparation Failed:" << sock_handler.sock_err[ID].errmsg; txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+			woss << L"MC Connection Preparation Failed:" << sock_handler.sock_err[ID].errmsg; txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
 			sock_handler.sock_close(ID);
 			sock_handler.sock_err[ID].wErrCode = r;
 		}
 	}
 	else if ((protocol == SOCK_STREAM) && (type == SERVER_SOCKET)) {
 		if (r == S_OK) {
-			woss << L"index:" << ID << L"  Listening Start"; txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+			woss << L"index:" << ID << L"  MC Listening Start"; txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
 			sock_handler.sock_packs[ID].current_step = LISTENING;
 		}
 		else {
 			sock_handler.GetSockMsg(r, sock_handler.sock_err[ID].errmsg, SOCK_ERR_MSG_MAX);
-			woss << L"Connection Preparation Failed:" << sock_handler.sock_err[ID].errmsg; txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+			woss << L"MC Connection Preparation Failed:" << sock_handler.sock_err[ID].errmsg; txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
 			sock_handler.sock_close(ID);
 		}
 	}
 	else {
-		;
+		return SOCKET_ERROR;
 	}
+
+	return ID;
+}
+
+unsigned CCommunicator::start_UDPsock(PCSTR ipaddr, USHORT port,  int type) {
+
+	CSock sock_handler;
+	int ID;
+	IN_ADDR sa;
+	wostringstream woss;
+
+	if (sock_handler.init_ok == NOT_INITIALIZED) {
+		if (sock_handler.wsa_init() == S_OK) {
+			woss << L"UDP WSA Start OK"; txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+			sock_handler.init_ok = WSA_INITIAL_OK;
+		}
+		else {
+			return SOCKET_ERROR;
+		}
+	}
+
+	int r = inet_pton(AF_INET, ipaddr, &(sa.S_un.S_addr));
+
+	if (sock_handler.create(&ID, sa, port, SOCK_DGRAM, type) == S_OK) {
+		woss << L"UDP Creat Sock OK index = " << ID << L",  Proto:" << SOCK_DGRAM << L",  Type:" << type << L",  IP:" << ipaddr << L",  PORT:" << port; txout2msg_listbox(woss.str()); woss.str(L""); woss.clear();
+		sock_handler.sock_packs[ID].current_step = SOCK_PREPARED;
+		st_com_lamp.tx_color[SOCK_U_C][0] = st_com_lamp.rx_color[SOCK_U_C][0] = COLID_COM_GRAY;
+		st_com_lamp.tx_color[SOCK_U_S][0] = st_com_lamp.rx_color[SOCK_U_S][0] = COLID_COM_GRAY;
+	}
+	else {
+		st_com_lamp.tx_color[SOCK_U_C][0] = st_com_lamp.rx_color[SOCK_U_C][0] = COLID_COM_RED;
+		st_com_lamp.tx_color[SOCK_U_S][0] = st_com_lamp.rx_color[SOCK_U_S][0] = COLID_COM_RED;
+		return SOCK_ERROR;
+	}
+
+	r = sock_handler.make_connection(ID);
 
 	return ID;
 }
@@ -823,12 +1066,12 @@ void CCommunicator::sndmsgout2wwnd(const wstring wstr) {
 };
 
 void CCommunicator::update_lamp() {
-	int code = st_com_lamp.dispif[st_com_lamp.i_disp_if];
+	int code = st_com_lamp.dispif[st_com_lamp.i_disp_if];//dispif[]Ç…äeIFÇÃéÌï ÉRÅ[ÉhÅiï\é¶ÉZÉbÉgêFîzóÒÇ÷ÇÃindexÅjÇ™ì¸Ç¡ÇƒÇ¢ÇÈ
 	SetWindowText(st_com_lamp.hifpb_work, st_com_lamp.ifname[code]);
 	for (int i = 0; i < NUM_OF_CLIENT; i++) {
-		SelectObject(st_com_lamp.hdc, sel_lmp_brush(st_com_lamp.tx_color[code][i]));
+		SelectObject(st_com_lamp.hdc, sel_lmp_brush(st_com_lamp.tx_color[code][i]));//ï\é¶êFÇÕäeIFÇ™é©äÑÇËìñÇƒîzóÒÇÃïîï™Ç…èÛãµÇ…âûÇ∂ÇƒÉZÉbÉgÇµÇƒÇ®Ç≠
 		Ellipse(st_com_lamp.hdc, st_com_lamp.tx_ellipse_pos[i][0], st_com_lamp.tx_ellipse_pos[i][1], st_com_lamp.tx_ellipse_pos[i][2], st_com_lamp.tx_ellipse_pos[i][3]);
-		SelectObject(st_com_lamp.hdc, sel_lmp_brush(st_com_lamp.rx_color[code][i]));
+		SelectObject(st_com_lamp.hdc, sel_lmp_brush(st_com_lamp.rx_color[code][i]));//ï\é¶êFÇÕäeIFÇ™é©äÑÇËìñÇƒîzóÒÇÃïîï™Ç…èÛãµÇ…âûÇ∂ÇƒÉZÉbÉgÇµÇƒÇ®Ç≠
 		Ellipse(st_com_lamp.hdc, st_com_lamp.rx_ellipse_pos[i][0], st_com_lamp.rx_ellipse_pos[i][1], st_com_lamp.rx_ellipse_pos[i][2], st_com_lamp.rx_ellipse_pos[i][3]);
 	}
 	return;
@@ -841,6 +1084,7 @@ HBRUSH CCommunicator::sel_lmp_brush(int code) {
 	case COLID_COM_GREEN: return st_com_lamp.hBrushGreen;
 	case COLID_COM_GRAY: return st_com_lamp.hBrushGray;
 	case COLID_COM_DGREEN: return st_com_lamp.hBrushDGreen;
+	case COLID_COM_WHITE: return st_com_lamp.hBrushWhite;
 	default: return st_com_lamp.hBrushNull;
 	}
 	

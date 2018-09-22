@@ -130,7 +130,7 @@ typedef struct _stMCTransactionMng
  	MCRES res_msg[MC_TRANSACTION_MAX];//レスポンス電文
 
 	HANDLE hsock_event[MC_SOCK_USE_EVENTS];//非同期処理用イベントハンドル
-	int sock_index;//CSockfより割り当てられたソケットのインデックス
+	int sock_index;//CSockより割り当てられたソケットのインデックス
 	int sock_protocol;//利用するソケットのプロトコル　TCP/UDP
 	int sock_type;//利用するソケットのType　Server/Client
 	PCSTR  sock_ipaddr;//利用するソケットのIPアドレスへのポインタ
@@ -142,6 +142,7 @@ typedef struct _stMCTransactionMng
 	HWND hwnd;//トランザクションの完了通知先ウィンドウ
 	BOOL thread_end;
 	HWND hmsg_listbox;			//メッセージ表示用リストボックスハンドル
+	WORD if_index;//全インターフェイスの中の識別インデックス
 }MCMsgMng, LPMCMsgMng;
 
 class CMCtransaction
