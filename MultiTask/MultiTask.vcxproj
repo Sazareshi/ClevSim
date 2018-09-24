@@ -160,10 +160,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Actor.h" />
     <ClInclude Include="Communicator.h" />
     <ClInclude Include="CSock.h" />
     <ClInclude Include="MCtransaction.h" />
     <ClInclude Include="NamedPipe.h" />
+    <ClInclude Include="PublicRelation.h" />
     <ClInclude Include="ThreadObj.h" />
     <ClInclude Include="Helper.h" />
     <ClInclude Include="MultiTaskMain.h" />
@@ -173,10 +175,12 @@
     <ClInclude Include="UDPtransaction.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Actor.cpp" />
     <ClCompile Include="Communicator.cpp" />
     <ClCompile Include="CSock.cpp" />
     <ClCompile Include="MCtransaction.cpp" />
     <ClCompile Include="NamedPipe.cpp" />
+    <ClCompile Include="PublicRelation.cpp" />
     <ClCompile Include="ThreadObj.cpp" />
     <ClCompile Include="Helper.cpp" />
     <ClCompile Include="MultiTaskMain.cpp" />
@@ -192,7 +196,10 @@
     <ResourceCompile Include="MultiTask.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="bmp\bitmap3.bmp" />
     <Image Include="bmp\com.bmp" />
+    <Image Include="bmp\demi.bmp" />
+    <Image Include="bmp\enntoma.bmp" />
     <Image Include="bmp\yu.bmp" />
     <Image Include="MultiTask.ico" />
     <Image Include="small.ico" />

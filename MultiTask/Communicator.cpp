@@ -422,7 +422,7 @@ unsigned __stdcall CCommunicator::UDPThread(void *pVoid)
 				};
 				pcomm->rcvmsgout2wwnd(helper.carray2wstr16(pmsg, msglen));
 
-				Sleep(1000);
+				Sleep(100);
 				
 				if (*pmsg == UDP_COM_REQ_DATA) {//受信メッセージ　データ要求
 					udp_handler.udpifmng.com_step[UDP_REQ_DATA] = UDP_STP_WAIT_RES;

@@ -48,6 +48,12 @@
     <ClInclude Include="UDPtransaction.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="PublicRelation.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Actor.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -77,6 +83,12 @@
     <ClCompile Include="UDPtransaction.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="PublicRelation.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Actor.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MultiTask.rc">
@@ -94,6 +106,15 @@
       <Filter>リソース ファイル</Filter>
     </Image>
     <Image Include="bmp\com.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="bmp\enntoma.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="bmp\bitmap3.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="bmp\demi.bmp">
       <Filter>リソース ファイル</Filter>
     </Image>
   </ItemGroup>
