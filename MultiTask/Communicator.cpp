@@ -538,6 +538,7 @@ LRESULT CCommunicator::COM_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 		DeleteObject(st_com_lamp.hBrushGreen);
 		DeleteObject(st_com_lamp.hBrushYellow);
 		DeleteObject(st_com_lamp.hBrushDGreen);
+		pComInst->inf.hWnd_work = NULL;
 		break;
 	}
 	default:
@@ -556,7 +557,7 @@ HWND  CCommunicator::CreateWorkWindow(HWND h_parent_wnd) {
 			hlistbox_work = GetDlgItem(inf.hWnd_work, IDC_LIST_COM1);
 		}
 	}
-	return NULL;
+	return inf.hWnd_work;
 };
 
 void CCommunicator::init_task(void* pobj) {
@@ -659,7 +660,9 @@ void CCommunicator::init_task(void* pobj) {
 	st_com_lamp.num_of_act = IF_index;
 	
 	///# 作業ウィンドウクリエイト
-	CreateWorkWindow(inf.hWnd_parent);
+	inf.hWnd_work = CreateWorkWindow(inf.hWnd_parent);
+	ShowWindow(inf.hWnd_work, SW_MINIMIZE);
+	UpdateWindow(inf.hWnd_work);
 
 	///# その他　MCプロトコル処理オブジェクトの初期化
 	mc_handler.init();
@@ -841,6 +844,10 @@ LRESULT CALLBACK CCommunicator::PanelProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM
 			inf.panel_type_id = LOWORD(wp); set_panel_tip_txt();  SetFocus(GetDlgItem(inf.hWnd_opepane, IDC_TASK_EDIT1));
 			if ((inf.panel_func_id == IDC_TASK_FUNC_RADIO1) && (inf.panel_type_id == IDC_TASK_ITEM_RADIO1)) {
 				if (inf.hWnd_work == NULL) CreateWorkWindow(inf.hWnd_parent);
+				else {
+					ShowWindow(inf.hWnd_work, SW_RESTORE);
+					UpdateWindow(inf.hWnd_work);
+				}
 			}
 			break;
 		case IDSET: {
