@@ -110,7 +110,8 @@ int CHelper::cmnCreateShmem(LPCTSTR szName, DWORD dwSize, HANDLE* hMapFile, LPVO
 	*hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, highByte, lowByte, szName);
 	if (*hMapFile == NULL) return(ERR_SHMEM_CREATE);
 	else {
-		if (GetLastError() == ERROR_ALREADY_EXISTS)	*dwExist = ON;
+		if (GetLastError() == ERROR_ALREADY_EXISTS)
+			*dwExist = ON;
 		// ファイル・ビューを作成(共有メモリのハンドル, アクセスの種類, ファイル オフセット(上位32ビット), ファイル オフセット(下位32ビット), マップするバイト数→0はファイルﾙマッピングオブジェクト全体)
 		*pMapTop = MapViewOfFile(*hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, dwSize);
 		if (*pMapTop == NULL) {
@@ -171,4 +172,3 @@ wstring CHelper::carray2wstr16(char* c, int len) {
 	}
 	return ws.str();
 };
-

@@ -117,6 +117,7 @@ public:
 	virtual void set_PNLparam_value(float p1, float p2, float p3, float p4, float p5, float p6);//パラメータ初期表示値設定
 	
 	virtual LRESULT CALLBACK PanelProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp);
+	LPVOID get_smem() { return inf.pSmem; }
 
 protected:
 	CHelper tool;

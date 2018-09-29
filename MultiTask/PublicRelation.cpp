@@ -13,19 +13,20 @@ CPublicRelation::~CPublicRelation()
 
 CPublicRelation* CPublicRelation:: pPrInst;
 
-HBITMAP CPublicRelation::hBmp_bg;
-HBITMAP CPublicRelation::hBmp_mob;
-HDC CPublicRelation::hdc_mem0;
-HDC CPublicRelation::hdc_mem_bg;
-HDC CPublicRelation::hdc_mem_mob;
-HDC CPublicRelation::hdc_mem_inf;
-HIMAGELIST CPublicRelation::hImgList_harai;
+PR_DISP CPublicRelation::stdisp;
 
 void CPublicRelation::init_task(void* pobj) {
 
 	pPrInst = (CPublicRelation *)pobj;//スタティック変数にインスタンスポインタ登録
 	
 	///# 作業ウィンドウ生成
+		//MOBの透過率設定用構造体設定
+	pPrInst->stdisp.bf.SourceConstantAlpha = MOB_DISP_ALPHA;  pPrInst->stdisp.bf.BlendOp = AC_SRC_OVER; pPrInst->stdisp.bf.BlendFlags = 0; pPrInst->stdisp.bf.AlphaFormat = 0;
+		//MOBの画像配列セット
+	for (int i = 0; i < NUM_OF_MOB; i++) stdisp.hBmp_mob[i] = NULL;//ムービングオブジェクトのハンドル初期化
+	stdisp.hBmp_mob[MOB_ID_HARAI] = (HBITMAP)LoadImage(pPrInst->inf.hInstance, TEXT("IDB_HARAI0"), IMAGE_BITMAP, 0, 0, LR_DEFAULTCOLOR);
+	stdisp.hBmp_mob[MOB_ID_CRUSH] = (HBITMAP)LoadImage(pPrInst->inf.hInstance, TEXT("IDB_CRUSH0"), IMAGE_BITMAP, 0, 0, LR_DEFAULTCOLOR);
+	
 	InitWorkWnd(pPrInst->inf.hInstance, PrWndProc, TEXT("child"));
 	pPrInst->inf.hWnd_work = CreateWindow(TEXT("child"),
 		TEXT("Yard Simulator"),
@@ -71,71 +72,125 @@ BOOL CPublicRelation::InitWorkWnd(HINSTANCE hInst, WNDPROC WndProc, LPCTSTR lpsz
 
 LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 	BITMAP bmp_info;
-	static int bgw,bgh,mobw,mobh,mobx,moby, i_img;
+	static int mobw, mobh, mobx, moby, i_img;
+	static BOOL b_infchecked;
+	static HWND hinfchk;
 	int nFramX, nFramY, nCaption, scrw, scrh, winw, winh, winx, winy, mob_speed = 4;
 	HDC hdc;
+	static POINTS mpts;
+	TCHAR szBuf[64];
 
 	switch (msg) {
+
 	case WM_COMMAND: {
-	}break;
+		
+		switch (LOWORD(wp))	{
+		case IDC_CHK_INFDISP:
+			if (BST_CHECKED == SendMessage(hinfchk, BM_GETCHECK, 0, 0)) b_infchecked = TRUE;
+			else b_infchecked = FALSE;
+			SetFocus(hWnd);//親ウィンドウにフォーカスを持ってこないとキーイベントが入らない
+			break;
+		default:
+			break;
+		}
+		break;
+	}
 	case WM_CREATE: {
 		nFramX = GetSystemMetrics(SM_CXSIZEFRAME);//ウィンドウ周囲の幅
 		nFramY = GetSystemMetrics(SM_CYSIZEFRAME);//ウィンドウ周囲の高さ
 		nCaption = GetSystemMetrics(SM_CYCAPTION);//タイトルバーの高さ
 		scrw = GetSystemMetrics(SM_CXSCREEN);//プライマモニタの幅
 		scrh = GetSystemMetrics(SM_CYSCREEN);//プライマモニタの高さ
+		pPrInst->stdisp.hfont_inftext = CreateFont(12, 0, 0, 0, 0, FALSE, FALSE, FALSE, SHIFTJIS_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, PROOF_QUALITY, FIXED_PITCH | FF_MODERN, TEXT("Arial"));
 
-		hBmp_bg = (HBITMAP)LoadImage(pPrInst->inf.hInstance, TEXT("IDB_BACKGROUND"), IMAGE_BITMAP, 0, 0, LR_DEFAULTCOLOR);
-		GetObject(hBmp_bg, (int)sizeof(bmp_info), &bmp_info);
-		bgw = bmp_info.bmWidth; bgh = bmp_info.bmHeight;
-		hdc_mem_bg = CreateCompatibleDC(NULL);
-		SelectObject(hdc_mem_bg, hBmp_bg);
 
-		hBmp_mob = (HBITMAP)LoadImage(pPrInst->inf.hInstance, TEXT("IDB_HARAI0"), IMAGE_BITMAP, 0, 0, LR_DEFAULTCOLOR);
-		GetObject(hBmp_mob, (int)sizeof(bmp_info), &bmp_info);
+		pPrInst->stdisp.hBmp_bg = (HBITMAP)LoadImage(pPrInst->inf.hInstance, TEXT("IDB_BACKGROUND"), IMAGE_BITMAP, 0, 0, LR_DEFAULTCOLOR);
+		GetObject(pPrInst->stdisp.hBmp_bg, (int)sizeof(bmp_info), &bmp_info);
+		pPrInst->stdisp.bgw = bmp_info.bmWidth; pPrInst->stdisp.bgh = bmp_info.bmHeight;
+		pPrInst->stdisp.hdc_mem_bg = CreateCompatibleDC(NULL);
+		SelectObject(pPrInst->stdisp.hdc_mem_bg, pPrInst->stdisp.hBmp_bg);
+			
+
+		GetObject(pPrInst->stdisp.hBmp_mob[0], (int)sizeof(bmp_info), &bmp_info);
 		mobw = bmp_info.bmWidth; mobh = bmp_info.bmHeight;
-		hdc_mem_mob = CreateCompatibleDC(NULL);
-		SelectObject(hdc_mem_mob, hBmp_mob);
+		pPrInst->stdisp.hdc_mem_mob = CreateCompatibleDC(NULL);
+		SelectObject(pPrInst->stdisp.hdc_mem_mob, pPrInst->stdisp.hBmp_mob[0]);
 
-		hdc_mem0 = CreateCompatibleDC(NULL);
+		HBITMAP htmp = CreateCompatibleBitmap(pPrInst->stdisp.hdc_mem_bg, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh);
+		pPrInst->stdisp.hdc_mem_inf = CreateCompatibleDC(NULL);
+		SelectObject(pPrInst->stdisp.hdc_mem_inf, htmp);
+		PatBlt(pPrInst->stdisp.hdc_mem_inf,0,0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh,WHITENESS);
+		wsprintf(szBuf, TEXT("mouse x:%04d  y:%04d"), 0, 0);
+		SetTextColor(pPrInst->stdisp.hdc_mem_inf,RGB(128,128,128));
+		SelectObject(pPrInst->stdisp.hdc_mem_inf, pPrInst->stdisp.hfont_inftext);
+		TextOut(pPrInst->stdisp.hdc_mem_inf, pPrInst->stdisp.bgw - 200, 5, szBuf, lstrlen(szBuf));
+		DeleteObject(htmp);
+		
+		pPrInst->stdisp.hdc_mem0 = CreateCompatibleDC(NULL);
 		hdc = GetDC(hWnd);
-		HBITMAP hDummy = CreateCompatibleBitmap(hdc, bgw, bgh);
-		SelectObject(hdc_mem0, hDummy);
+		HBITMAP hDummy = CreateCompatibleBitmap(hdc, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh);
+		SelectObject(pPrInst->stdisp.hdc_mem0, hDummy);
 		ReleaseDC(hWnd, hdc);
 		DeleteObject(hDummy);
+		
+		BitBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_bg, 0, 0, SRCCOPY);
+		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, 16, 16, pPrInst->stdisp.hdc_mem_mob, 0, 0, 16, 16, RGB(255, 255, 255));
+		if(b_infchecked)TransparentBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_inf, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, RGB(255, 255, 255));
 
-		BitBlt(hdc_mem0, 0, 0, bgw, bgh, hdc_mem_bg, 0, 0, SRCCOPY);
-		TransparentBlt(hdc_mem0, mobx, moby, 16, 16, hdc_mem_mob, 0, 0, 16, 16, RGB(255, 255, 255));
-
-		winw = bgw + nFramX * 2; winh = bgh + nFramY * 2 + nCaption; winx = (scrw - winw) / 2; winy = (scrh - winh) / 2;
-		MoveWindow(hWnd, winx-20, winy-10, winw+40, winh+20, TRUE);
-
+		winw = pPrInst->stdisp.bgw + nFramX * 2; winh = pPrInst->stdisp.bgh + nFramY * 2 + nCaption; winx = (scrw - winw) / 2; winy = (scrh - winh) / 2;
+		MoveWindow(hWnd, winx - 20, winy - 10, winw + 40, winh + 20, TRUE);
+		
+		hinfchk=CreateWindow(L"button", TEXT(":inf"), WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,winw-40,5,45,15, hWnd, (HMENU)IDC_CHK_INFDISP, pPrInst->inf.hInstance, NULL);
+		
 		break;
 	}
 	case WM_PAINT: {
 		PAINTSTRUCT ps;
 		hdc = BeginPaint(hWnd, &ps);
-		BitBlt(hdc, 20, 0, bgw, bgh, hdc_mem0, 0, 0, SRCCOPY);
+		BitBlt(hdc, 20, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem0, 0, 0, SRCCOPY);
 		EndPaint(hWnd, &ps);
+		break;
+	}
+	case WM_MOUSEMOVE: {
+		mpts.x = LOWORD(lp); mpts.y = HIWORD(lp);
+		PatBlt(pPrInst->stdisp.hdc_mem_inf, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, WHITENESS);
+		wsprintf(szBuf, TEXT("mouse x:%04d  y:%04d"), mpts.x, mpts.y);
+		TextOut(pPrInst->stdisp.hdc_mem_inf, pPrInst->stdisp.bgw - 200, 5, szBuf, lstrlen(szBuf));
+		BitBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_bg, 0, 0, SRCCOPY);
+		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, 16, 16, pPrInst->stdisp.hdc_mem_mob, 0, 0, 16, 16, RGB(255, 255, 255));
+		if (b_infchecked)TransparentBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_inf, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, RGB(255, 255, 255));
+		InvalidateRect(pPrInst->inf.hWnd_work, NULL, FALSE);
+
+		break;
+	}
+	case WM_LBUTTONUP: {
+		mpts.x = LOWORD(lp); mpts.y = HIWORD(lp);
+		break;
+	}
+	case WM_LBUTTONDOWN: {
+		mpts.x = LOWORD(lp); mpts.y = HIWORD(lp);
 		break;
 	}
 	case WM_KEYDOWN: {
 		if (wp == VK_LEFT) { mobx -= mob_speed; if (mobx < 0)mobx = 0; }
-		else if(wp == VK_RIGHT) { mobx += mob_speed; if (mobx + 16 > bgw ) mobx = bgw-16; }
+		else if(wp == VK_RIGHT) { mobx += mob_speed; if (mobx + 16 > pPrInst->stdisp.bgw ) mobx = pPrInst->stdisp.bgw-16; }
 		else if (wp == VK_UP) { moby -= mob_speed; if (moby < 0) moby = 0; }
-		else if (wp == VK_DOWN) { moby += mob_speed; if (moby + 16 > bgh) moby = bgh - 16; }
+		else if (wp == VK_DOWN) { moby += mob_speed; if (moby + 16 > pPrInst->stdisp.bgh) moby = pPrInst->stdisp.bgh - 16; }
 		else return DefWindowProc(hWnd, msg, wp, lp);
 
 		i_img += 1; if (i_img > 3)i_img = 1;
 
-		BitBlt(hdc_mem0, 0, 0, bgw, bgh, hdc_mem_bg, 0, 0, SRCCOPY);
-		TransparentBlt(hdc_mem0, mobx, moby, 16, 16, hdc_mem_mob, i_img * 16 , 0, 16, 16, RGB(255, 255, 255));
-		InvalidateRect(hWnd,NULL,FALSE);
+		BitBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_bg, 0, 0, SRCCOPY);
+		AlphaBlend(pPrInst->stdisp.hdc_mem0, mobx, moby, 16, 16, pPrInst->stdisp.hdc_mem_mob, i_img * 16, 0, 16, 16, pPrInst->stdisp.bf);
+		//		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, 16, 16, pPrInst->stdisp.hdc_mem_mob, i_img * 16, 0, 16, 16, RGB(255, 255, 255));
+		if (b_infchecked)TransparentBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_inf, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, RGB(255, 255, 255));
+		InvalidateRect(pPrInst->inf.hWnd_work, NULL, FALSE);
 
 		break;
 	}
 	case WM_DESTROY: {
 		pPrInst->inf.hWnd_work = NULL;
+		pPrInst->del_objects();
 		break;
 	}
 	default:
@@ -389,3 +444,22 @@ void CPublicRelation::set_panel_tip_txt()
 	SetWindowText(GetDlgItem(inf.hWnd_opepane, IDC_STATIC_TASKSET3), wstr.c_str());
 	SetWindowText(GetDlgItem(inf.hWnd_opepane, IDC_STATIC_TASKSET4), wstr_type.c_str());
 }
+
+void CPublicRelation::del_objects() {
+	DeleteObject(stdisp.hBmp_bg);
+	for (int i = 0; i < NUM_OF_MOB; i++) {
+		if (stdisp.hBmp_mob[i] != NULL) DeleteObject(stdisp.hBmp_mob[i]);
+	}
+	DeleteObject(stdisp.hdc_mem_bg);
+	DeleteObject(stdisp.hdc_mem_mob);
+	DeleteObject(stdisp.hdc_mem_inf);
+	DeleteObject(stdisp.hfont_inftext);
+};
+
+void CPublicRelation::set_image(BOOL req_inf) {
+	BitBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_bg, 0, 0, SRCCOPY);
+//	TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, 16, 16, pPrInst->stdisp.hdc_mem_mob, i_img * 16, 0, 16, 16, RGB(255, 255, 255));
+	TransparentBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_inf, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, RGB(255, 255, 255));
+	InvalidateRect(pPrInst->inf.hWnd_work, NULL, FALSE);
+
+};

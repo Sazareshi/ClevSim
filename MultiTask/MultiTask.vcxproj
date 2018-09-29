@@ -164,6 +164,7 @@
     <ClInclude Include="Communicator.h" />
     <ClInclude Include="CSock.h" />
     <ClInclude Include="MCtransaction.h" />
+    <ClInclude Include="mob.h" />
     <ClInclude Include="NamedPipe.h" />
     <ClInclude Include="PublicRelation.h" />
     <ClInclude Include="ThreadObj.h" />
@@ -179,6 +180,7 @@
     <ClCompile Include="Communicator.cpp" />
     <ClCompile Include="CSock.cpp" />
     <ClCompile Include="MCtransaction.cpp" />
+    <ClCompile Include="mob.cpp" />
     <ClCompile Include="NamedPipe.cpp" />
     <ClCompile Include="PublicRelation.cpp" />
     <ClCompile Include="ThreadObj.cpp" />
@@ -200,6 +202,7 @@
     <Image Include="bmp\bitmap3.bmp" />
     <Image Include="bmp\com.bmp" />
     <Image Include="bmp\coqu.bmp" />
+    <Image Include="bmp\crash.bmp" />
     <Image Include="bmp\demi.bmp" />
     <Image Include="bmp\enntoma.bmp" />
     <Image Include="bmp\harai0.bmp" />

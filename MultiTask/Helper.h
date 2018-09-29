@@ -24,4 +24,5 @@ public:
 
 	wstring warray2wstr16(WORD* w, int len);
 	wstring carray2wstr16(char* c, int len);
+
 };

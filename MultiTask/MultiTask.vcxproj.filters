@@ -54,6 +54,9 @@
     <ClInclude Include="Actor.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="mob.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -87,6 +90,9 @@
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Actor.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="mob.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
@@ -130,6 +136,9 @@
       <Filter>リソース ファイル</Filter>
     </Image>
     <Image Include="bmp\harai2.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="bmp\crash.bmp">
       <Filter>リソース ファイル</Filter>
     </Image>
   </ItemGroup>

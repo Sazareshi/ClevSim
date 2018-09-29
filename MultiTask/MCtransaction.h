@@ -143,7 +143,7 @@ typedef struct _stMCTransactionMng
 	BOOL thread_end;
 	HWND hmsg_listbox;			//メッセージ表示用リストボックスハンドル
 	WORD if_index;//全インターフェイスの中の識別インデックス
-}MCMsgMng, LPMCMsgMng;
+}MCMsgMng, *LPMCMsgMng;
 
 class CMCtransaction
 {
