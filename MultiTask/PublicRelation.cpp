@@ -493,28 +493,31 @@ void CPublicRelation::update_disp() {
 	static int i_img2;
 	int mobw, mobh, mobx, moby;
 
-	i_img2 += 1; if (i_img2 > 3)i_img2 = 1;
+	//i_img2 += 1; if (i_img2 > 3)i_img2 = 1;
 
 	BitBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_bg, 0, 0, SRCCOPY);
 
 	SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_CRUSH][0]->hBmp_mob);
 	for (int i = 0; i < NUM_OF_CRUSH; i++) {
+		i_img2 = pstMobs->pmobs[MOB_ID_CRUSH][i]->status;
 		mobx = pstMobs->pmobs[MOB_ID_CRUSH][i]->area.x;	moby = pstMobs->pmobs[MOB_ID_CRUSH][i]->area.y;
-		mobw = pstMobs->pmobs[MOB_ID_CRUSH][i]->area.bmpw;	mobh = pstMobs->pmobs[MOB_ID_CRUSH][i]->area.bmph;
+		mobw = pstMobs->pmobs[MOB_ID_CRUSH][i]->bmpw;	mobh = pstMobs->pmobs[MOB_ID_CRUSH][i]->bmph;
 		//AlphaBlend(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, pPrInst->stdisp.bf);
 		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
 	}
 	SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_HARAI][0]->hBmp_mob);
 	for (int i = 0; i < NUM_OF_HARAI; i++) {
+		i_img2 = pstMobs->pmobs[MOB_ID_HARAI][i]->status;
 		mobx = pstMobs->pmobs[MOB_ID_HARAI][i]->area.x;	moby = pstMobs->pmobs[MOB_ID_HARAI][i]->area.y;
-		mobw = pstMobs->pmobs[MOB_ID_HARAI][i]->area.bmpw;	mobh = pstMobs->pmobs[MOB_ID_HARAI][i]->area.bmph;
+		mobw = pstMobs->pmobs[MOB_ID_HARAI][i]->bmpw;	mobh = pstMobs->pmobs[MOB_ID_HARAI][i]->bmph;
 		//	AlphaBlend(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, pPrInst->stdisp.bf);
 		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
 	}
 	SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_CUL][0]->hBmp_mob);
 	for (int i = 0; i < NUM_OF_CUL; i++) {
+		i_img2 = pstMobs->pmobs[MOB_ID_CUL][i]->status;
 		mobx = pstMobs->pmobs[MOB_ID_CUL][i]->area.x;	moby = pstMobs->pmobs[MOB_ID_CUL][i]->area.y;
-		mobw = pstMobs->pmobs[MOB_ID_CUL][i]->area.bmpw;	mobh = pstMobs->pmobs[MOB_ID_CUL][i]->area.bmph;
+		mobw = pstMobs->pmobs[MOB_ID_CUL][i]->bmpw;	mobh = pstMobs->pmobs[MOB_ID_CUL][i]->bmph;
 		//AlphaBlend(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, pPrInst->stdisp.bf);
 		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
 	}

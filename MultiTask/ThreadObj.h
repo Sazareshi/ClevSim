@@ -7,6 +7,7 @@
 using namespace std;
 
 extern LPWSTR pszInifile;
+extern wstring wstrPathExe;
 
 //#ƒ^ƒXƒNğŒİ’è•”
 #define TARGET_RESOLUTION			1

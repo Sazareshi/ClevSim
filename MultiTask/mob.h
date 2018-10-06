@@ -16,9 +16,10 @@
 
 #define MOB_STAT_IDLE			0
 #define MOB_STAT_FAULT			0xFF
-#define MOB_STAT_ACT1			1
-#define MOB_STAT_ACT2			2
-#define MOB_STAT_ACT3			3
+#define MOB_STAT_ACT0			1
+#define MOB_STAT_ACT1			2
+#define MOB_STAT_ACT2			3
+#define MOB_STAT_ACT3			4
 
 #define MOB_TYPE_BC			TEXT("BC0000")
 #define MOB_TYPE_HARAI		TEXT("HARAI0")
@@ -29,7 +30,6 @@
 typedef struct _stRECTM
 {
 	LONG x;	LONG y;	LONG w;	LONG h;
-	LONG bmpw; LONG bmph;
 }RECTM, *LPLECTM;
 
 class CMob
@@ -41,9 +41,12 @@ public:
 public:
 	DWORD ID;
 	TCHAR type[8];
-	TCHAR name[8];
+	TCHAR name[16];
 	RECTM area;
+	RECTM area_real;
 	HBITMAP hBmp_mob;
+	LONG bmpw; 
+	LONG bmph;
 	DWORD status;
 	void setpos(LONG x, LONG y) { area.x = x; area.y = y; return; }
 	void setpos(int x, int y) { area.x = x; area.y = y; return; }
