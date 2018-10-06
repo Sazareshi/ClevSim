@@ -8,6 +8,8 @@
 #define	ON				1		// ON
 #define	OFF				0		// OFF
 
+#define	SPLIT_TOKEN_SIZE	128	// 
+
 using namespace std;
 
 class CHelper
@@ -24,5 +26,7 @@ public:
 
 	wstring warray2wstr16(WORD* w, int len);
 	wstring carray2wstr16(char* c, int len);
+
+	void splitbydelimiter(TCHAR token[][SPLIT_TOKEN_SIZE], PTCHAR pwstr, int size, TCHAR delimiter);
 
 };

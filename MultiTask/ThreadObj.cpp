@@ -37,7 +37,8 @@ unsigned CThreadObj::run(void *param) {
 
 	while (this->inf.thread_com != TERMINATE_THREAD){
 		inf.event_triggered=WaitForMultipleObjects(inf.n_active_events,((CThreadObj*)param)->inf.hevents,FALSE, INFINITE);//メインスレッドからのSIGNAL状態待ち
-
+		if (inf.thread_com == TERMINATE_THREAD)
+			return 0;
 		//処理周期確認用
 		DWORD start_time = timeGetTime();
 		inf.period = start_time - inf.start_time;

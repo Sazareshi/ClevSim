@@ -110,8 +110,7 @@ int CHelper::cmnCreateShmem(LPCTSTR szName, DWORD dwSize, HANDLE* hMapFile, LPVO
 	*hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, highByte, lowByte, szName);
 	if (*hMapFile == NULL) return(ERR_SHMEM_CREATE);
 	else {
-		if (GetLastError() == ERROR_ALREADY_EXISTS)
-			*dwExist = ON;
+		if (GetLastError() == ERROR_ALREADY_EXISTS)	*dwExist = ON;
 		// ファイル・ビューを作成(共有メモリのハンドル, アクセスの種類, ファイル オフセット(上位32ビット), ファイル オフセット(下位32ビット), マップするバイト数→0はファイルﾙマッピングオブジェクト全体)
 		*pMapTop = MapViewOfFile(*hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, dwSize);
 		if (*pMapTop == NULL) {
@@ -172,3 +171,23 @@ wstring CHelper::carray2wstr16(char* c, int len) {
 	}
 	return ws.str();
 };
+
+
+/****************************************************************************************************************************************************
+文字列を区切り文字でtokenに分割する
+
+****************************************************************************************************************************************************/
+void CHelper::splitbydelimiter(TCHAR token[][SPLIT_TOKEN_SIZE], PTCHAR wstr, int size, TCHAR delimiter) {
+	int ptr = 0;
+	int idx = 0;
+
+	for (unsigned int i = 0; i < lstrlen(wstr); i++) {
+		if ((*(wstr + i) != delimiter) && (*(wstr + i) != TEXT('\r')) && (*(wstr + i) != TEXT('\n')))	token[idx][ptr++] = *(wstr + i);
+		else {
+			token[idx++][ptr] = TEXT('\0');
+			ptr = 0;
+			if (idx >= size)break;
+		}
+	}
+
+}

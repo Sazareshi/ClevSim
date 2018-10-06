@@ -1,19 +1,20 @@
 #include "stdafx.h"
 #include "PublicRelation.h"
+#include "Smem.h"
 
 
-CPublicRelation::CPublicRelation()
-{
-}
+CPublicRelation::CPublicRelation(){}
 
-
-CPublicRelation::~CPublicRelation()
-{
-}
+CPublicRelation::~CPublicRelation(){}
 
 CPublicRelation* CPublicRelation:: pPrInst;
 
+LPSTMobs CPublicRelation::pstMobs;
+HANDLE CPublicRelation::hmue_mobs;
+
 PR_DISP CPublicRelation::stdisp;
+
+BOOL CPublicRelation::b_infchecked;
 
 void CPublicRelation::init_task(void* pobj) {
 
@@ -42,8 +43,12 @@ void CPublicRelation::init_task(void* pobj) {
 	ShowWindow(pPrInst->inf.hWnd_work, SW_SHOW);
 	UpdateWindow(pPrInst->inf.hWnd_work);
 
+	///# 共有メモリ関連セット
+	pstMobs = (LPSTMobs)&(((P_ST_SMEM_FORMAT)inf.pSmem)->stSmem.mobs);
+	hmue_mobs = inf.hSmem_mutex[MUTEXID_MOBS];
+	
 	///# INIファイル読み込み
-	wchar_t tbuf[32];
+//	wchar_t tbuf[32];
 //	DWORD	str_num = GetPrivateProfileString(COMM_SECT_OF_INIFILE, MC_PROTOKEY_OF_TYPE, L"C", tbuf, sizeof(tbuf), PATH_OF_INIFILE);
 
 }
@@ -70,10 +75,20 @@ BOOL CPublicRelation::InitWorkWnd(HINSTANCE hInst, WNDPROC WndProc, LPCTSTR lpsz
 	return RegisterClassExW(&wc);
 }
 
+void CPublicRelation::routine_work(void *param) {
+
+	//COMMON
+	ws << L"PR work activated!" << *(inf.psys_counter); tweet2owner(ws.str()); ws.str(L""); ws.clear();
+
+	SendMessage(pPrInst->inf.hWnd_work, MSGID_UPDATE_DISP_PR, 0, 0);
+
+	return;
+};
+
 LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 	BITMAP bmp_info;
 	static int mobw, mobh, mobx, moby, i_img;
-	static BOOL b_infchecked;
+
 	static HWND hinfchk;
 	int nFramX, nFramY, nCaption, scrw, scrh, winw, winh, winx, winy, mob_speed = 4;
 	HDC hdc;
@@ -84,7 +99,7 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 
 	case WM_COMMAND: {
 		
-		switch (LOWORD(wp))	{
+		switch (LOWORD(wp)) {
 		case IDC_CHK_INFDISP:
 			if (BST_CHECKED == SendMessage(hinfchk, BM_GETCHECK, 0, 0)) b_infchecked = TRUE;
 			else b_infchecked = FALSE;
@@ -95,6 +110,11 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 		}
 		break;
 	}
+
+	case MSGID_UPDATE_DISP_PR: {
+		update_disp();
+	}break;
+
 	case WM_CREATE: {
 		nFramX = GetSystemMetrics(SM_CXSIZEFRAME);//ウィンドウ周囲の幅
 		nFramY = GetSystemMetrics(SM_CYSIZEFRAME);//ウィンドウ周囲の高さ
@@ -111,10 +131,10 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 		SelectObject(pPrInst->stdisp.hdc_mem_bg, pPrInst->stdisp.hBmp_bg);
 			
 
-		GetObject(pPrInst->stdisp.hBmp_mob[0], (int)sizeof(bmp_info), &bmp_info);
+		GetObject(pPrInst->stdisp.hBmp_mob[MOB_ID_CRUSH], (int)sizeof(bmp_info), &bmp_info);
 		mobw = bmp_info.bmWidth; mobh = bmp_info.bmHeight;
 		pPrInst->stdisp.hdc_mem_mob = CreateCompatibleDC(NULL);
-		SelectObject(pPrInst->stdisp.hdc_mem_mob, pPrInst->stdisp.hBmp_mob[0]);
+		SelectObject(pPrInst->stdisp.hdc_mem_mob, pPrInst->stdisp.hBmp_mob[MOB_ID_CRUSH]);
 
 		HBITMAP htmp = CreateCompatibleBitmap(pPrInst->stdisp.hdc_mem_bg, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh);
 		pPrInst->stdisp.hdc_mem_inf = CreateCompatibleDC(NULL);
@@ -134,7 +154,7 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 		DeleteObject(hDummy);
 		
 		BitBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_bg, 0, 0, SRCCOPY);
-		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, 16, 16, pPrInst->stdisp.hdc_mem_mob, 0, 0, 16, 16, RGB(255, 255, 255));
+		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobh, mobh, pPrInst->stdisp.hdc_mem_mob, 0, 0, mobh, mobh, RGB(255, 255, 255));
 		if(b_infchecked)TransparentBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_inf, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, RGB(255, 255, 255));
 
 		winw = pPrInst->stdisp.bgw + nFramX * 2; winh = pPrInst->stdisp.bgh + nFramY * 2 + nCaption; winx = (scrw - winw) / 2; winy = (scrh - winh) / 2;
@@ -146,21 +166,26 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 	}
 	case WM_PAINT: {
 		PAINTSTRUCT ps;
+
 		hdc = BeginPaint(hWnd, &ps);
 		BitBlt(hdc, 20, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem0, 0, 0, SRCCOPY);
 		EndPaint(hWnd, &ps);
 		break;
 	}
 	case WM_MOUSEMOVE: {
-		mpts.x = LOWORD(lp); mpts.y = HIWORD(lp);
-		PatBlt(pPrInst->stdisp.hdc_mem_inf, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, WHITENESS);
+		mpts.x = LOWORD(lp); mpts.y = HIWORD(lp);//マウス位置
+		PatBlt(pPrInst->stdisp.hdc_mem_inf, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, WHITENESS);//情報画面一旦クリア
 		wsprintf(szBuf, TEXT("mouse x:%04d  y:%04d"), mpts.x, mpts.y);
-		TextOut(pPrInst->stdisp.hdc_mem_inf, pPrInst->stdisp.bgw - 200, 5, szBuf, lstrlen(szBuf));
-		BitBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_bg, 0, 0, SRCCOPY);
-		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, 16, 16, pPrInst->stdisp.hdc_mem_mob, 0, 0, 16, 16, RGB(255, 255, 255));
-		if (b_infchecked)TransparentBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_inf, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, RGB(255, 255, 255));
-		InvalidateRect(pPrInst->inf.hWnd_work, NULL, FALSE);
+		TextOut(pPrInst->stdisp.hdc_mem_inf, pPrInst->stdisp.bgw - 200, 5, szBuf, lstrlen(szBuf));//マウス位置情報書き込み
 
+	/*
+		BitBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_bg, 0, 0, SRCCOPY);
+		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobh, mobh, pPrInst->stdisp.hdc_mem_mob, i_img * mobh, 0, mobh, mobh, RGB(255, 255, 255));
+		if (b_infchecked)TransparentBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_inf, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, RGB(255, 255, 255));
+
+		InvalidateRect(pPrInst->inf.hWnd_work, NULL, FALSE);
+	*/
+		update_disp();
 		break;
 	}
 	case WM_LBUTTONUP: {
@@ -173,15 +198,15 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 	}
 	case WM_KEYDOWN: {
 		if (wp == VK_LEFT) { mobx -= mob_speed; if (mobx < 0)mobx = 0; }
-		else if(wp == VK_RIGHT) { mobx += mob_speed; if (mobx + 16 > pPrInst->stdisp.bgw ) mobx = pPrInst->stdisp.bgw-16; }
+		else if(wp == VK_RIGHT) { mobx += mob_speed; if (mobx + mobh > pPrInst->stdisp.bgw ) mobx = pPrInst->stdisp.bgw- mobh; }
 		else if (wp == VK_UP) { moby -= mob_speed; if (moby < 0) moby = 0; }
-		else if (wp == VK_DOWN) { moby += mob_speed; if (moby + 16 > pPrInst->stdisp.bgh) moby = pPrInst->stdisp.bgh - 16; }
+		else if (wp == VK_DOWN) { moby += mob_speed; if (moby + mobh > pPrInst->stdisp.bgh) moby = pPrInst->stdisp.bgh - mobh; }
 		else return DefWindowProc(hWnd, msg, wp, lp);
 
 		i_img += 1; if (i_img > 3)i_img = 1;
 
 		BitBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_bg, 0, 0, SRCCOPY);
-		AlphaBlend(pPrInst->stdisp.hdc_mem0, mobx, moby, 16, 16, pPrInst->stdisp.hdc_mem_mob, i_img * 16, 0, 16, 16, pPrInst->stdisp.bf);
+		AlphaBlend(pPrInst->stdisp.hdc_mem0, mobx, moby, mobh, mobh, pPrInst->stdisp.hdc_mem_mob, i_img * mobh, 0, mobh, mobh, pPrInst->stdisp.bf);
 		//		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, 16, 16, pPrInst->stdisp.hdc_mem_mob, i_img * 16, 0, 16, 16, RGB(255, 255, 255));
 		if (b_infchecked)TransparentBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_inf, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, RGB(255, 255, 255));
 		InvalidateRect(pPrInst->inf.hWnd_work, NULL, FALSE);
@@ -461,5 +486,40 @@ void CPublicRelation::set_image(BOOL req_inf) {
 //	TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, 16, 16, pPrInst->stdisp.hdc_mem_mob, i_img * 16, 0, 16, 16, RGB(255, 255, 255));
 	TransparentBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_inf, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, RGB(255, 255, 255));
 	InvalidateRect(pPrInst->inf.hWnd_work, NULL, FALSE);
-
+	return;
 };
+
+void CPublicRelation::update_disp() {
+	static int i_img2;
+	int mobw, mobh, mobx, moby;
+
+	i_img2 += 1; if (i_img2 > 3)i_img2 = 1;
+
+	BitBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_bg, 0, 0, SRCCOPY);
+
+	SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_CRUSH][0]->hBmp_mob);
+	for (int i = 0; i < NUM_OF_CRUSH; i++) {
+		mobx = pstMobs->pmobs[MOB_ID_CRUSH][i]->area.x;	moby = pstMobs->pmobs[MOB_ID_CRUSH][i]->area.y;
+		mobw = pstMobs->pmobs[MOB_ID_CRUSH][i]->area.bmpw;	mobh = pstMobs->pmobs[MOB_ID_CRUSH][i]->area.bmph;
+		//AlphaBlend(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, pPrInst->stdisp.bf);
+		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
+	}
+	SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_HARAI][0]->hBmp_mob);
+	for (int i = 0; i < NUM_OF_HARAI; i++) {
+		mobx = pstMobs->pmobs[MOB_ID_HARAI][i]->area.x;	moby = pstMobs->pmobs[MOB_ID_HARAI][i]->area.y;
+		mobw = pstMobs->pmobs[MOB_ID_HARAI][i]->area.bmpw;	mobh = pstMobs->pmobs[MOB_ID_HARAI][i]->area.bmph;
+		//	AlphaBlend(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, pPrInst->stdisp.bf);
+		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
+	}
+	SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_CUL][0]->hBmp_mob);
+	for (int i = 0; i < NUM_OF_CUL; i++) {
+		mobx = pstMobs->pmobs[MOB_ID_CUL][i]->area.x;	moby = pstMobs->pmobs[MOB_ID_CUL][i]->area.y;
+		mobw = pstMobs->pmobs[MOB_ID_CUL][i]->area.bmpw;	mobh = pstMobs->pmobs[MOB_ID_CUL][i]->area.bmph;
+		//AlphaBlend(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, pPrInst->stdisp.bf);
+		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
+	}
+	if (b_infchecked)TransparentBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_inf, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, RGB(255, 255, 255));
+	InvalidateRect(pPrInst->inf.hWnd_work, NULL, FALSE);
+	return;
+};
+;

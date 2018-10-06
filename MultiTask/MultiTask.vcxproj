@@ -167,6 +167,7 @@
     <ClInclude Include="mob.h" />
     <ClInclude Include="NamedPipe.h" />
     <ClInclude Include="PublicRelation.h" />
+    <ClInclude Include="Smem.h" />
     <ClInclude Include="ThreadObj.h" />
     <ClInclude Include="Helper.h" />
     <ClInclude Include="MultiTaskMain.h" />
@@ -183,6 +184,7 @@
     <ClCompile Include="mob.cpp" />
     <ClCompile Include="NamedPipe.cpp" />
     <ClCompile Include="PublicRelation.cpp" />
+    <ClCompile Include="Smem.cpp" />
     <ClCompile Include="ThreadObj.cpp" />
     <ClCompile Include="Helper.cpp" />
     <ClCompile Include="MultiTaskMain.cpp" />
@@ -203,6 +205,7 @@
     <Image Include="bmp\com.bmp" />
     <Image Include="bmp\coqu.bmp" />
     <Image Include="bmp\crash.bmp" />
+    <Image Include="bmp\CUL.bmp" />
     <Image Include="bmp\demi.bmp" />
     <Image Include="bmp\enntoma.bmp" />
     <Image Include="bmp\harai0.bmp" />

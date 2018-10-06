@@ -1,6 +1,6 @@
 #pragma once
 #include "ThreadObj.h"
-#include "Actor.h"
+#include "mob.h"
 #include <windowsx.h> //コモンコントロール用
 #include <commctrl.h> //コモンコントロール用
 
@@ -13,7 +13,9 @@
 #define PR_WND_Y				0
 
 #define NUM_OF_MOB				32
-#define MOB_DISP_ALPHA			144 //透過度　0-255　0：透明
+#define MOB_DISP_ALPHA			160 //透過度　0-255　0：透明
+
+#define MSGID_UPDATE_DISP_PR	5001
 
 
 typedef struct _stPR_DISP
@@ -42,11 +44,19 @@ public:
 	static PR_DISP stdisp;
 	static CPublicRelation* pPrInst;
 
+	void routine_work(void *param);
+
 	void set_panel_tip_txt();//タブパネルのStaticテキストを設定
+
+	static LPSTMobs pstMobs;
+	static HANDLE hmue_mobs;
+
 private:
 	BOOL InitWorkWnd(HINSTANCE hInst, WNDPROC WndProc, LPCTSTR lpzClassName);
 	static LRESULT CALLBACK PrWndProc(HWND, UINT, WPARAM, LPARAM);
 	void del_objects();
 	void set_image(BOOL req_inf);
-};
+	static void update_disp();
+	static BOOL b_infchecked;
 
+};

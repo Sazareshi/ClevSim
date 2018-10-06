@@ -57,6 +57,9 @@
     <ClInclude Include="mob.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="Smem.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -93,6 +96,9 @@
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="mob.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Smem.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
@@ -139,6 +145,9 @@
       <Filter>リソース ファイル</Filter>
     </Image>
     <Image Include="bmp\crash.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="bmp\CUL.bmp">
       <Filter>リソース ファイル</Filter>
     </Image>
   </ItemGroup>

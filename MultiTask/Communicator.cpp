@@ -56,7 +56,7 @@ void CCommunicator::routine_work(void *param) {
 	//PulseEvent(npip_handler.ifmng.hevent_testsend);
 
 	//COMMON
-	ws << L"Routine work activated!" << *(inf.psys_counter); tweet2owner(ws.str()); ws.str(L""); ws.clear();
+	ws << L"COMM work activated!" << *(inf.psys_counter); tweet2owner(ws.str()); ws.str(L""); ws.clear();
 
 };
 

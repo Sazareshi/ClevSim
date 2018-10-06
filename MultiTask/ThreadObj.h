@@ -32,6 +32,10 @@ extern LPWSTR pszInifile;
 
 #define ID_TIMER_EVENT			0	//タイマー用イベント配列の位置
 
+#define ID_UPDATE_DATA			4500 //他タスクへのメッセージID
+
+#define NUM_OF_SMEM_TYPE		4//共有タイプ数
+
 
 /***********************************************************************
 タスクオブジェクトの個別管理情報構造体
@@ -73,7 +77,7 @@ typedef struct {
 	HINSTANCE		hInstance;
 
 	PVOID			pSmem;							//自管理共有メモリのポインタ
-	HANDLE			hSmem_mutex;						//共有メモリ管理用ミューテックのハンドル
+	HANDLE			hSmem_mutex[NUM_OF_SMEM_TYPE];	//共有メモリ管理用ミューテックのハンドル
 
     //-操作パネル関連
 	int				cnt_PNLlist_msg = 0;			//パネルメッセージリストのカウント数
