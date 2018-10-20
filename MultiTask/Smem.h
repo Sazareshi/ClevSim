@@ -1,12 +1,15 @@
 #pragma once
 
 #include "mob.h"
+#include "panel.h"
 #define MUTEXID_MOBS					0
 
 
 //共有メモリの構成定義
 typedef struct smembpdy_tag {
+	ULONG simtime_ms;//シミュレーション上での時間
 	STMobs mobs;
+	ST_PanelOutSmem panels;
 }ST_SMEM_BODY, *P_ST_SMEM_BODY;
 
 

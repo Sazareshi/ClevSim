@@ -65,7 +65,6 @@ void CThreadObj::routine_work(void *param) {
 
 };
 
-
 void CThreadObj::optional_work1(void *param) {
 	ws << L"Working on option1!" << *(inf.psys_counter);
 	tweet2owner(ws.str()); ws.str(L""); ws.clear();
@@ -109,7 +108,7 @@ void CThreadObj::txout2msg_listbox(std::wstring str) {
 	item.iSubItem = 0;									// サブアイテムの番号
 	ListView_SetItem(inf.hWnd_msgList, &item);
 
-//	InvalidateRect(inf.hWnd_msgList, NULL, TRUE);
+//	InvalidateCUBE(inf.hWnd_msgList, NULL, TRUE);
 	inf.cnt_PNLlist_msg++;
 
 };

@@ -163,9 +163,11 @@
     <ClInclude Include="Actor.h" />
     <ClInclude Include="Communicator.h" />
     <ClInclude Include="CSock.h" />
+    <ClInclude Include="EParts.h" />
     <ClInclude Include="MCtransaction.h" />
     <ClInclude Include="mob.h" />
     <ClInclude Include="NamedPipe.h" />
+    <ClInclude Include="Panel.h" />
     <ClInclude Include="PublicRelation.h" />
     <ClInclude Include="Smem.h" />
     <ClInclude Include="ThreadObj.h" />
@@ -180,9 +182,11 @@
     <ClCompile Include="Actor.cpp" />
     <ClCompile Include="Communicator.cpp" />
     <ClCompile Include="CSock.cpp" />
+    <ClCompile Include="EParts.cpp" />
     <ClCompile Include="MCtransaction.cpp" />
     <ClCompile Include="mob.cpp" />
     <ClCompile Include="NamedPipe.cpp" />
+    <ClCompile Include="Panel.cpp" />
     <ClCompile Include="PublicRelation.cpp" />
     <ClCompile Include="Smem.cpp" />
     <ClCompile Include="ThreadObj.cpp" />
@@ -207,10 +211,12 @@
     <Image Include="bmp\crash.bmp" />
     <Image Include="bmp\CUL.bmp" />
     <Image Include="bmp\demi.bmp" />
+    <Image Include="bmp\e-room.bmp" />
     <Image Include="bmp\enntoma.bmp" />
     <Image Include="bmp\harai0.bmp" />
     <Image Include="bmp\harai1.bmp" />
     <Image Include="bmp\harai2.bmp" />
+    <Image Include="bmp\tripper.bmp" />
     <Image Include="bmp\yu.bmp" />
     <Image Include="MultiTask.ico" />
     <Image Include="small.ico" />

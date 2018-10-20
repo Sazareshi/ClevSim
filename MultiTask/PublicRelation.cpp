@@ -183,7 +183,7 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobh, mobh, pPrInst->stdisp.hdc_mem_mob, i_img * mobh, 0, mobh, mobh, RGB(255, 255, 255));
 		if (b_infchecked)TransparentBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_inf, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, RGB(255, 255, 255));
 
-		InvalidateRect(pPrInst->inf.hWnd_work, NULL, FALSE);
+		InvalidateCUBE(pPrInst->inf.hWnd_work, NULL, FALSE);
 	*/
 		update_disp();
 		break;
@@ -505,6 +505,7 @@ void CPublicRelation::update_disp() {
 		//AlphaBlend(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, pPrInst->stdisp.bf);
 		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
 	}
+	
 	SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_HARAI][0]->hBmp_mob);
 	for (int i = 0; i < NUM_OF_HARAI; i++) {
 		i_img2 = pstMobs->pmobs[MOB_ID_HARAI][i]->status;
@@ -513,6 +514,7 @@ void CPublicRelation::update_disp() {
 		//	AlphaBlend(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, pPrInst->stdisp.bf);
 		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
 	}
+	
 	SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_CUL][0]->hBmp_mob);
 	for (int i = 0; i < NUM_OF_CUL; i++) {
 		i_img2 = pstMobs->pmobs[MOB_ID_CUL][i]->status;
@@ -521,6 +523,25 @@ void CPublicRelation::update_disp() {
 		//AlphaBlend(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, pPrInst->stdisp.bf);
 		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
 	}
+
+	SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_TRIPPER][0]->hBmp_mob);
+	for (int i = 0; i < NUM_OF_TRIPPER; i++) {
+		i_img2 = pstMobs->pmobs[MOB_ID_TRIPPER][i]->status;
+		mobx = pstMobs->pmobs[MOB_ID_TRIPPER][i]->area.x;	moby = pstMobs->pmobs[MOB_ID_TRIPPER][i]->area.y;
+		mobw = pstMobs->pmobs[MOB_ID_TRIPPER][i]->bmpw;	mobh = pstMobs->pmobs[MOB_ID_TRIPPER][i]->bmph;
+		//AlphaBlend(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, pPrInst->stdisp.bf);
+		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
+	}
+
+	SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_EROOM][0]->hBmp_mob);
+	for (int i = 0; i < NUM_OF_EROOM; i++) {
+		i_img2 = pstMobs->pmobs[MOB_ID_EROOM][i]->status;
+		mobx = pstMobs->pmobs[MOB_ID_EROOM][i]->area.x;	moby = pstMobs->pmobs[MOB_ID_EROOM][i]->area.y;
+		mobw = pstMobs->pmobs[MOB_ID_EROOM][i]->bmpw;	mobh = pstMobs->pmobs[MOB_ID_EROOM][i]->bmph;
+		//AlphaBlend(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, pPrInst->stdisp.bf);
+		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
+	}
+
 	if (b_infchecked)TransparentBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_inf, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, RGB(255, 255, 255));
 	InvalidateRect(pPrInst->inf.hWnd_work, NULL, FALSE);
 	return;

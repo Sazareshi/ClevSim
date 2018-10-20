@@ -29,6 +29,7 @@ typedef struct _stPR_DISP
 	HDC hdc_mem_inf;				//文字画面メモリデバイスコンテキスト
 	HFONT hfont_inftext;			//テキスト用フォント
 	BLENDFUNCTION bf;				//半透過設定構造体
+	CMob * mobmap[PR_WND_W / 8 + 1][PR_WND_H / 8 + 1];//UI情報取得用Map
 
 }PR_DISP, *LPPR_DISP;
 

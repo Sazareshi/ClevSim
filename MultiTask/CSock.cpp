@@ -354,7 +354,7 @@ HRESULT CSock::GetSockMsg(int nError, LPWSTR pszMessage, DWORD dwSize)
 	case WSAENAMETOOLONG:		lstrcat(pszMessage, L"File name too long");								break;
 	case WSAEHOSTDOWN:			lstrcat(pszMessage, L"Host is down");										break;
 	case WSAEHOSTUNREACH:		lstrcat(pszMessage, L"No route to host");									break;
-	case WSAENOTEMPTY:			lstrcat(pszMessage, L"Directory not empty");								break;
+	case WSAENOTEMPTY:			lstrcat(pszMessage, L"DiCUBEory not empty");								break;
 	case WSAEPROCLIM:			lstrcat(pszMessage, L"Too many processes");								break;
 	case WSAEUSERS:				lstrcat(pszMessage, L"Too many users");									break;
 	case WSAEDQUOT:				lstrcat(pszMessage, L"Disc quota exceeded");								break;
