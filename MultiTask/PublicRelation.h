@@ -61,3 +61,5 @@ private:
 	static BOOL b_infchecked;
 
 };
+
+#define BC_HEAD_SIZE	8

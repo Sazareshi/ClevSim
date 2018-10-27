@@ -74,6 +74,21 @@ public:
 	int set_condition(double Vin);
 };
 
+//#####モータ
+class CMotor : public CEParts
+
+{
+private:
+
+public:
+	CMotor(void) {;};
+	~CMotor(void) {};
+	DWORD kw;//容量
+	DWORD status;//容量
+
+	int set_condition(double Vin) { return 0; };
+};
+
 //#####コンバータ
 // コンバータCC_Linkデータ構造体
 #define CC_LINK_B_NUM_CNV 2

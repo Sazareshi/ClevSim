@@ -1,4 +1,5 @@
 #pragma once
+#include "EParts.h"
 
 #define MOB_TYPE_NUM			32	//Mobのタイプ数
 #define MOB_MAX_NUM				128 //Mobの数
@@ -9,9 +10,6 @@
 #define MOB_ID_CUL				3 //CUL ID
 #define MOB_ID_TRIPPER			4 //積み付け機 ID
 #define MOB_ID_EROOM			5//屋外設備制御室 ID
-
-
-
 
 #define MOB_STAT_IDLE			0
 #define MOB_STAT_FAULT			0xFF
@@ -27,6 +25,13 @@
 #define MOB_TYPE_TRIPPER	TEXT("TRIP00")
 #define MOB_TYPE_EROOM		TEXT("EROOM0")
 
+#define MASK_DIR_X			0x00ff
+#define MASK_DIR_LEFT		0x00ff
+#define MASK_DIR_UP		0x00ff
+#define MASK_DIR_Y			0xff00
+
+#define MOB_COM_UPDATE	0x0000
+#define MOB_COM_RESET	0x0001
 
 typedef struct _stCUBEM //mob座標構造体3D
 {
@@ -46,10 +51,9 @@ public:
 	~CMob();
 
 public:
-	TCHAR type[8];
-	int type_code;
-	DWORD ID;
-	TCHAR name[16];
+	TCHAR type[8];//機器種類名
+	DWORD ID;//機器ID HIWORD=type LOWORD=id
+	TCHAR name[16];//機器名
 	double radz;//角度radian z軸回り
 	CUBEM area; //シミュレーション空間上の配置エリア
 	CUBEM area_real;//実システム空間上の配置エリア
@@ -58,8 +62,9 @@ public:
 	LONG bmph;
 	DWORD status;//対象の状態
 	DWORD command;//対象への指令
-	ULONG* ptime_now;
-	ULONG* ptime_last;
+	ULONG* ptime_now;//シミュレーション現在時刻参照アドレス
+	ULONG  time_last;//シミュレーション前回時刻保持値
+	BOOL exist;//存在するかどうか、ONなら定期処理実施
 
 	void setpos(LONG x, LONG y, LONG z) { area.x = x; area.y = y; area.z = z; return; }
 	void setpos(int x, int y, int z) { area.x = x; area.y = y; area.z = z; return; }
@@ -76,41 +81,86 @@ public:
 typedef struct _stLoad {
 	WORD material;//素材成分　
 	WORD density;//	密度　kg/m3
-	WORD vol;//	BC1mの体積　1000cm3(l)
-	WORD weight;//BC1m当たりの重量kg
+	WORD vol;//	体積　1000cm3(l)
+	WORD weight;//重量kg
 } STLOAD, *LPSTLOAD;
 
 #define BC_DUMPER	0x0001//切替ダンパ有
 #define BC_TSHOOT	0x0002//テレスコシュート有
 #define BC_2WAY		0x0004//2方向
 #define BC_2MOTOR	0x0010//2モータ
-#define BC_HVOLT	0x0020//高圧モータ
+#define BC_3MOTOR	0x0020//3モータ
+#define BC_HVOLT	0x0040//高圧モータ
 #define BC_TRP		0x0100//トリッパー付
 #define BC_DROP1	0x0200//払出用1号
 #define BC_DROP2	0x0400//払出用2号
-#define BC_RCV_MAP	8//BCの荷受け場所最大数
+#define BC_RCV_MAX	12//BCの荷受け場所最大数
 #define BC_MAX_LEN	800//BCの最大長さ
+#define BC_MOTOR_MAX	3//最大モータ数
+#define BC_LINK_MAX		3//BC接続先最大数
 
 
 
+class CTripper : public CMob
+{
+public:
+	CTripper() {};
+	~CTripper() {};
+private:
+
+};
+
+#define BC_HEAD_0		0
+#define BC_HEAD_DUMPER	1
+#define BC_HEAD_SHOOT	2
+
+
+
+class CBCHead
+{
+public:
+	CBCHead() {};
+	~CBCHead() {};
+
+	int type;// 0:plane, 1:dumper, 2:shoot
+	int pos;
+
+	int	activate(int com) { pos = com; };
+};
 class CBC : public CMob
 {
 public:
-	CBC() {};
-	~CBC() {};
+	CBC();
+	~CBC();
 	DWORD BCtype; 
 	char cline;//A,B,C
-	int nrcv;//石炭受け個所数he
-	int pos_rcv[BC_RCV_MAP];//石炭受け位置m
+	int nrcv;//石炭受け個所数
+	int pos_rcv[BC_RCV_MAX];//石炭受け位置m
+	POINT imgpt_rcv[BC_RCV_MAX];//石炭受け画面位置
+	POINT imgpt_top[3],imgpt_tail;
+
+	DWORD dir;//画面での向き　HIWORD　縦横　0が横　LOWORD　0が正方向
 	DWORD l;//長さmm
 	DWORD w;//幅mm
 	int  spd;//現在速度　mm/s
+	int  base_spd;//定格速度　mm/s
 	int  trq;//トルク
 	STLOAD	belt[BC_MAX_LEN];//ベルトは1024mm単位で考える
 	int	ihead;//ベルトヘッド位置インデックス
+	int	ihead_last;//ベルトヘッド位置前回値
 	DWORD	headpos_mm;
+	DWORD	headpos_pix;
+	CBCHead head_unit;
+	CTripper* ptrp;
+	
+	CBC* bclink[BC_LINK_MAX];//排出先BCポインタ
+	int bclink_i[BC_LINK_MAX];//排出先BCの接続Drop位置インデックス
 	int put_load(int pos, STLOAD load);
-	STLOAD pop_load(int pos);
+	void conveyor(DWORD com, LONG dt);
+	void bc_reset() { headpos_mm = 0; memset(&pos_rcv, 0, sizeof(STLOAD) * BC_MAX_LEN); return; };//ベルトヘッド位置を0リセットして全石炭をクリア
+	CMotor motor[BC_MOTOR_MAX];
+	DWORD mm2pix;
+	
 private:
 
 };
@@ -132,31 +182,35 @@ private:
 };
 
 #define NUM_DROP_POINT_CUL 2
+#define COM_CUL_IDLE	0
+#define COM_CUL_DISCHARGE	1
+
 
 class CCUL : public CMob
 {
 public:
-	CCUL() {};
-	~CCUL() {};
+	CCUL();
+	~CCUL();
 	STLOAD dc_load;//排出積荷内容
 	CBC*	pBCA, pBCB;//排出先コンベヤ
-	int		iputA, iputB;//排出先コンベヤの位置インデックス
+
 	int ability;//払い出し能力　kg/s　900ton/h->250kg/s
 	LPSTLOAD pt_drop[NUM_DROP_POINT_CUL];//コンベヤへのドロップポイント
 
+	CBC* bclink[NUM_DROP_POINT_CUL];//排出先BCポインタ
+	int bclink_i[NUM_DROP_POINT_CUL];//排出先BCの接続Drop位置インデックス
+
+	BOOL bc_selA;//払い出しAline選択
+
+	int discharge(DWORD com, LONG dt);
+	
+	STLOAD set_load(WORD material, WORD density, WORD vol, WORD weight);
+	STLOAD load_base;
+
 private:
-	int discharge();
-	STLOAD set_load(WORD material,WORD density,	WORD vol,WORD weight);
+
 };
 
-class CTripper : public CMob
-{
-public:
-	CTripper() {};
-	~CTripper() {};
-private:
-
-};
 
 class CEroom : public CMob
 {
@@ -167,8 +221,8 @@ private:
 
 };
 
-#define BC_LINES	3//BCの系統数A,B,C
-#define BC_LINE_NUM	30//BCの各系統の数
+#define BC_LINES	3//BCの系統数A,B,C+循環
+#define BC_LINE_NUM	26//BCの各系統の数
 #define NUM_OF_HARAI			9
 #define NUM_OF_CRUSH			2
 #define NUM_OF_CUL				2
@@ -191,6 +245,50 @@ typedef struct _stMobs {
 	CMob* 	pmobs[MOB_TYPE_NUM][MOB_MAX_NUM];
 	STMobsBody	mobs;
 }STMobs, *LPSTMobs;
+
+
+#define LINE_A 0
+#define LINE_B 1
+#define LINE_C 2
+#define DUMP1 0
+#define DUMP2 1
+#define DUMP3 2
+
+#define BC_L1 0
+#define BC_L2 1
+#define BC_L3 2
+#define BC_L4_1 3
+#define BC_L4_2 4
+#define BC_L4_3 5
+#define BC_L5  6
+#define BC_L6 7
+#define BC_L7_1 8
+#define BC_L7_2 9
+#define BC_L7_3 10
+#define BC_L8 11
+#define BC_L11 12
+#define BC_L12 13
+#define BC_L13 14
+#define BC_L15 15
+#define BC_L16 16
+#define BC_L17 17
+#define BC_L18_1 18
+#define BC_L18_2 19
+#define BC_L19 20
+#define BC_L20 21
+#define BC_L21 22
+#define BC_L22 23
+#define BC_L23 24
+
+#define BC_L30 0
+#define BC_L31 1
+#define BC_L32 2
+#define BC_L33 3
+#define BC_L34 4
+#define BC_L35A 8
+#define BC_L35B 9
+#define BC_L8D 12
+
 
 
 

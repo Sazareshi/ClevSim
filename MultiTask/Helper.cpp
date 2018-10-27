@@ -181,7 +181,7 @@ void CHelper::splitbydelimiter(TCHAR token[][SPLIT_TOKEN_SIZE], PTCHAR wstr, int
 	int ptr = 0;
 	int idx = 0;
 
-	for (unsigned int i = 0; i < lstrlen(wstr); i++) {
+	for (int i = 0; i < lstrlen(wstr); i++) {
 		if ((*(wstr + i) != delimiter) && (*(wstr + i) != TEXT('\r')) && (*(wstr + i) != TEXT('\n')))	token[idx][ptr++] = *(wstr + i);
 		else {
 			token[idx++][ptr] = TEXT('\0');

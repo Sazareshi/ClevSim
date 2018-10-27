@@ -497,6 +497,83 @@ void CPublicRelation::update_disp() {
 
 	BitBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_bg, 0, 0, SRCCOPY);
 
+	//#BC
+	CBC* pbc;
+
+	//輪郭描画
+	SelectObject(pPrInst->stdisp.hdc_mem0, GetStockObject(NULL_BRUSH));
+	for (int i = 0; i < BC_LINES; i++) {
+
+		SelectObject(pPrInst->stdisp.hdc_mem0, GetStockObject(DC_PEN));
+		if(i==0)SetDCPenColor(pPrInst->stdisp.hdc_mem0, RGB(255, 0, 255));
+		else if(i == 1)SetDCPenColor(pPrInst->stdisp.hdc_mem0, RGB(0, 255, 0));
+		else SetDCPenColor(pPrInst->stdisp.hdc_mem0, RGB(0, 0, 255));
+
+
+		for (int j = 0; j < BC_LINE_NUM; j++) {
+			if ((pstMobs->pmobs[MOB_ID_BC][i*BC_LINE_NUM + j])->exist == ON) {
+				pbc = (CBC*)(pstMobs->pmobs[MOB_ID_BC][i*BC_LINE_NUM + j]);
+				Rectangle(pPrInst->stdisp.hdc_mem0, pbc->area.x, pbc->area.y, pbc->area.x + pbc->area.w, pbc->area.y + pbc->area.h);
+			}
+		}
+	}
+	//ヘッド位置描画
+	SelectObject(pPrInst->stdisp.hdc_mem0, GetStockObject(DC_BRUSH));
+	SetDCBrushColor(pPrInst->stdisp.hdc_mem0, RGB(192, 0, 192));
+	SelectObject(pPrInst->stdisp.hdc_mem0, GetStockObject(NULL_PEN));
+	//SetDCPenColor(pPrInst->stdisp.hdc_mem0, BLACK_PEN);
+	for (int i = 0; i < BC_LINES; i++) {
+		for (int j = 0; j < BC_LINE_NUM; j++) {
+			if ((pstMobs->pmobs[MOB_ID_BC][i*BC_LINE_NUM + j])->exist == ON) {
+				pbc =(CBC*)( pstMobs->pmobs[MOB_ID_BC][i*BC_LINE_NUM + j]);
+				mobx = pbc->area.x + pbc->headpos_pix;
+				moby = pbc->area.y;
+				if ((pbc->dir) & MASK_DIR_Y) {//縦配置
+					if ((pbc->dir) & MASK_DIR_UP) {//逆向き
+						mobx = pbc->area.x + pbc->area.w;
+						moby = pbc->area.y + pbc->area.h - pbc->headpos_pix;
+						Ellipse(pPrInst->stdisp.hdc_mem0, mobx, moby, mobx - BC_HEAD_SIZE, moby - BC_HEAD_SIZE);
+					}
+					else {
+						mobx = pbc->area.x + pbc->area.w;
+						moby = pbc->area.y + pbc->headpos_pix;
+						Ellipse(pPrInst->stdisp.hdc_mem0, mobx, moby, mobx + BC_HEAD_SIZE, moby + BC_HEAD_SIZE);
+					}
+				}
+				else {//横配置
+					if ((pbc->dir) & MASK_DIR_LEFT) {//逆向き
+						mobx = pbc->area.x + pbc->area.w - pbc->headpos_pix;
+						moby = pbc->area.y + pbc->area.h;
+						Ellipse(pPrInst->stdisp.hdc_mem0, mobx, moby, mobx + BC_HEAD_SIZE, moby + BC_HEAD_SIZE);
+					}
+					else {
+						mobx = pbc->area.x + pbc->headpos_pix;
+						moby = pbc->area.y;
+						Ellipse(pPrInst->stdisp.hdc_mem0, mobx, moby, mobx - BC_HEAD_SIZE, moby - BC_HEAD_SIZE);
+					}
+				}
+			}
+		}
+	}
+	//BCリンク位置描画
+	SelectObject(pPrInst->stdisp.hdc_mem0, GetStockObject(DC_PEN));
+	SetDCPenColor(pPrInst->stdisp.hdc_mem0, RGB(255, 150, 0));
+	POINT linkpt[2];
+	CBC* pbc2;
+	linkpt[0].x = 0; linkpt[0].y = 0; linkpt[1].x = 300; linkpt[1].y = 300;
+	for (int i = 0; i < BC_LINES; i++) {
+		for (int j = 0; j < BC_LINE_NUM; j++) {
+			if(pbc->exist == ON){
+				pbc = &(pstMobs->mobs.bc[i][j]);
+				linkpt[0] = pbc->imgpt_top[pbc->head_unit.pos];
+				pbc2 = pbc->bclink[pbc->head_unit.pos];
+				linkpt[1] = pbc2->imgpt_rcv[pbc->bclink_i[pbc->head_unit.pos]];
+				PolylineTo(pPrInst->stdisp.hdc_mem0, linkpt, 2);
+			}
+		}
+	}
+
+	//#クラッシャー
 	SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_CRUSH][0]->hBmp_mob);
 	for (int i = 0; i < NUM_OF_CRUSH; i++) {
 		i_img2 = pstMobs->pmobs[MOB_ID_CRUSH][i]->status;
@@ -505,7 +582,8 @@ void CPublicRelation::update_disp() {
 		//AlphaBlend(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, pPrInst->stdisp.bf);
 		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
 	}
-	
+
+	//#払い出し機
 	SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_HARAI][0]->hBmp_mob);
 	for (int i = 0; i < NUM_OF_HARAI; i++) {
 		i_img2 = pstMobs->pmobs[MOB_ID_HARAI][i]->status;
@@ -514,7 +592,8 @@ void CPublicRelation::update_disp() {
 		//	AlphaBlend(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, pPrInst->stdisp.bf);
 		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
 	}
-	
+
+	//#CUL
 	SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_CUL][0]->hBmp_mob);
 	for (int i = 0; i < NUM_OF_CUL; i++) {
 		i_img2 = pstMobs->pmobs[MOB_ID_CUL][i]->status;
@@ -524,6 +603,7 @@ void CPublicRelation::update_disp() {
 		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
 	}
 
+	//#トリッパー
 	SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_TRIPPER][0]->hBmp_mob);
 	for (int i = 0; i < NUM_OF_TRIPPER; i++) {
 		i_img2 = pstMobs->pmobs[MOB_ID_TRIPPER][i]->status;
@@ -533,6 +613,7 @@ void CPublicRelation::update_disp() {
 		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
 	}
 
+	//#電気室
 	SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_EROOM][0]->hBmp_mob);
 	for (int i = 0; i < NUM_OF_EROOM; i++) {
 		i_img2 = pstMobs->pmobs[MOB_ID_EROOM][i]->status;
