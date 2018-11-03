@@ -85,6 +85,8 @@ void CPublicRelation::routine_work(void *param) {
 	return;
 };
 
+#define ID_PR_TIMER 1
+
 LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 	BITMAP bmp_info;
 	static int mobw, mobh, mobx, moby, i_img;
@@ -93,7 +95,7 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 	int nFramX, nFramY, nCaption, scrw, scrh, winw, winh, winx, winy, mob_speed = 4;
 	HDC hdc;
 	static POINTS mpts;
-	TCHAR szBuf[64];
+	TCHAR szBuf[128];
 
 	switch (msg) {
 
@@ -162,6 +164,8 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 		
 		hinfchk=CreateWindow(L"button", TEXT(":inf"), WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,winw-40,5,45,15, hWnd, (HMENU)IDC_CHK_INFDISP, pPrInst->inf.hInstance, NULL);
 		
+		SetTimer(hWnd, ID_PR_TIMER, 200, NULL);
+		
 		break;
 	}
 	case WM_PAINT: {
@@ -170,6 +174,12 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 		hdc = BeginPaint(hWnd, &ps);
 		BitBlt(hdc, 20, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem0, 0, 0, SRCCOPY);
 		EndPaint(hWnd, &ps);
+		break;
+	}
+	case WM_TIMER: {
+		wsprintf(szBuf, TEXT("hpos_i BC1A[0]:%04d [1]:%04d [2]:%04d [3]:%04d [4]:%04d [5]:%04d"), pstMobs->mobs.bc[0][0].belt[0].weight, pstMobs->mobs.bc[0][0].belt[1].weight, pstMobs->mobs.bc[0][0].belt[2].weight, pstMobs->mobs.bc[0][0].belt[3].weight, pstMobs->mobs.bc[0][0].belt[4].weight, pstMobs->mobs.bc[0][0].belt[5].weight);
+		TextOut(pPrInst->stdisp.hdc_mem_inf, pPrInst->stdisp.bgw - 500, 20, szBuf, lstrlen(szBuf));//ƒ}ƒEƒXˆÊ’uî•ñ‘‚«ž‚Ý
+		update_disp();
 		break;
 	}
 	case WM_MOUSEMOVE: {
@@ -216,6 +226,7 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 	case WM_DESTROY: {
 		pPrInst->inf.hWnd_work = NULL;
 		pPrInst->del_objects();
+		KillTimer(hWnd, ID_PR_TIMER);
 		break;
 	}
 	default:
@@ -560,15 +571,92 @@ void CPublicRelation::update_disp() {
 	SetDCPenColor(pPrInst->stdisp.hdc_mem0, RGB(255, 150, 0));
 	POINT linkpt[2];
 	CBC* pbc2;
+	CCUL* pcul;
 	linkpt[0].x = 0; linkpt[0].y = 0; linkpt[1].x = 300; linkpt[1].y = 300;
+	for (int i = 0; i < NUM_OF_CUL; i++) {
+		pcul = &(pstMobs->mobs.cul[i]);
+		if (pcul->exist == ON) {
+			linkpt[0].x = pcul->area.x; linkpt[0].y = pcul->area.y + (pcul->area.h)/2;
+			pbc2 = pcul->bclink[pcul->bc_selbc];
+			linkpt[1] = pbc2->imgpt_rcv[pcul->bclink_i[pcul->bc_selbc]];
+			MoveToEx(pPrInst->stdisp.hdc_mem0, linkpt[0].x, linkpt[0].y, NULL);
+			LineTo(pPrInst->stdisp.hdc_mem0, linkpt[1].x, linkpt[1].y);
+		}
+	}
 	for (int i = 0; i < BC_LINES; i++) {
 		for (int j = 0; j < BC_LINE_NUM; j++) {
+			pbc = &(pstMobs->mobs.bc[i][j]);
 			if(pbc->exist == ON){
-				pbc = &(pstMobs->mobs.bc[i][j]);
 				linkpt[0] = pbc->imgpt_top[pbc->head_unit.pos];
 				pbc2 = pbc->bclink[pbc->head_unit.pos];
-				linkpt[1] = pbc2->imgpt_rcv[pbc->bclink_i[pbc->head_unit.pos]];
-				PolylineTo(pPrInst->stdisp.hdc_mem0, linkpt, 2);
+				if (pbc->BCtype & BC_TRP) {
+					linkpt[1].x = pbc->silolink->area.x; linkpt[1].y = pbc->silolink->area.y + pbc->silolink->area.h;
+				}
+				else {
+					linkpt[1] = pbc2->imgpt_rcv[pbc->bclink_i[pbc->head_unit.pos]];
+				}
+				MoveToEx(pPrInst->stdisp.hdc_mem0, linkpt[0].x, linkpt[0].y, NULL);
+				LineTo(pPrInst->stdisp.hdc_mem0, linkpt[1].x, linkpt[1].y);
+			}
+		}
+	}
+
+
+	//”À‘—Î’Y•`‰æ
+	SelectObject(pPrInst->stdisp.hdc_mem0, GetStockObject(GRAY_BRUSH));
+	SelectObject(pPrInst->stdisp.hdc_mem0, GetStockObject(NULL_PEN));
+	int ptl, ptt, ptr, ptb;
+
+	for (int i = 0; i < BC_LINES; i++) {
+		for (int j = 0; j < BC_LINE_NUM; j++) {
+			pbc = &(pstMobs->mobs.bc[i][j]);
+			if (pbc->exist == ON) {
+				int num_draw,num_accumlate,i_accum;
+				int level,level100;
+				if ((pbc->dir) & MASK_DIR_Y) num_draw = pbc->area.h / BC_COAL_DISP_PIXW;//c”z’u RECT•`‰æŒÂ”
+				else num_draw = pbc->area.w / BC_COAL_DISP_PIXW;//‰¡”z’u RECT•`‰æŒÂ”
+
+				num_accumlate = (pbc->pix2mm*BC_COAL_DISP_PIXW)>>10;//•`‰æRECT‚É‘Î‚·‚éƒxƒ‹ƒg’·‚³1024mm’PˆÊ
+				i_accum = pbc->ihead;//ŒvŽZ‘ÎÛbelt”z—ñ‚ÌƒCƒ“ƒfƒbƒNƒX ˆÈ~ƒwƒbƒhˆÊ’u‚©‚ç•`‰æ‚Æ‚È‚é
+				level100 = pbc->Kg100perM * num_accumlate;
+
+				for (int k = 0; k < num_draw; k++) {
+					//•`‰æ”ÍˆÍ‚ÌÎ’YÏŽZd—Ê
+					level = 0;
+					for (int i_sum = 0; i_sum < num_accumlate; i_sum++,i_accum++) {
+						int i_cal = i_accum + pbc->ihead; if (i_cal > pbc->belt_size) i_cal -= pbc->belt_size;
+						if (!(i_accum < pbc->belt_size))i_accum = 0;
+						level += pbc->belt[i_accum].weight;
+					}
+
+					if ((pbc->dir) & MASK_DIR_Y) {//c”z’u
+						ptr = pbc->area.x + pbc->area.w;
+						ptl = ptr - (pbc->area.w * level) / level100;
+						if ((pbc->dir) & MASK_DIR_X) {//ãŒü
+							ptt = pbc->area.y + BC_COAL_DISP_PIXW * k;
+							ptb = ptt + BC_COAL_DISP_PIXW;
+						}
+						else {
+							ptb = pbc->area.y + pbc->area.h - BC_COAL_DISP_PIXW * k;
+							ptt = ptb - BC_COAL_DISP_PIXW;
+						}
+
+					}
+					else {
+						ptb = pbc->area.y + pbc->area.h;
+						ptt = ptb - (pbc->area.h * level) / level100;
+						if ((pbc->dir) & MASK_DIR_X) {//¶s
+							ptl = pbc->area.x + BC_COAL_DISP_PIXW * k;
+							ptr = ptl + BC_COAL_DISP_PIXW;
+						}
+						else {
+							ptr = pbc->area.x + pbc->area.w - BC_COAL_DISP_PIXW * k;
+							ptl = ptr - BC_COAL_DISP_PIXW;
+						}
+					}
+					Rectangle(pPrInst->stdisp.hdc_mem0, ptl, ptt, ptr, ptb);
+				}
+
 			}
 		}
 	}

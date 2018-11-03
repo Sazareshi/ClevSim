@@ -29,6 +29,8 @@ public:
 private:
 	int cal_cul(DWORD index, STLOAD load, LONG dt, DWORD com);
 	int cal_bc(DWORD index, LONG dt, DWORD com);
+	int cal_silo(DWORD index, LONG dt, DWORD com);
+	int cal_tripper(DWORD index, LONG dt, DWORD com);
 	void init_bc();
 
 };

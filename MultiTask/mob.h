@@ -10,6 +10,7 @@
 #define MOB_ID_CUL				3 //CUL ID
 #define MOB_ID_TRIPPER			4 //積み付け機 ID
 #define MOB_ID_EROOM			5//屋外設備制御室 ID
+#define MOB_ID_SILO				6//SILO ID
 
 #define MOB_STAT_IDLE			0
 #define MOB_STAT_FAULT			0xFF
@@ -24,10 +25,11 @@
 #define MOB_TYPE_CUL		TEXT("CUL000")
 #define MOB_TYPE_TRIPPER	TEXT("TRIP00")
 #define MOB_TYPE_EROOM		TEXT("EROOM0")
+#define MOB_TYPE_SILO		TEXT("SILO00")
 
 #define MASK_DIR_X			0x00ff
 #define MASK_DIR_LEFT		0x00ff
-#define MASK_DIR_UP		0x00ff
+#define MASK_DIR_UP			0x00ff
 #define MASK_DIR_Y			0xff00
 
 #define MOB_COM_UPDATE	0x0000
@@ -99,6 +101,38 @@ typedef struct _stLoad {
 #define BC_MOTOR_MAX	3//最大モータ数
 #define BC_LINK_MAX		3//BC接続先最大数
 
+#define BC_COAL_DISP_PIXW	5//BC　石炭表示ピクセル幅
+
+
+#define SIRO_COLUMN_NUM	12//サイロ区分数
+
+class CSilo : public CMob 
+{
+public:
+	CSilo() {};
+	~CSilo() {};
+	DWORD SILOtype;
+	DWORD l;//長さmm
+	DWORD l_offset;//コンベヤライン上のオフセット位置
+	DWORD w;//幅mm
+	DWORD capa_all;//全容量　kg
+	DWORD capa1;//1区画あたり定格搬送能力　ton/h
+
+	STLOAD column[SIRO_COLUMN_NUM];//サイロ区分エリア
+	int put_load(int pos, STLOAD load);
+	int remove_load(int pos, STLOAD load);
+	int clear_load();
+	DWORD pix2kg;
+
+private:
+
+private:
+};
+
+
+#define COM_TRP_IDLE	0
+#define COM_TRP_DISCHARGE	1
+#define COM_TRP_MOVE		2
 
 
 class CTripper : public CMob
@@ -106,6 +140,13 @@ class CTripper : public CMob
 public:
 	CTripper() {};
 	~CTripper() {};
+
+	int  spd;//現在速度　mm/s
+	int discharge(DWORD com, LONG dt);
+	int pos_drop[SIRO_COLUMN_NUM];
+	int ability;//払い出し能力　kg/s　900ton/h->250kg/s
+	CSilo* silo[4];//紐付きサイロ
+
 private:
 
 };
@@ -113,8 +154,6 @@ private:
 #define BC_HEAD_0		0
 #define BC_HEAD_DUMPER	1
 #define BC_HEAD_SHOOT	2
-
-
 
 class CBCHead
 {
@@ -133,7 +172,6 @@ public:
 	CBC();
 	~CBC();
 	DWORD BCtype; 
-	char cline;//A,B,C
 	int nrcv;//石炭受け個所数
 	int pos_rcv[BC_RCV_MAX];//石炭受け位置m
 	POINT imgpt_rcv[BC_RCV_MAX];//石炭受け画面位置
@@ -142,24 +180,28 @@ public:
 	DWORD dir;//画面での向き　HIWORD　縦横　0が横　LOWORD　0が正方向
 	DWORD l;//長さmm
 	DWORD w;//幅mm
+	DWORD ability;//定格搬送能力　ton/h
 	int  spd;//現在速度　mm/s
 	int  base_spd;//定格速度　mm/s
 	int  trq;//トルク
 	STLOAD	belt[BC_MAX_LEN];//ベルトは1024mm単位で考える
+	int belt_size;//belt配列のサイズ
 	int	ihead;//ベルトヘッド位置インデックス
 	int	ihead_last;//ベルトヘッド位置前回値
 	DWORD	headpos_mm;
 	DWORD	headpos_pix;
+	DWORD	Kg100perM;//BC1m当たりの定格搬送重量
 	CBCHead head_unit;
 	CTripper* ptrp;
 	
 	CBC* bclink[BC_LINK_MAX];//排出先BCポインタ
+	CSilo* silolink;//排出先サイロポインタ　トリッパ、スクレーパ付きBCのみ
 	int bclink_i[BC_LINK_MAX];//排出先BCの接続Drop位置インデックス
 	int put_load(int pos, STLOAD load);
 	void conveyor(DWORD com, LONG dt);
 	void bc_reset() { headpos_mm = 0; memset(&pos_rcv, 0, sizeof(STLOAD) * BC_MAX_LEN); return; };//ベルトヘッド位置を0リセットして全石炭をクリア
 	CMotor motor[BC_MOTOR_MAX];
-	DWORD mm2pix;
+	DWORD pix2mm;
 	
 private:
 
@@ -192,15 +234,12 @@ public:
 	CCUL();
 	~CCUL();
 	STLOAD dc_load;//排出積荷内容
-	CBC*	pBCA, pBCB;//排出先コンベヤ
-
 	int ability;//払い出し能力　kg/s　900ton/h->250kg/s
-	LPSTLOAD pt_drop[NUM_DROP_POINT_CUL];//コンベヤへのドロップポイント
 
 	CBC* bclink[NUM_DROP_POINT_CUL];//排出先BCポインタ
 	int bclink_i[NUM_DROP_POINT_CUL];//排出先BCの接続Drop位置インデックス
 
-	BOOL bc_selA;//払い出しAline選択
+	int bc_selbc;//払い出しline選択 0:A,1:B
 
 	int discharge(DWORD com, LONG dt);
 	
@@ -210,7 +249,6 @@ public:
 private:
 
 };
-
 
 class CEroom : public CMob
 {
@@ -228,6 +266,9 @@ private:
 #define NUM_OF_CUL				2
 #define NUM_OF_TRIPPER			3
 #define NUM_OF_EROOM			3
+#define SILO_LINES				7	// 1号3line　2号設備2line　BIO　2line
+#define SILO_LINE_NUM			4	//各ラインのサイロ数　Max　1号　4　（BIOは8サイロで1つと換算）
+
 
 //共有メモリ配置定義
 typedef struct _stMobsBody {
@@ -237,6 +278,7 @@ typedef struct _stMobsBody {
 	CCUL		cul[NUM_OF_CUL];
 	CTripper	tripper[NUM_OF_TRIPPER];
 	CEroom		eroom[NUM_OF_EROOM];
+	CSilo		silo[SILO_LINES][BC_LINE_NUM];
 }STMobsBody, *LPSTMobsBody;
 
 
@@ -250,6 +292,10 @@ typedef struct _stMobs {
 #define LINE_A 0
 #define LINE_B 1
 #define LINE_C 2
+#define LINE_D 3
+#define LINE_E 4
+#define LINE_F 5
+#define LINE_G 6
 #define DUMP1 0
 #define DUMP2 1
 #define DUMP3 2
