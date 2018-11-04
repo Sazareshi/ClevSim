@@ -711,6 +711,46 @@ void CPublicRelation::update_disp() {
 		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
 	}
 
+	//#ƒTƒCƒ
+	CSilo* psilo;
+
+	//—ÖŠs•`‰æ
+	SelectObject(pPrInst->stdisp.hdc_mem0, GetStockObject(NULL_BRUSH));
+	SelectObject(pPrInst->stdisp.hdc_mem0, GetStockObject(DC_PEN));
+	SetDCPenColor(pPrInst->stdisp.hdc_mem0, RGB(100, 100, 100));
+
+	for (int i = 0; i < SILO_LINES; i++) {
+		for (int j = 0; j < SILO_LINE_NUM; j++) {
+			if ((pstMobs->pmobs[MOB_ID_SILO][i*SILO_LINE_NUM + j])->exist == ON) {
+				psilo = (CSilo*)(pstMobs->pmobs[MOB_ID_SILO][i*SILO_LINE_NUM + j]);
+				Rectangle(pPrInst->stdisp.hdc_mem0, psilo->area.x, psilo->area.y, psilo->area.x + psilo->area.w, psilo->area.y + psilo->area.h);
+			}
+		}
+	}
+
+	//”À‘—Î’Y•`‰æ
+	SelectObject(pPrInst->stdisp.hdc_mem0, GetStockObject(GRAY_BRUSH));
+	SelectObject(pPrInst->stdisp.hdc_mem0, GetStockObject(NULL_PEN));
+	//’™’Y•`‰æ
+	for (int i = 0; i < SILO_LINES; i++) {
+		for (int j = 0; j < SILO_LINE_NUM; j++) {
+			psilo = &(pstMobs->mobs.silo[i][j]);
+			if (psilo->exist == ON) {
+				for (int k = 0; k < SIRO_COLUMN_NUM; k++) {
+					ptr = psilo->area.x + psilo->area.w;
+					ptl = ptr - (psilo->area.w * psilo->column[k].weight)/ psilo->capa1;
+					ptt = psilo->area.y + psilo->pix_columw * k;
+					ptb = ptt + psilo->pix_columw;
+					Rectangle(pPrInst->stdisp.hdc_mem0, ptl, ptt, ptr, ptb);
+					if (i == 0 && j == 3 && k == 11) {
+						int temp = psilo->column[k].weight;
+					}
+				}
+			}
+		}
+	}
+
+
 	if (b_infchecked)TransparentBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_inf, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, RGB(255, 255, 255));
 	InvalidateRect(pPrInst->inf.hWnd_work, NULL, FALSE);
 	return;

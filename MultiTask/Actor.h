@@ -32,6 +32,7 @@ private:
 	int cal_silo(DWORD index, LONG dt, DWORD com);
 	int cal_tripper(DWORD index, LONG dt, DWORD com);
 	void init_bc();
+	void init_silo();
 
 };
 

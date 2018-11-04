@@ -116,13 +116,14 @@ public:
 	DWORD l_offset;//コンベヤライン上のオフセット位置
 	DWORD w;//幅mm
 	DWORD capa_all;//全容量　kg
-	DWORD capa1;//1区画あたり定格搬送能力　ton/h
+	DWORD capa1;//1区画あたり定格
 
 	STLOAD column[SIRO_COLUMN_NUM];//サイロ区分エリア
 	int put_load(int pos, STLOAD load);
 	int remove_load(int pos, STLOAD load);
 	int clear_load();
 	DWORD pix2kg;
+	int pix_columw;
 
 private:
 

@@ -292,11 +292,10 @@ void CActor::init_task(void* pobj) {
 			itype[MOB_ID_EROOM]++;
 		}
 		else if (wstrtmp == MOB_TYPE_SILO) {
-			if (itype[MOB_ID_SILO] >= BC_LINES * BC_LINE_NUM) continue;
+			if (itype[MOB_ID_SILO] >= SILO_LINES * SILO_LINE_NUM) continue;
 			int k = 0;
 
 			CSilo* pobj = (CSilo*)(pstMobs->pmobs[MOB_ID_SILO][itype[MOB_ID_SILO]]);
-
 			while (getline(wstream, wstrtmp, L',')) {
 				switch (k) {
 				case 0:pobj->ID = _wtoi(wstrtmp.c_str()); break;
@@ -327,6 +326,7 @@ void CActor::init_task(void* pobj) {
 
 	init_bclink();//BCの接続設定
 	init_bc();//BC関連初期化
+	init_silo();//BCサイロ関連初期化
 
 
 	///CUL積荷初期値
@@ -855,3 +855,22 @@ void CActor::init_bclink() {//BCの接続設定
 	}
  
 }
+
+void CActor::init_silo() {
+	CSilo* psilo;
+	for (int i = 0; i < SILO_LINES; i++) {
+		for (int j = 0; j < SILO_LINE_NUM; j++) {
+			psilo = &(pstMobs->mobs.silo[i][j]);
+
+			if (psilo->ID != 0) {
+				psilo->capa1 = psilo->capa_all / SIRO_COLUMN_NUM;
+				psilo->exist = ON;
+				psilo->pix_columw = psilo->area.h / SIRO_COLUMN_NUM;
+				psilo->pix2kg = psilo->capa1 / psilo->area.w;
+			}
+			else  psilo->exist = OFF;
+		}
+	}
+
+	return;
+};
