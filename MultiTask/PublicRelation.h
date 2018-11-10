@@ -11,11 +11,17 @@
 #define PR_WND_H				840
 #define PR_WND_X				400
 #define PR_WND_Y				0
+#define TIP_WND_W				100
+#define TIP_WND_H				15
+
+#define DISP_OFFSET_X			25
+#define DISP_OFFSET_Y			12
 
 #define NUM_OF_MOB				32
 #define MOB_DISP_ALPHA			160 //透過度　0-255　0：透明
 
 #define MSGID_UPDATE_DISP_PR	5001
+#define MSGID_UPDATE_DISP_TIP	5002
 
 
 typedef struct _stPR_DISP
@@ -33,6 +39,12 @@ typedef struct _stPR_DISP
 
 }PR_DISP, *LPPR_DISP;
 
+#define COM_MOBMAP_ALL 0
+#define COM_MOBMAP_5A 0x0001
+#define COM_MOBMAP_5B 0x0002
+#define COM_MOBMAP_5C 0x0003
+
+
 
 class CPublicRelation :	public CThreadObj
 {
@@ -45,6 +57,7 @@ public:
 	static PR_DISP stdisp;
 	static CPublicRelation* pPrInst;
 
+
 	void routine_work(void *param);
 
 	void set_panel_tip_txt();//タブパネルのStaticテキストを設定
@@ -52,13 +65,23 @@ public:
 	static LPSTMobs pstMobs;
 	static HANDLE hmue_mobs;
 
+	static void set_mobmap(int com);
+	static LRESULT PR_BCPANEL_PROC(HWND, UINT, WPARAM, LPARAM);
+	static LRESULT PR_TRPPANEL_PROC(HWND, UINT, WPARAM, LPARAM);
+	static LRESULT PR_SILOPANEL_PROC(HWND, UINT, WPARAM, LPARAM);
+
 private:
 	BOOL InitWorkWnd(HINSTANCE hInst, WNDPROC WndProc, LPCTSTR lpzClassName);
+	BOOL InitTipWnd(HINSTANCE hInst, WNDPROC WndProc, LPCTSTR lpzClassName);
 	static LRESULT CALLBACK PrWndProc(HWND, UINT, WPARAM, LPARAM);
+	static LRESULT CALLBACK TipWndProc(HWND, UINT, WPARAM, LPARAM);
 	void del_objects();
 	void set_image(BOOL req_inf);
 	static void update_disp();
 	static BOOL b_infchecked;
+	static void putobj2map(CMob* pobj);
+	static HWND hwndtip;
+	static CMob* pmob_dlg;
 
 };
 

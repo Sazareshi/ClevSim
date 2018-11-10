@@ -3,6 +3,7 @@
 #include "mob.h"
 #include "panel.h"
 #include "MultiTaskMain.h"
+#include "PublicRelation.h"
 
 
 class CActor :public CThreadObj
@@ -32,6 +33,7 @@ private:
 	int cal_silo(DWORD index, LONG dt, DWORD com);
 	int cal_tripper(DWORD index, LONG dt, DWORD com);
 	void init_bc();
+	void init_trp();
 	void init_silo();
 
 };

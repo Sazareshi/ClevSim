@@ -10,7 +10,6 @@ CMCtransaction::~CMCtransaction(){}
 int CMCtransaction::set_com_msg(int pos, int type, int writelen, ...)//書き込むレジスタのバイト数
 {
 	va_list arguments;
-	
 	//共通ヘッダ
 	mcifmng.com_msg[pos].cmd0401.common_header.subheader[0] = 0x50;//サブヘッダ
 	mcifmng.com_msg[pos].cmd0401.common_header.subheader[1] = 0x00;//サブヘッダ

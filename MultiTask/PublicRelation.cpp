@@ -11,6 +11,8 @@ CPublicRelation* CPublicRelation:: pPrInst;
 
 LPSTMobs CPublicRelation::pstMobs;
 HANDLE CPublicRelation::hmue_mobs;
+HWND CPublicRelation::hwndtip;
+CMob* CPublicRelation::pmob_dlg;
 
 PR_DISP CPublicRelation::stdisp;
 
@@ -43,6 +45,25 @@ void CPublicRelation::init_task(void* pobj) {
 	ShowWindow(pPrInst->inf.hWnd_work, SW_SHOW);
 	UpdateWindow(pPrInst->inf.hWnd_work);
 
+
+	InitTipWnd(pPrInst->inf.hInstance, TipWndProc, TEXT("pr_tip"));
+	hwndtip = CreateWindow(TEXT("pr_tip"),
+		NULL,
+		WS_CHILD,
+		0,
+		0,
+		100,
+		10,
+		pPrInst->inf.hWnd_work,
+		0,
+		pPrInst->inf.hInstance,
+		NULL);
+
+
+	ShowWindow(hwndtip, SW_SHOW);
+	UpdateWindow(hwndtip);
+
+
 	///# 共有メモリ関連セット
 	pstMobs = (LPSTMobs)&(((P_ST_SMEM_FORMAT)inf.pSmem)->stSmem.mobs);
 	hmue_mobs = inf.hSmem_mutex[MUTEXID_MOBS];
@@ -74,6 +95,28 @@ BOOL CPublicRelation::InitWorkWnd(HINSTANCE hInst, WNDPROC WndProc, LPCTSTR lpsz
 
 	return RegisterClassExW(&wc);
 }
+BOOL CPublicRelation::InitTipWnd(HINSTANCE hInst, WNDPROC WndProc, LPCTSTR lpszClassName) {
+
+	WNDCLASSEX wc;
+
+	ZeroMemory(&wc, sizeof(wc));
+	wc.cbSize = sizeof(WNDCLASSEX);
+
+	wc.style = CS_HREDRAW | CS_VREDRAW;
+	wc.lpfnWndProc = TipWndProc;
+	wc.cbClsExtra = 0;
+	wc.cbWndExtra = 0;
+	wc.hInstance = hInst;
+	wc.hIcon = NULL;
+	wc.hCursor = LoadCursor(0, IDC_ARROW);
+//	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+	wc.hbrBackground = CreateSolidBrush(RGB(255,255,220));
+	wc.lpszMenuName = NULL;
+	wc.lpszClassName = lpszClassName;
+	wc.hIconSm = NULL;
+
+	return RegisterClassExW(&wc);
+}
 
 void CPublicRelation::routine_work(void *param) {
 
@@ -96,6 +139,9 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 	HDC hdc;
 	static POINTS mpts;
 	TCHAR szBuf[128];
+	CMob* pmob;
+	HMENU hpopmenu,hsubmenu;
+	HWND tmpwnd;
 
 	switch (msg) {
 
@@ -107,6 +153,29 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 			else b_infchecked = FALSE;
 			SetFocus(hWnd);//親ウィンドウにフォーカスを持ってこないとキーイベントが入らない
 			break;
+		case IDM_PR_OPEN_DLG: {
+			if (pmob_dlg != nullptr) {
+				if ((pmob_dlg->type[0] == L'B') && (pmob_dlg->type[1] == L'C')) {
+					tmpwnd = CreateDialog(pPrInst->inf.hInstance, L"IDD_BC_HANDLE", hWnd, (DLGPROC)PR_BCPANEL_PROC);
+				}
+				else if ((pmob_dlg->type[0] == L'T') && (pmob_dlg->type[1] == L'R')) {
+					tmpwnd = CreateDialog(pPrInst->inf.hInstance, L"IDD_TRP_HANDLE", hWnd, (DLGPROC)PR_TRPPANEL_PROC);
+				}
+				else if ((pmob_dlg->type[0] == L'S') && (pmob_dlg->type[1] == L'I')) {
+					tmpwnd = CreateDialog(pPrInst->inf.hInstance, L"IDD_SILO_HANDLE", hWnd, (DLGPROC)PR_SILOPANEL_PROC);
+				}
+				else;
+			}
+		}break;
+		case IDM_PR_ACT_DEACT: {
+			if (pmob_dlg != nullptr) {
+				if ((pmob_dlg->type[0] == L'C') && (pmob_dlg->type[1] == L'U')) {
+					if(pmob_dlg->status == MOB_STAT_IDLE)pmob_dlg->status = MOB_STAT_ACT0;
+					else pmob_dlg->status = MOB_STAT_IDLE;
+				}
+
+			}
+		}break;
 		default:
 			break;
 		}
@@ -118,6 +187,7 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 	}break;
 
 	case WM_CREATE: {
+		
 		nFramX = GetSystemMetrics(SM_CXSIZEFRAME);//ウィンドウ周囲の幅
 		nFramY = GetSystemMetrics(SM_CYSIZEFRAME);//ウィンドウ周囲の高さ
 		nCaption = GetSystemMetrics(SM_CYCAPTION);//タイトルバーの高さ
@@ -187,15 +257,10 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 		PatBlt(pPrInst->stdisp.hdc_mem_inf, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, WHITENESS);//情報画面一旦クリア
 		wsprintf(szBuf, TEXT("mouse x:%04d  y:%04d"), mpts.x, mpts.y);
 		TextOut(pPrInst->stdisp.hdc_mem_inf, pPrInst->stdisp.bgw - 200, 5, szBuf, lstrlen(szBuf));//マウス位置情報書き込み
-
-	/*
-		BitBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_bg, 0, 0, SRCCOPY);
-		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobh, mobh, pPrInst->stdisp.hdc_mem_mob, i_img * mobh, 0, mobh, mobh, RGB(255, 255, 255));
-		if (b_infchecked)TransparentBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_inf, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, RGB(255, 255, 255));
-
-		InvalidateCUBE(pPrInst->inf.hWnd_work, NULL, FALSE);
-	*/
-		update_disp();
+		
+		pmob = stdisp.mobmap[(mpts.x - DISP_OFFSET_X) >> 3][(mpts.y - DISP_OFFSET_Y) >> 3];
+		SendMessage(hwndtip, MSGID_UPDATE_DISP_TIP, 0L, (LPARAM)pmob);
+		MoveWindow(hwndtip, mpts.x + 20, mpts.y -20, TIP_WND_W, TIP_WND_H,TRUE);
 		break;
 	}
 	case WM_LBUTTONUP: {
@@ -204,6 +269,17 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 	}
 	case WM_LBUTTONDOWN: {
 		mpts.x = LOWORD(lp); mpts.y = HIWORD(lp);
+		break;
+	}
+	case WM_RBUTTONDOWN: {
+		mpts.x = LOWORD(lp); mpts.y = HIWORD(lp);
+		hpopmenu = LoadMenu((HINSTANCE)GetWindowLong(hWnd,GWLP_HINSTANCE),L"PR_POPUP");
+		pmob_dlg = stdisp.mobmap[(mpts.x - DISP_OFFSET_X) >> 3][(mpts.y - DISP_OFFSET_Y) >> 3];
+		hsubmenu = GetSubMenu(hpopmenu, 0);
+		POINT pt;
+		ClientToScreen(hWnd, &pt);
+		TrackPopupMenu(hsubmenu, TPM_LEFTALIGN, mpts.x + 150, mpts.y, 0, hWnd, NULL);
+		DestroyMenu(hpopmenu);
 		break;
 	}
 	case WM_KEYDOWN: {
@@ -229,6 +305,45 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 		KillTimer(hWnd, ID_PR_TIMER);
 		break;
 	}
+	default:
+		return DefWindowProc(hWnd, msg, wp, lp);
+	}
+	return 0;
+};
+
+
+LRESULT CPublicRelation::TipWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
+	static TCHAR szBuf[128];
+	HDC hdc_tip;
+
+	switch (msg) {
+	case WM_CREATE: {
+
+		break;
+	}
+	case WM_PAINT: {
+		PAINTSTRUCT ps;
+
+		hdc_tip = BeginPaint(hWnd, &ps);
+		SetBkMode(hdc_tip, TRANSPARENT);
+		SetTextColor(hdc_tip, RGB(128, 128, 128));
+		TextOut(hdc_tip, 0, 0, szBuf, lstrlen(szBuf));
+		EndPaint(hWnd, &ps);
+		break;
+	}
+	case MSGID_UPDATE_DISP_TIP: {
+		CMob* pmob;
+		pmob = (CMob *)lp;
+		if (pmob != nullptr) {
+			wsprintf(szBuf, pmob->name);
+		}
+		else {
+			wsprintf(szBuf, TEXT("#####"));
+		}
+	}break;
+	case WM_DESTROY:
+		break;
+
 	default:
 		return DefWindowProc(hWnd, msg, wp, lp);
 	}
@@ -500,6 +615,88 @@ void CPublicRelation::set_image(BOOL req_inf) {
 	return;
 };
 
+void CPublicRelation::set_mobmap(int com) {
+
+	CMob* pobj;
+	if (com == COM_MOBMAP_ALL) {
+		//PANEL
+		for (int i = 0; i < NUM_OF_EROOM; i++) {
+			pobj = pstMobs->pmobs[MOB_ID_EROOM][i];
+			putobj2map(pobj);
+		}
+
+		//Equipment
+		//BC
+		for (int i = 0; i < BC_LINES; i++) {
+			for (int j = 0; j < BC_LINE_NUM; j++) {
+				pobj = pstMobs->pmobs[MOB_ID_BC][i*BC_LINE_NUM + j];
+				putobj2map(pobj);
+			}
+		}
+		//SILO
+		for (int i = 0; i < SILO_LINES; i++) {
+			for (int j = 0; j < SILO_LINE_NUM; j++) {
+				pobj = pstMobs->pmobs[MOB_ID_SILO][i*SILO_LINE_NUM + j];
+				putobj2map(pobj);
+			}
+		}
+		//CUL
+		for (int i = 0; i < NUM_OF_CUL; i++) {
+			pobj = pstMobs->pmobs[MOB_ID_CUL][i];
+			putobj2map(pobj);
+		}
+		//CRUSHER
+		for (int i = 0; i < NUM_OF_CRUSH; i++) {
+			pobj = pstMobs->pmobs[MOB_ID_CRUSH][i];
+			putobj2map(pobj);
+		}
+		//HARAIDASHIKI
+		for (int i = 0; i < NUM_OF_HARAI; i++) {
+			pobj = pstMobs->pmobs[MOB_ID_HARAI][i];
+			putobj2map(pobj);
+		}
+		//TRIPPER
+		for (int i = 0; i < NUM_OF_TRIPPER; i++) {
+			pobj = pstMobs->pmobs[MOB_ID_TRIPPER][i];
+			putobj2map(pobj);
+		}
+	}
+	else if (com == COM_MOBMAP_5A) {
+		pobj = pstMobs->pmobs[MOB_ID_BC][LINE_A*BC_LINE_NUM +BC_L5];
+		putobj2map(pobj);
+		pobj = pstMobs->pmobs[MOB_ID_TRIPPER][LINE_A];
+		putobj2map(pobj);
+	}
+	else if (com == COM_MOBMAP_5B) {
+		pobj = pstMobs->pmobs[MOB_ID_BC][LINE_B*BC_LINE_NUM + BC_L5];
+		putobj2map(pobj);
+		pobj = pstMobs->pmobs[MOB_ID_TRIPPER][LINE_B];
+		putobj2map(pobj);
+
+	}
+	else if (com == COM_MOBMAP_5C) {
+		pobj = pstMobs->pmobs[MOB_ID_BC][LINE_C*BC_LINE_NUM + BC_L5];
+		putobj2map(pobj);
+		pobj = pstMobs->pmobs[MOB_ID_TRIPPER][LINE_C];
+		putobj2map(pobj);
+
+	}
+	else;
+}
+
+void CPublicRelation::putobj2map(CMob* pobj) {
+
+	if (pobj->exist == ON) {
+		int map_x = pobj->area.x >> 3;
+		int map_y = pobj->area.y >> 3;
+		for (int ii = 0; ii < (pobj->area.w >> 3); ii++) {
+			for (int jj = 0; jj < (pobj->area.h >> 3); jj++) {
+				stdisp.mobmap[map_x + ii][map_y + jj] = pobj;
+			}
+		}
+	}
+};
+
 void CPublicRelation::update_disp() {
 	static int i_img2;
 	int mobw, mobh, mobx, moby;
@@ -755,4 +952,174 @@ void CPublicRelation::update_disp() {
 	InvalidateRect(pPrInst->inf.hWnd_work, NULL, FALSE);
 	return;
 };
-;
+
+LRESULT CPublicRelation::PR_BCPANEL_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
+	PAINTSTRUCT ps;
+	
+	static CBC* pbc;
+
+	switch (msg) {
+	case WM_COMMAND: {
+		switch (LOWORD(wp)) {
+		case IDC_DMPER_RADIO1: {
+			pbc->head_unit.pos = 0;
+			SendMessage(GetDlgItem(hWnd, IDC_DMPER_RADIO1), BM_SETCHECK, BST_CHECKED, 0L);
+		}break;
+		case IDC_DMPER_RADIO2: {
+			pbc->head_unit.pos = 1;
+			SendMessage(GetDlgItem(hWnd, IDC_DMPER_RADIO2), BM_SETCHECK, BST_CHECKED, 0L);
+		}break;
+		case IDC_DMPER_RADIO3: {
+			pbc->head_unit.pos = 2;
+			SendMessage(GetDlgItem(hWnd, IDC_DMPER_RADIO3), BM_SETCHECK, BST_CHECKED, 0L);
+		}break;
+		case IDC_PR_CHECK_BC_PUTLOAD: {
+			if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_PR_CHECK_BC_PUTLOAD)) {
+				pbc->put_test_load = (pbc->l >> 10) - 10;
+				//			pbc->put_test_load = 20;
+			}
+			else {
+				pbc->put_test_load = 0;
+			}
+
+		}break;
+
+
+		case IDCANCEL: {
+			EndDialog(hWnd, LOWORD(wp));
+		}break;
+		default: return FALSE;
+		}
+	}break;
+	case WM_INITDIALOG: {
+		pbc = (CBC*)pmob_dlg;//MOUSE MOVEでオブジェクトのポインタはセットされている
+		if(pbc->head_unit.pos == 0) SendMessage(GetDlgItem(hWnd, IDC_DMPER_RADIO1), BM_SETCHECK, BST_CHECKED, 0L);
+		else if(pbc->head_unit.pos == 1) SendMessage(GetDlgItem(hWnd, IDC_DMPER_RADIO2), BM_SETCHECK, BST_CHECKED, 0L);
+		else if (pbc->head_unit.pos == 2) SendMessage(GetDlgItem(hWnd, IDC_DMPER_RADIO3), BM_SETCHECK, BST_CHECKED, 0L);
+
+		if(pbc->put_test_load)SendMessage(GetDlgItem(hWnd, IDC_PR_CHECK_BC_PUTLOAD), BM_SETCHECK, BST_CHECKED, 0L);
+		else SendMessage(GetDlgItem(hWnd, IDC_PR_CHECK_BC_PUTLOAD), BM_SETCHECK, BST_UNCHECKED, 0L);
+	}break;
+	case WM_PAINT: {
+		BeginPaint(hWnd, &ps);
+		EndPaint(hWnd, &ps);
+		break;
+	}
+	case WM_DESTROY: {
+		break;
+	}
+	default:
+		return FALSE;
+	}
+	return TRUE;
+};
+LRESULT CPublicRelation::PR_TRPPANEL_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
+	PAINTSTRUCT ps;
+	wstring wstr;
+	static CTripper* ptrp;
+
+	switch (msg) {
+	case WM_COMMAND: {
+		switch (LOWORD(wp)) {
+		case IDC_TRPCHECK_COM_MOVE: {
+			if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_TRPCHECK_COM_MOVE)) {
+				ptrp->set_command(COM_TRP_MOVE);
+				int n = GetDlgItemText(hWnd, IDC_TRPEDIT_COM_TARGET,(LPTSTR)wstr.c_str(), 128);
+				if (n) ptrp->set_target(stoi(wstr)); 
+			}
+			else {
+				ptrp->reset_command(COM_TRP_MOVE);
+			}
+
+		}break;
+		case IDC_TRPCHECK_COM_DISCHARGE: {
+			if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_TRPCHECK_COM_DISCHARGE)) {
+				ptrp->set_command(COM_TRP_DISCHARGE);
+			}
+			else {
+				ptrp->reset_command(COM_TRP_DISCHARGE);
+			}
+
+		}break;
+
+		case IDCANCEL: {
+			EndDialog(hWnd, LOWORD(wp));
+		}break;
+		case IDOK: {
+			int n = GetDlgItemText(hWnd, IDC_TRPEDIT_COM_TARGET, (LPTSTR)wstr.c_str(), 128);
+			if (n) ptrp->set_target(stoi(wstr));
+		}break;
+		default: return FALSE;
+		}
+	}break;
+	case WM_INITDIALOG: {
+		ptrp = (CTripper*)pmob_dlg;//MOUSE MOVEでオブジェクトのポインタはセットされている
+		if (ptrp->command & COM_TRP_MOVE) SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_MOVE), BM_SETCHECK, BST_CHECKED, 0L);
+		else  SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_MOVE), BM_SETCHECK, BST_UNCHECKED, 0L);
+
+		if (ptrp->command & COM_TRP_DISCHARGE) SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_DISCHARGE), BM_SETCHECK, BST_CHECKED, 0L);
+		else  SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_DISCHARGE), BM_SETCHECK, BST_UNCHECKED, 0L);
+	}break;
+	case WM_PAINT: {
+		BeginPaint(hWnd, &ps);
+		EndPaint(hWnd, &ps);
+		break;
+	}
+	case WM_DESTROY: {
+		break;
+	}
+	default:
+		return FALSE;
+	}
+	return TRUE;
+};
+LRESULT CPublicRelation::PR_SILOPANEL_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
+	PAINTSTRUCT ps;
+	wstring wstr;
+	static CSilo* psilo;
+
+	switch (msg) {
+	case WM_COMMAND: {
+		switch (LOWORD(wp)) {
+		case IDC_PR_BUTTON_SILO_100: {
+			for (int i = 0; i < SIRO_COLUMN_NUM; i++) {
+				psilo->column[i].weight = psilo->capa1;
+			}
+		}break;
+		case IDC_PR_BUTTON_SILO_50: {
+			for (int i = 0; i < SIRO_COLUMN_NUM; i++) {
+				psilo->column[i].weight = psilo->capa1/2;
+			}
+		}break;
+		case IDC_PR_BUTTON_SILO_0: {
+			for (int i = 0; i < SIRO_COLUMN_NUM; i++) {
+				psilo->column[i].weight = 0;
+			}
+		}break;
+
+		case IDCANCEL: {
+			EndDialog(hWnd, LOWORD(wp));
+		}break;
+		case IDOK: {
+
+		}break;
+		default: return FALSE;
+		}
+	}break;
+	case WM_INITDIALOG: {
+		psilo = (CSilo*)pmob_dlg;//MOUSE MOVEでオブジェクトのポインタはセットされている
+	}break;
+	case WM_PAINT: {
+		BeginPaint(hWnd, &ps);
+		EndPaint(hWnd, &ps);
+		break;
+	}
+	case WM_DESTROY: {
+		break;
+	}
+	default:
+		return FALSE;
+	}
+	return TRUE;
+};
+

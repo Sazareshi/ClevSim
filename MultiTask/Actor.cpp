@@ -75,7 +75,7 @@ void CActor::init_task(void* pobj) {
 	hbmp = (HBITMAP)LoadImage(pActInst->inf.hInstance, TEXT("IDB_CUL0"), IMAGE_BITMAP, 0, 0, LR_DEFAULTCOLOR);
 	for (int i = 0; i < NUM_OF_CUL; i++) {
 		pstMobs->pmobs[MOB_ID_CUL][i] = &(pstMobs->mobs.cul[i]);
-		pstMobs->mobs.cul[i].status = MOB_STAT_ACT0;
+		pstMobs->mobs.cul[i].status = MOB_STAT_IDLE;
 		wsprintf(pstMobs->mobs.cul[i].type, MOB_TYPE_CUL);
 		pstMobs->mobs.cul[i].hBmp_mob = hbmp;
 		pstMobs->pmobs[MOB_ID_CUL][i]->bmpw = BMP_WH[MOB_ID_CUL][0];
@@ -252,18 +252,18 @@ void CActor::init_task(void* pobj) {
 				case 9: break;
 				case 10: break;
 				case 11: pobj->ability = _wtoi(wstrtmp.c_str()); break;
-				case 12:pobj->pos_drop[0] = _wtoi(wstrtmp.c_str()); break;
-				case 13:pobj->pos_drop[1] = _wtoi(wstrtmp.c_str()); break;
-				case 14:pobj->pos_drop[2] = _wtoi(wstrtmp.c_str()); break;
-				case 15:pobj->pos_drop[3] = _wtoi(wstrtmp.c_str()); break;
-				case 16:pobj->pos_drop[4] = _wtoi(wstrtmp.c_str()); break;
-				case 17:pobj->pos_drop[5] = _wtoi(wstrtmp.c_str()); break;
-				case 18:pobj->pos_drop[6] = _wtoi(wstrtmp.c_str()); break;
-				case 19:pobj->pos_drop[7] = _wtoi(wstrtmp.c_str()); break;
-				case 20:pobj->pos_drop[8] = _wtoi(wstrtmp.c_str()); break;
-				case 21:pobj->pos_drop[9] = _wtoi(wstrtmp.c_str()); break;
-				case 22:pobj->pos_drop[10] = _wtoi(wstrtmp.c_str()); break;
-				case 23:pobj->pos_drop[11] = _wtoi(wstrtmp.c_str()); break;
+				case 12:pobj->pos_drop[0][0] = _wtoi(wstrtmp.c_str()); break;
+				case 13:pobj->pos_drop[0][1] = _wtoi(wstrtmp.c_str()); break;
+				case 14:pobj->pos_drop[0][2] = _wtoi(wstrtmp.c_str()); break;
+				case 15:pobj->pos_drop[0][3] = _wtoi(wstrtmp.c_str()); break;
+				case 16:pobj->pos_drop[0][4] = _wtoi(wstrtmp.c_str()); break;
+				case 17:pobj->pos_drop[0][5] = _wtoi(wstrtmp.c_str()); break;
+				case 18:pobj->pos_drop[1][0] = _wtoi(wstrtmp.c_str()); break;
+				case 19:pobj->pos_drop[1][1] = _wtoi(wstrtmp.c_str()); break;
+				case 20:pobj->pos_drop[1][2] = _wtoi(wstrtmp.c_str()); break;
+				case 21:pobj->pos_drop[1][3] = _wtoi(wstrtmp.c_str()); break;
+				case 22:pobj->pos_drop[1][4] = _wtoi(wstrtmp.c_str()); break;
+				case 23:pobj->pos_drop[1][5] = _wtoi(wstrtmp.c_str()); break;
 				default:break;
 				}
 				k++;
@@ -312,6 +312,7 @@ void CActor::init_task(void* pobj) {
 				case 9: pobj->SILOtype = stoi(wstrtmp.c_str(), nullptr, 16); break;
 				case 10: ; break;
 				case 11: pobj->capa_all = _wtoi(wstrtmp.c_str()); break;
+				case 12: pobj->pos_bc_origin = _wtoi(wstrtmp.c_str()); break;
 				default:break;
 				}
 				k++;
@@ -326,6 +327,7 @@ void CActor::init_task(void* pobj) {
 
 	init_bclink();//BCの接続設定
 	init_bc();//BC関連初期化
+	init_trp();//Tripper関連初期化
 	init_silo();//BCサイロ関連初期化
 
 
@@ -333,7 +335,10 @@ void CActor::init_task(void* pobj) {
 	load_cul.density = 1000;//密度kg/m3  1000kg/m3
 	load_cul.material = LD_COAL1; //素材成分　
 	load_cul.weight = load_cul.density;//1m当たりの重量kg
-	load_cul.vol = 1000;//	体積　1000cm3(l)
+
+	// CMob ポインタマップセット
+	CPublicRelation pr;
+	pr.set_mobmap(COM_MOBMAP_ALL);
 
 	return;
 }
@@ -387,9 +392,13 @@ void CActor::routine_work(void *param) {
 	}
 	//TRIPPER
 	for (int i = 0; i < NUM_OF_TRIPPER; i++) {
-		if (pstMobs->pmobs[MOB_ID_TRIPPER][i]->status == MOB_STAT_ACT0)pstMobs->pmobs[MOB_ID_TRIPPER][i]->status = MOB_STAT_ACT1;
+		if (pstMobs->pmobs[MOB_ID_TRIPPER][i]->command == COM_TRP_IDLE) pstMobs->pmobs[MOB_ID_TRIPPER][i]->status = MOB_STAT_IDLE;
+		else if (!(pstMobs->pmobs[MOB_ID_TRIPPER][i]->command & COM_TRP_DISCHARGE)) pstMobs->pmobs[MOB_ID_TRIPPER][i]->status = MOB_STAT_ACT0;
+		else if (pstMobs->pmobs[MOB_ID_TRIPPER][i]->status == MOB_STAT_IDLE) pstMobs->pmobs[MOB_ID_TRIPPER][i]->status = MOB_STAT_ACT0;
+		else if (pstMobs->pmobs[MOB_ID_TRIPPER][i]->status == MOB_STAT_ACT0)pstMobs->pmobs[MOB_ID_TRIPPER][i]->status = MOB_STAT_ACT1;
 		else if (pstMobs->pmobs[MOB_ID_TRIPPER][i]->status == MOB_STAT_ACT1)pstMobs->pmobs[MOB_ID_TRIPPER][i]->status = MOB_STAT_ACT2;
 		else pstMobs->pmobs[MOB_ID_TRIPPER][i]->status = MOB_STAT_ACT0;
+		cal_tripper(i,ms_dt, pstMobs->pmobs[MOB_ID_TRIPPER][i]->command);
 	}
 
 	ms_lasttime = ((P_ST_SMEM_FORMAT)inf.pSmem)->stSmem.simtime_ms; //前回シミュレーション時間保持
@@ -431,6 +440,16 @@ int CActor::cal_silo(DWORD index, LONG dt, DWORD com) {
 
 int CActor::cal_tripper(DWORD index, LONG dt, DWORD com) {
 	CTripper* pobj = &(pstMobs->mobs.tripper[index]);
+	int iret = pobj->move(com, dt, pobj->get_target());
+
+	//トリッパ移動でマップ更新
+	if (iret) {//移動有り
+		CPublicRelation pr;
+		if (pobj->ID == LINE_A)  pr.set_mobmap(COM_MOBMAP_5A);
+		else if (pobj->ID == LINE_B) pr.set_mobmap(COM_MOBMAP_5B);
+		else if (pobj->ID == LINE_C) pr.set_mobmap(COM_MOBMAP_5C); 
+		else;
+	}
 
 	return 0;
 };
@@ -683,9 +702,9 @@ void CActor::set_panel_tip_txt()
 
 void CActor::init_bc() {//BC関連初期設定
 	//Tripperセット
-	(pstMobs->mobs.bc[LINE_A][BC_L5]).ptrp = &(pstMobs->mobs.tripper[LINE_A]);
-	(pstMobs->mobs.bc[LINE_B][BC_L5]).ptrp = &(pstMobs->mobs.tripper[LINE_B]);
-	(pstMobs->mobs.bc[LINE_B][BC_L5]).ptrp = &(pstMobs->mobs.tripper[LINE_C]);
+	(pstMobs->mobs.bc[LINE_A][BC_L5]).ptrp = (CMob*)(&(pstMobs->mobs.tripper[LINE_A]));
+	(pstMobs->mobs.bc[LINE_B][BC_L5]).ptrp = (CMob*)(&(pstMobs->mobs.tripper[LINE_B]));
+	(pstMobs->mobs.bc[LINE_B][BC_L5]).ptrp = (CMob*)(&(pstMobs->mobs.tripper[LINE_C]));
 
 
 	CBC* pbc;
@@ -785,6 +804,24 @@ void CActor::init_bc() {//BC関連初期設定
 				}
 			}
 		}
+	}
+	return;
+};
+void CActor::init_trp() {//TRIPPER関連初期設定
+	//BCセット
+	pstMobs->mobs.tripper[LINE_A].pbc = &(pstMobs->mobs.bc[LINE_A][BC_L5]);
+	pstMobs->mobs.tripper[LINE_B].pbc = &(pstMobs->mobs.bc[LINE_B][BC_L5]);
+	pstMobs->mobs.tripper[LINE_C].pbc = &(pstMobs->mobs.bc[LINE_C][BC_L5]);
+	//SILOセット
+	for (int i = 0; i < 4; i++) {
+		pstMobs->mobs.tripper[LINE_A].psilo[i] = &(pstMobs->mobs.silo[LINE_A][i]);
+		pstMobs->mobs.tripper[LINE_B].psilo[i] = &(pstMobs->mobs.silo[LINE_B][i]);
+		pstMobs->mobs.tripper[LINE_C].psilo[i] = &(pstMobs->mobs.silo[LINE_C][i]);
+
+	}
+
+	for (int i = 0; i < NUM_OF_TRIPPER; i++) {
+		pstMobs->mobs.tripper[i].set_param();
 	}
 
 	return;
