@@ -32,9 +32,11 @@ private:
 	int cal_bc(DWORD index, LONG dt, DWORD com);
 	int cal_silo(DWORD index, LONG dt, DWORD com);
 	int cal_tripper(DWORD index, LONG dt, DWORD com);
+	int cal_harai(DWORD index, LONG dt, DWORD com);
 	void init_bc();
 	void init_trp();
 	void init_silo();
+	void init_harai();
 
 };
 

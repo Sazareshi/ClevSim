@@ -21,7 +21,7 @@ STLOAD CSilo::pop_load(int pos, STLOAD load) {
 }
 
 int CSilo::clear_load() {
-	for (int i = 0; i < SIRO_COLUMN_NUM;i++) column[i].weight = 0;
+	for (int i = 0; i < SILO_COLUMN_NUM;i++) column[i].weight = 0;
 	return 0;
 }
 
@@ -37,7 +37,7 @@ CBC::CBC() {
 };
 CBC::~CBC() {};
 int CBC::put_load(int pos, STLOAD load) {
-	DWORD beltmm;
+	LONG beltmm;
 	if (pos < BC_RCV_MAX) {
 		beltmm = headpos_mm + pos_rcv[pos] * 1000; if (beltmm > l)beltmm -= l;
 	}
@@ -55,7 +55,7 @@ int CBC::put_load(int pos, STLOAD load) {
 STLOAD CBC::pop_load(int pos, STLOAD load) {
 	STLOAD load_ret;
 
-	DWORD beltmm = headpos_mm + pos * 1000; if (beltmm > l)beltmm -= l;
+	LONG beltmm = headpos_mm + pos * 1000; if (beltmm > l)beltmm -= l;
 	int i_pos_belt = beltmm >> 10;
 
 	if (belt[i_pos_belt].weight > load.weight) {
@@ -98,7 +98,7 @@ void CBC::conveyor(DWORD com, LONG dt) {
 
 	if (ihead != ihead_last) {
 		if(BCtype & BC_TRP){
-			silolink->put_load(SIRO_COLUMN_NUM-1, belt[ihead_last]);
+			silolink->put_load(SILO_COLUMN_NUM-1, belt[ihead_last]);
 		}
 		else {
 			if (head_unit.pos) {
@@ -167,11 +167,11 @@ int CTripper::discharge(DWORD com, LONG dt) {
 
 	for (int i = 0; i < SILO_LINE_NUM; i++) {
 		i_silo = i;
-		if (pos < psilo[i]->pos_bc_origin * 1000 + psilo[i]->l) break;
+		if (pos < psilo[i]->pos_bc_origin_put * 1000 + psilo[i]->l) break;
 	}
-	for (int i = 0; i < SIRO_COLUMN_NUM; i++) {
+	for (int i = 0; i < SILO_COLUMN_NUM; i++) {
 		i_column = i;
-		if (pos < (psilo[i_silo]->pos_bc_origin * 1000) + psilo[i_silo]->l / SIRO_COLUMN_NUM * (i+1)) break;
+		if (pos < (psilo[i_silo]->pos_bc_origin_put * 1000) + psilo[i_silo]->l / SILO_COLUMN_NUM * (i+1)) break;
 	}
 	bc_pos_m = (pbc->l - pos) / 1000;//BCヘッドからの位置
 
@@ -219,13 +219,88 @@ int CTripper::move(DWORD com, LONG dt, int target) {
 };
 void CTripper::set_param(){
 	if (psilo[0] != nullptr) {
-		pos_min = psilo[0]->pos_bc_origin * 1000;
+		pos_min = psilo[0]->pos_bc_origin_put * 1000;
 	}
 	else {
 		pos_min = 0;
 	}
 	if (psilo[3] != nullptr) {
-		pos_max = psilo[3]->pos_bc_origin* 1000 + psilo[3]->l;
+		pos_max = psilo[3]->pos_bc_origin_put* 1000 + psilo[3]->l;
+	}
+	else {
+		pos_max = 224000;
+	}
+	pos = pos_min;
+	return;
+};
+
+/* HARAIKI ***************************************************/
+int CHarai::discharge(DWORD com, LONG dt) {
+	int i_silo, i_column, bc_pos_m;
+
+	if (!(com & COM_TRP_DISCHARGE)) 	return 0;
+
+	for (int i = 0; i < SILO_LINE_NUM; i++) {
+		i_silo = i;
+		if (pos < psilo[i]->pos_bc_origin_put * 1000 + psilo[i]->l) break;
+	}
+	for (int i = 0; i < SILO_COLUMN_NUM; i++) {
+		i_column = i;
+		if (pos < (psilo[i_silo]->pos_bc_origin_put * 1000) + psilo[i_silo]->l / SILO_COLUMN_NUM * (i + 1)) break;
+	}
+	bc_pos_m = (pbc->l - pos) / 1000;//BCヘッドからの位置
+
+	STLOAD load;
+	load.weight = ability * dt / 1000;
+	psilo[i_silo]->put_load(i_column, pbc->pop_load(bc_pos_m, load));
+
+	return 1;
+};
+int CHarai::move(DWORD com, LONG dt, int target) {
+	int iret;
+
+	iret = 1;
+
+	if (com == COM_TRP_IDLE) {
+		status = MOB_STAT_IDLE;
+	}
+	else if (com & COM_TRP_DISCHARGE) {
+		discharge(com, dt);
+	}
+	else;
+
+	if (com & COM_TRP_MOVE) {
+		if (abs(pos - target) < TRP_MOVE_COMPLETE_RANGE) {
+			pos = pos;
+			iret = 0;
+		}
+		else if ((pos - target) > 0) {
+			pos = pos - (dt * spd) / 1000;
+			iret = 1;
+		}
+		else {
+			pos = pos + (dt * spd) / 1000;
+			iret = 1;
+		}
+	}
+	else {
+		pos = pos;
+		iret = 0;
+	}
+	if (pos < pos_min)pos = pos_min;
+	if (pos > pos_max)pos = pos_max;
+	set_area(pos);
+	return iret;
+};
+void CHarai::set_param() {
+	if (psilo[0] != nullptr) {
+		pos_min = psilo[0]->pos_bc_origin_pop * 1000;
+	}
+	else {
+		pos_min = 0;
+	}
+	if (psilo[3] != nullptr) {
+		pos_max = psilo[3]->pos_bc_origin_pop * 1000 + psilo[3]->l;
 	}
 	else {
 		pos_max = 224000;

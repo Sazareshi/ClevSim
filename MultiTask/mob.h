@@ -83,7 +83,7 @@ public:
 typedef struct _stLoad {
 	WORD material;//素材成分　
 	WORD density;//	密度　kg/m3
-	DWORD weight;//重量kg
+	LONG weight;//重量kg
 } STLOAD, *LPSTLOAD;
 
 #define BC_DUMPER	0x0001//切替ダンパ有
@@ -93,8 +93,9 @@ typedef struct _stLoad {
 #define BC_3MOTOR	0x0020//3モータ
 #define BC_HVOLT	0x0040//高圧モータ
 #define BC_TRP		0x0100//トリッパー付
-#define BC_DROP1	0x0200//払出用1号
-#define BC_DROP2	0x0400//払出用2号
+#define BC_SQR		0x0200//スクレーパ付
+#define BC_DROP1	0x0400//払出用1号
+#define BC_DROP2	0x0800//払出用2号
 #define BC_RCV_MAX	12//BCの荷受け場所最大数
 #define BC_MAX_LEN	800//BCの最大長さ
 #define BC_MOTOR_MAX	3//最大モータ数
@@ -102,25 +103,27 @@ typedef struct _stLoad {
 
 #define BC_COAL_DISP_PIXW	5//BC　石炭表示ピクセル幅
 
-#define SIRO_COLUMN_NUM	12//サイロ区分数
+#define SILO_COLUMN_NUM	12//サイロ区分数
 
 class CSilo : public CMob
 {
 public:
 	CSilo() {};
 	~CSilo() {};
-	DWORD SILOtype;
-	DWORD l;//長さmm
-	DWORD pos_bc_origin;//コンベヤライン上のオフセット位置m　テールから
-	DWORD w;//幅mm
-	DWORD capa_all;//全容量　kg
-	DWORD capa1;//1区画あたり定格
+	LONG SILOtype;
+	LONG l;//長さmm
+	LONG pos_bc_origin_put;//積コンベヤライン上のオフセット位置m　テールから
+	LONG pos_bc_origin_pop;//払コンベヤライン上のオフセット位置m　テールから
+	LONG w;//幅mm
+	LONG capa_all;//全容量　kg
+	LONG capa1;//1区画あたり定格
+	LONG thresh_level;//積山平準化の判定値（隣セルとの差）
 
-	STLOAD column[SIRO_COLUMN_NUM];//サイロ区分エリア
+	STLOAD column[SILO_COLUMN_NUM];//サイロ区分エリア
 	int put_load(int pos, STLOAD load);//pos サイロ上実位置m
 	STLOAD pop_load(int pos, STLOAD load);
 	int clear_load();
-	DWORD pix2kg;
+	LONG pix2kg;
 	int pix_columw;
 
 private:
@@ -155,9 +158,9 @@ public:
 	POINT imgpt_top[3],imgpt_tail;
 
 	DWORD dir;//画面での向き　HIWORD　縦横　0が横　LOWORD　0が正方向
-	DWORD l;//長さmm
-	DWORD w;//幅mm
-	DWORD ability;//定格搬送能力　ton/h
+	LONG l;//長さmm
+	LONG w;//幅mm
+	LONG ability;//定格搬送能力　ton/h
 	int  spd;//現在速度　mm/s
 	int  base_spd;//定格速度　mm/s
 	int  trq;//トルク
@@ -165,9 +168,9 @@ public:
 	int belt_size;//belt配列のサイズ
 	int	ihead;//ベルトヘッド位置インデックス
 	int	ihead_last;//ベルトヘッド位置前回値
-	DWORD	headpos_mm;
-	DWORD	headpos_pix;
-	DWORD	Kg100perM;//BC1m当たりの定格搬送重量
+	LONG	headpos_mm;
+	LONG	headpos_pix;
+	LONG	Kg100perM;//BC1m当たりの定格搬送重量
 	CBCHead head_unit;
 	CMob* ptrp;
 	
@@ -179,8 +182,8 @@ public:
 	void conveyor(DWORD com, LONG dt);
 	void bc_reset() { headpos_mm = 0; memset(&pos_rcv, 0, sizeof(STLOAD) * BC_MAX_LEN); return; };//ベルトヘッド位置を0リセットして全石炭をクリア
 	CMotor motor[BC_MOTOR_MAX];
-	DWORD pix2mm;
-	DWORD put_test_load;//0以外でテールポジションからのインデックス位置に重量投入
+	LONG pix2mm;
+	LONG put_test_load;//0以外でテールポジションからのインデックス位置に重量投入
 	
 private:
 
@@ -193,8 +196,6 @@ private:
 #define TRP_SIRO_DRP_NUM	6
 #define TRP_SIRO_DRP_LAYER	2
 #define TRP_MOVE_COMPLETE_RANGE	500
-
-
 
 class CTripper : public CMob
 {
@@ -229,11 +230,45 @@ private:
 
 };
 
+
+#define COM_HARAI_IDLE	0
+#define COM_HARAI_DISCHARGE	1
+#define COM_HARAI_MOVE		2
+#define HARAI_SIRO_DRP_NUM	12
+#define HARAI_MOVE_COMPLETE_RANGE	500
+
 class CHarai : public CMob
 {
 public:
 	CHarai() {};
 	~CHarai() {};
+
+	int  spd;//現在速度　mm/s
+	int  pos;//現在位置　mm/s　紐付きBC上テールからの位置
+	int  pos_max, pos_min;//移動範囲最大値、最小値mm
+
+
+	int pos_drop[HARAI_SIRO_DRP_NUM];//SILO上目標位置ｍ
+	int ability;//払い出し能力　kg/s　900ton/h->250kg/s
+	CSilo* psilo[4];//紐付きサイロ
+	CBC* pbc;//紐付BC
+
+
+	int discharge(DWORD com, LONG dt);//紐付きBCへ紐付きサイロから石炭を移載
+	int move(DWORD com, LONG dt, int target);//移動/移載　戻り値1：移動有り
+	void set_command(DWORD com) { command |= com; };//指示コマンド
+	void reset_command(DWORD com) { command &= ~com; };//指示コマンド
+	DWORD get_command() { return command; };//指示コマンド
+	void set_target(int target) { if (target < pos_min)pos_target = pos_min; else if (target > pos_max)pos_target = pos_max; else pos_target = target; };//指示コマンド
+	int get_target() { return pos_target; }
+	void set_param();//パラメータを展開
+
+	void set_area(int pos) { area.y = pbc->area.y + pos / pbc->pix2mm; return; };
+
+private:
+	int pos_target;
+
+
 private:
 
 };
@@ -290,7 +325,7 @@ private:
 #define NUM_OF_TRIPPER			3
 #define NUM_OF_EROOM			3
 #define SILO_LINES				7	// 1号3line　2号設備2line　BIO　2line
-#define SILO_LINE_NUM			4	//各ラインのサイロ数　Max　1号　4　（BIOは8サイロで1つと換算）
+#define SILO_LINE_NUM			4	//各ラインのサイロ数　Max　1号　4　（BIOは8サイロで1つに換算）
 
 
 //共有メモリ配置定義
@@ -323,41 +358,47 @@ typedef struct _stMobs {
 #define DUMP2 1
 #define DUMP3 2
 
-#define BC_L1 0
-#define BC_L2 1
-#define BC_L3 2
+#define BC_L1	0
+#define BC_L2	1
+#define BC_L3	2
 #define BC_L4_1 3
 #define BC_L4_2 4
 #define BC_L4_3 5
-#define BC_L5  6
-#define BC_L6 7
-#define BC_L7_1 8
-#define BC_L7_2 9
-#define BC_L7_3 10
-#define BC_L8 11
-#define BC_L11 12
-#define BC_L12 13
-#define BC_L13 14
-#define BC_L15 15
-#define BC_L16 16
-#define BC_L17 17
-#define BC_L18_1 18
-#define BC_L18_2 19
-#define BC_L19 20
-#define BC_L20 21
-#define BC_L21 22
-#define BC_L22 23
-#define BC_L23 24
+#define BC_L5	6
+#define BC_L6	7
+#define BC_L7	8
+#define BC_L8	9
+#define BC_L9	10
+#define BC_L9_1 11
+#define BC_L9_2 12
+#define BC_L11	13
+#define BC_L12	14
+#define BC_L13	15
+#define BC_L15	16
+#define BC_L16	17
+#define BC_L17	18
+#define BC_L18	19
+#define BC_L19	20
+#define BC_L20	21
+#define BC_L21	22
+#define BC_L22	23
+#define BC_L23	24
+#define BC_LRC	25
 
 #define BC_L30 0
 #define BC_L31 1
 #define BC_L32 2
 #define BC_L33 3
 #define BC_L34 4
-#define BC_L35A 8
-#define BC_L35B 9
-#define BC_L8D 12
 
-
+#define HARAI_11A	0
+#define HARAI_11B	1
+#define HARAI_11C	2
+#define HARAI_12A	3
+#define HARAI_12B	4
+#define HARAI_12C	5
+#define HARAI_13A	6
+#define HARAI_13B	7
+#define HARAI_13C	8
 
 

@@ -140,7 +140,7 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 	static POINTS mpts;
 	TCHAR szBuf[128];
 	CMob* pmob;
-	HMENU hpopmenu,hsubmenu;
+	HMENU hsubmenu, hpopmenu;
 	HWND tmpwnd;
 
 	switch (msg) {
@@ -681,6 +681,69 @@ void CPublicRelation::set_mobmap(int com) {
 		putobj2map(pobj);
 
 	}
+	else if (com == COM_MOBMAP_11A) {
+		pobj = pstMobs->pmobs[MOB_ID_BC][LINE_A*BC_LINE_NUM + BC_L11];
+		putobj2map(pobj);
+		pobj = pstMobs->pmobs[MOB_ID_HARAI][HARAI_11A];
+		putobj2map(pobj);
+
+	}
+	else if (com == COM_MOBMAP_11B) {
+		pobj = pstMobs->pmobs[MOB_ID_BC][LINE_B*BC_LINE_NUM + BC_L11];
+		putobj2map(pobj);
+		pobj = pstMobs->pmobs[MOB_ID_HARAI][HARAI_11B];
+		putobj2map(pobj);
+
+	}
+	else if (com == COM_MOBMAP_11C) {
+		pobj = pstMobs->pmobs[MOB_ID_BC][LINE_C*BC_LINE_NUM + BC_L11];
+		putobj2map(pobj);
+		pobj = pstMobs->pmobs[MOB_ID_HARAI][HARAI_11C];
+		putobj2map(pobj);
+
+	}
+	else if (com == COM_MOBMAP_12A) {
+		pobj = pstMobs->pmobs[MOB_ID_BC][LINE_A*BC_LINE_NUM + BC_L12];
+		putobj2map(pobj);
+		pobj = pstMobs->pmobs[MOB_ID_HARAI][HARAI_12A];
+		putobj2map(pobj);
+
+	}
+	else if (com == COM_MOBMAP_12B) {
+		pobj = pstMobs->pmobs[MOB_ID_BC][LINE_B*BC_LINE_NUM + BC_L12];
+		putobj2map(pobj);
+		pobj = pstMobs->pmobs[MOB_ID_HARAI][HARAI_12B];
+		putobj2map(pobj);
+
+	}
+	else if (com == COM_MOBMAP_12C) {
+		pobj = pstMobs->pmobs[MOB_ID_BC][LINE_C*BC_LINE_NUM + BC_L12];
+		putobj2map(pobj);
+		pobj = pstMobs->pmobs[MOB_ID_HARAI][HARAI_12C];
+		putobj2map(pobj);
+
+	}
+	else if (com == COM_MOBMAP_13A) {
+		pobj = pstMobs->pmobs[MOB_ID_BC][LINE_A*BC_LINE_NUM + BC_L13];
+		putobj2map(pobj);
+		pobj = pstMobs->pmobs[MOB_ID_HARAI][HARAI_13A];
+		putobj2map(pobj);
+
+	}
+	else if (com == COM_MOBMAP_13B) {
+		pobj = pstMobs->pmobs[MOB_ID_BC][LINE_B*BC_LINE_NUM + BC_L13];
+		putobj2map(pobj);
+		pobj = pstMobs->pmobs[MOB_ID_HARAI][HARAI_13B];
+		putobj2map(pobj);
+
+	}
+	else if (com == COM_MOBMAP_13C) {
+		pobj = pstMobs->pmobs[MOB_ID_BC][LINE_C*BC_LINE_NUM + BC_L13];
+		putobj2map(pobj);
+		pobj = pstMobs->pmobs[MOB_ID_HARAI][HARAI_13C];
+		putobj2map(pobj);
+
+	}
 	else;
 }
 
@@ -786,7 +849,7 @@ void CPublicRelation::update_disp() {
 			if(pbc->exist == ON){
 				linkpt[0] = pbc->imgpt_top[pbc->head_unit.pos];
 				pbc2 = pbc->bclink[pbc->head_unit.pos];
-				if (pbc->BCtype & BC_TRP) {
+				if ((pbc->BCtype & BC_TRP)|| (pbc->BCtype & BC_SQR)) {
 					linkpt[1].x = pbc->silolink->area.x; linkpt[1].y = pbc->silolink->area.y + pbc->silolink->area.h;
 				}
 				else {
@@ -933,7 +996,7 @@ void CPublicRelation::update_disp() {
 		for (int j = 0; j < SILO_LINE_NUM; j++) {
 			psilo = &(pstMobs->mobs.silo[i][j]);
 			if (psilo->exist == ON) {
-				for (int k = 0; k < SIRO_COLUMN_NUM; k++) {
+				for (int k = 0; k < SILO_COLUMN_NUM; k++) {
 					ptr = psilo->area.x + psilo->area.w;
 					ptl = ptr - (psilo->area.w * psilo->column[k].weight)/ psilo->capa1;
 					ptt = psilo->area.y + psilo->pix_columw * k;
@@ -1082,17 +1145,17 @@ LRESULT CPublicRelation::PR_SILOPANEL_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARA
 	case WM_COMMAND: {
 		switch (LOWORD(wp)) {
 		case IDC_PR_BUTTON_SILO_100: {
-			for (int i = 0; i < SIRO_COLUMN_NUM; i++) {
+			for (int i = 0; i < SILO_COLUMN_NUM; i++) {
 				psilo->column[i].weight = psilo->capa1;
 			}
 		}break;
 		case IDC_PR_BUTTON_SILO_50: {
-			for (int i = 0; i < SIRO_COLUMN_NUM; i++) {
+			for (int i = 0; i < SILO_COLUMN_NUM; i++) {
 				psilo->column[i].weight = psilo->capa1/2;
 			}
 		}break;
 		case IDC_PR_BUTTON_SILO_0: {
-			for (int i = 0; i < SIRO_COLUMN_NUM; i++) {
+			for (int i = 0; i < SILO_COLUMN_NUM; i++) {
 				psilo->column[i].weight = 0;
 			}
 		}break;
