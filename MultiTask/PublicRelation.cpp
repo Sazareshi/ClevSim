@@ -878,7 +878,7 @@ void CPublicRelation::update_disp() {
 
 				num_accumlate = (pbc->pix2mm*BC_COAL_DISP_PIXW)>>10;//描画RECTに対するベルト長さ1024mm単位
 				i_accum = pbc->ihead;//計算対象belt配列のインデックス 以降ヘッド位置から描画となる
-				level100 = pbc->Kg100perM * num_accumlate;
+				level100 = pbc->Kg100perM * num_accumlate;//ベルト搬送能力による1m辺りの」100％荷重量　x　描画で纏めるm数
 
 				for (int k = 0; k < num_draw; k++) {
 					//描画範囲の石炭積算重量
