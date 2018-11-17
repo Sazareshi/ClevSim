@@ -87,8 +87,9 @@ typedef struct _stLoad {
 } STLOAD, *LPSTLOAD;
 
 #define BC_DUMPER	0x0001//切替ダンパ有
-#define BC_TSHOOT	0x0002//テレスコシュート有
-#define BC_2WAY		0x0004//2方向
+#define BC_TSHOOT	0x0004//テレスコシュート3port
+#define BC_TSHOOT4	0x0008//テレスコシュート4port
+#define BC_2WAY		0x0002//2方向
 #define BC_2MOTOR	0x0010//2モータ
 #define BC_3MOTOR	0x0020//3モータ
 #define BC_HVOLT	0x0040//高圧モータ
@@ -99,11 +100,15 @@ typedef struct _stLoad {
 #define BC_RCV_MAX	12//BCの荷受け場所最大数
 #define BC_MAX_LEN	800//BCの最大長さ
 #define BC_MOTOR_MAX	3//最大モータ数
-#define BC_LINK_MAX		3//BC接続先最大数
+#define BC_LINK_MAX		4//BC接続先最大数
 
 #define BC_COAL_DISP_PIXW	5//BC　石炭表示ピクセル幅
 
 #define SILO_COLUMN_NUM	12//サイロ区分数
+#define SILO_TYPE_1		0x0001//1号サイロ
+#define SILO_TYPE_2		0x0002//2号サイロ
+#define SILO_TYPE_BIO	0x0004//バイオサイロ
+#define SILO_TYPE_BANK	0x0008//バンカー
 
 class CSilo : public CMob
 {
@@ -118,6 +123,7 @@ public:
 	LONG capa_all;//全容量　kg
 	LONG capa1;//1区画あたり定格
 	LONG thresh_level;//積山平準化の判定値（隣セルとの差）
+	DWORD dir;//画面での向き　HIWORD　縦横　0が横　LOWORD　0が正方向
 
 	STLOAD column[SILO_COLUMN_NUM];//サイロ区分エリア
 	int put_load(int pos, STLOAD load);//pos サイロ上実位置m
@@ -131,9 +137,11 @@ private:
 private:
 };
 
-#define BC_HEAD_0		0
-#define BC_HEAD_DUMPER	1
-#define BC_HEAD_SHOOT	2
+#define BC_HEAD_0		0x0000
+#define BC_HEAD_DUMPER	0x0001
+#define BC_HEAD_DUAL	0x0002
+#define BC_HEAD_SHOOT3	0x0004
+#define BC_HEAD_SHOOT4	0x0008
 
 class CBCHead
 {
@@ -141,7 +149,7 @@ public:
 	CBCHead() {};
 	~CBCHead() {};
 
-	int type;// 0:plane, 1:dumper, 2:shoot
+	int type;// 0:plane, 1:dumper,2:Dual,3:shoot3,4:shoot4
 	int pos;
 
 	int	activate(int com) { pos = com; };
@@ -322,10 +330,10 @@ private:
 #define NUM_OF_HARAI			9
 #define NUM_OF_CRUSH			2
 #define NUM_OF_CUL				2
-#define NUM_OF_TRIPPER			3
+#define NUM_OF_TRIPPER			5
 #define NUM_OF_EROOM			3
-#define SILO_LINES				7	// 1号3line　2号設備2line　BIO　2line
-#define SILO_LINE_NUM			4	//各ラインのサイロ数　Max　1号　4　（BIOは8サイロで1つに換算）
+#define SILO_LINES				9	// 1号3line　2号設備2line　BIO　2line BANKER 2line
+#define SILO_LINE_NUM			4	//各ラインのサイロ数　Max　1号　4　（BIOは8サイロで1つに換算 BANKERは6サイロで1つに換算）
 
 
 //共有メモリ配置定義
@@ -354,9 +362,12 @@ typedef struct _stMobs {
 #define LINE_E 4
 #define LINE_F 5
 #define LINE_G 6
+#define LINE_H 7
+#define LINE_I 8
 #define DUMP1 0
 #define DUMP2 1
 #define DUMP3 2
+#define DUMP4 3
 
 #define BC_L1	0
 #define BC_L2	1
@@ -390,6 +401,7 @@ typedef struct _stMobs {
 #define BC_L32 2
 #define BC_L33 3
 #define BC_L34 4
+#define BC_BIO 5
 
 #define HARAI_11A	0
 #define HARAI_11B	1

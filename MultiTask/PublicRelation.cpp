@@ -173,7 +173,36 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 					if(pmob_dlg->status == MOB_STAT_IDLE)pmob_dlg->status = MOB_STAT_ACT0;
 					else pmob_dlg->status = MOB_STAT_IDLE;
 				}
+				else if ((pmob_dlg->type[0] == L'T') && (pmob_dlg->type[1] == L'R')) {
+					CTripper * ptrp = (CTripper *)pmob_dlg;
+					if (ptrp->get_command() & COM_TRP_DISCHARGE) {
+						ptrp->reset_command(COM_TRP_DISCHARGE);
+					}
+					else {
+						ptrp->set_command(COM_TRP_DISCHARGE);
+					}
+				}
+				else if ((pmob_dlg->type[0] == L'H') && (pmob_dlg->type[1] == L'A')) {
+					if (pmob_dlg->status == MOB_STAT_IDLE)pmob_dlg->status = MOB_STAT_ACT0;
+					else pmob_dlg->status = MOB_STAT_IDLE;
+				}
+				else {
 
+				}
+			}
+		}break;
+		case IDM_PR_DMP_CHNG: {
+			if (pmob_dlg != nullptr) {
+				if ((pmob_dlg->type[0] == L'B') && (pmob_dlg->type[1] == L'C')) {
+					CBC* pbc = (CBC *)pmob_dlg;
+					int idev;
+					if (pbc->BCtype & BC_TSHOOT4) idev = 4;
+					else if (pbc->BCtype & BC_TSHOOT) idev = 3;
+					else if (pbc->BCtype & BC_2WAY) idev = 3;
+					else  idev = 2;
+
+					pbc->head_unit.pos = (pbc->head_unit.pos + 1) % idev;
+				}
 			}
 		}break;
 		default:
@@ -276,10 +305,39 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 		hpopmenu = LoadMenu((HINSTANCE)GetWindowLong(hWnd,GWLP_HINSTANCE),L"PR_POPUP");
 		pmob_dlg = stdisp.mobmap[(mpts.x - DISP_OFFSET_X) >> 3][(mpts.y - DISP_OFFSET_Y) >> 3];
 		hsubmenu = GetSubMenu(hpopmenu, 0);
+		
+
+		if (pmob_dlg != nullptr) {
+			if ((pmob_dlg->type[0] == L'C') && (pmob_dlg->type[1] == L'U')) {
+				EnableMenuItem(hsubmenu, IDM_PR_ACT_DEACT, MF_ENABLED);
+			}
+			else if ((pmob_dlg->type[0] == L'T') && (pmob_dlg->type[1] == L'R')) {
+				EnableMenuItem(hsubmenu, IDM_PR_ACT_DEACT, MF_ENABLED);
+			}
+			else if ((pmob_dlg->type[0] == L'H') && (pmob_dlg->type[1] == L'A')) {
+				EnableMenuItem(hsubmenu, IDM_PR_ACT_DEACT, MF_ENABLED);
+			}
+			else {
+				EnableMenuItem(hsubmenu, IDM_PR_ACT_DEACT, MF_GRAYED);
+			}
+
+			if ((pmob_dlg->type[0] == L'B') && (pmob_dlg->type[1] == L'C')) {
+				EnableMenuItem(hsubmenu, IDM_PR_DMP_CHNG, MF_ENABLED);
+			}
+			else {
+				EnableMenuItem(hsubmenu, IDM_PR_DMP_CHNG, MF_GRAYED);
+			}
+		}
+		else {
+			EnableMenuItem(hsubmenu, IDM_PR_ACT_DEACT, MF_GRAYED);
+			EnableMenuItem(hsubmenu, IDM_PR_DMP_CHNG, MF_GRAYED);
+		}
+
 		POINT pt;
 		ClientToScreen(hWnd, &pt);
 		TrackPopupMenu(hsubmenu, TPM_LEFTALIGN, mpts.x + 150, mpts.y, 0, hWnd, NULL);
 		DestroyMenu(hpopmenu);
+
 		break;
 	}
 	case WM_KEYDOWN: {
@@ -801,9 +859,9 @@ void CPublicRelation::update_disp() {
 				moby = pbc->area.y;
 				if ((pbc->dir) & MASK_DIR_Y) {//c”z’u
 					if ((pbc->dir) & MASK_DIR_UP) {//‹tŒü‚«
-						mobx = pbc->area.x + pbc->area.w;
+						mobx = pbc->area.x + pbc->area.w ;
 						moby = pbc->area.y + pbc->area.h - pbc->headpos_pix;
-						Ellipse(pPrInst->stdisp.hdc_mem0, mobx, moby, mobx - BC_HEAD_SIZE, moby - BC_HEAD_SIZE);
+						Ellipse(pPrInst->stdisp.hdc_mem0, mobx, moby, mobx + BC_HEAD_SIZE, moby + BC_HEAD_SIZE);
 					}
 					else {
 						mobx = pbc->area.x + pbc->area.w;
@@ -850,7 +908,13 @@ void CPublicRelation::update_disp() {
 				linkpt[0] = pbc->imgpt_top[pbc->head_unit.pos];
 				pbc2 = pbc->bclink[pbc->head_unit.pos];
 				if ((pbc->BCtype & BC_TRP)|| (pbc->BCtype & BC_SQR)) {
-					linkpt[1].x = pbc->silolink->area.x; linkpt[1].y = pbc->silolink->area.y + pbc->silolink->area.h;
+					if (pbc->silolink->dir & MASK_DIR_Y) {
+						linkpt[1].x = pbc->silolink->area.x + pbc->silolink->area.w; linkpt[1].y = pbc->silolink->area.y + pbc->silolink->area.h/2;
+					}
+					else {
+						linkpt[1].x = pbc->silolink->area.x; linkpt[1].y = pbc->silolink->area.y + pbc->silolink->area.h;
+					}
+
 				}
 				else {
 					linkpt[1] = pbc2->imgpt_rcv[pbc->bclink_i[pbc->head_unit.pos]];

@@ -335,7 +335,7 @@ void CActor::init_task(void* pobj) {
 				case 7: pobj->w = _wtol(wstrtmp.c_str()); break;
 				case 8: break;
 				case 9: pobj->SILOtype = stoi(wstrtmp.c_str(), nullptr, 16); break;
-				case 10: ; break;
+				case 10: pobj->dir = stoi(wstrtmp.c_str(), nullptr, 16); break;
 				case 11: pobj->capa_all = _wtoi(wstrtmp.c_str()); break;
 				case 12: pobj->pos_bc_origin_put = _wtoi(wstrtmp.c_str()); break;
 				case 13: pobj->pos_bc_origin_pop = _wtoi(wstrtmp.c_str()); break;
@@ -378,7 +378,8 @@ void CActor::routine_work(void *param) {
 
 	//PANEL
 	for (int i = 0; i < NUM_OF_EROOM; i++) {
-		if (pstMobs->pmobs[MOB_ID_EROOM][i]->status == MOB_STAT_ACT0)pstMobs->pmobs[MOB_ID_EROOM][i]->status = MOB_STAT_ACT1;
+		if (pstMobs->pmobs[MOB_ID_EROOM][i]->status == MOB_STAT_IDLE);
+		else if (pstMobs->pmobs[MOB_ID_EROOM][i]->status == MOB_STAT_ACT0)pstMobs->pmobs[MOB_ID_EROOM][i]->status = MOB_STAT_ACT1;
 		else if (pstMobs->pmobs[MOB_ID_EROOM][i]->status == MOB_STAT_ACT1)pstMobs->pmobs[MOB_ID_EROOM][i]->status = MOB_STAT_ACT2;
 		else pstMobs->pmobs[MOB_ID_EROOM][i]->status = MOB_STAT_ACT0;
 	}
@@ -406,13 +407,15 @@ void CActor::routine_work(void *param) {
 	for (int i = 0; i < NUM_OF_CUL; i++) cal_cul(i, load_cul, ms_dt,COM_CUL_IDLE);
 	//CRUSHER
 	for (int i = 0; i < NUM_OF_CRUSH; i++) {
-		if(pstMobs->pmobs[MOB_ID_CRUSH][i]->status == MOB_STAT_ACT0)pstMobs->pmobs[MOB_ID_CRUSH][i]->status = MOB_STAT_ACT1;
+		if (pstMobs->pmobs[MOB_ID_CRUSH][i]->status == MOB_STAT_IDLE);
+		else if(pstMobs->pmobs[MOB_ID_CRUSH][i]->status == MOB_STAT_ACT0)pstMobs->pmobs[MOB_ID_CRUSH][i]->status = MOB_STAT_ACT1;
 		else if (pstMobs->pmobs[MOB_ID_CRUSH][i]->status == MOB_STAT_ACT1)pstMobs->pmobs[MOB_ID_CRUSH][i]->status = MOB_STAT_ACT2;
 		else pstMobs->pmobs[MOB_ID_CRUSH][i]->status = MOB_STAT_ACT0;
 	}
 	//HARAIDASHIKI
 	for (int i = 0; i < NUM_OF_HARAI; i++) {
-		if (pstMobs->pmobs[MOB_ID_HARAI][i]->status == MOB_STAT_ACT0)pstMobs->pmobs[MOB_ID_HARAI][i]->status = MOB_STAT_ACT1;
+		if (pstMobs->pmobs[MOB_ID_HARAI][i]->status == MOB_STAT_IDLE);
+		else if (pstMobs->pmobs[MOB_ID_HARAI][i]->status == MOB_STAT_ACT0)pstMobs->pmobs[MOB_ID_HARAI][i]->status = MOB_STAT_ACT1;
 		else if (pstMobs->pmobs[MOB_ID_HARAI][i]->status == MOB_STAT_ACT1)pstMobs->pmobs[MOB_ID_HARAI][i]->status = MOB_STAT_ACT2;
 		else pstMobs->pmobs[MOB_ID_HARAI][i]->status = MOB_STAT_ACT0;
 	}
@@ -788,14 +791,20 @@ void CActor::init_bc() {//BC関連初期設定
 	//Tripperセット
 	(pstMobs->mobs.bc[LINE_A][BC_L5]).ptrp = (CMob*)(&(pstMobs->mobs.tripper[LINE_A]));
 	(pstMobs->mobs.bc[LINE_B][BC_L5]).ptrp = (CMob*)(&(pstMobs->mobs.tripper[LINE_B]));
-	(pstMobs->mobs.bc[LINE_B][BC_L5]).ptrp = (CMob*)(&(pstMobs->mobs.tripper[LINE_C]));
+	(pstMobs->mobs.bc[LINE_C][BC_L5]).ptrp = (CMob*)(&(pstMobs->mobs.tripper[LINE_C]));
+	(pstMobs->mobs.bc[LINE_A][BC_L8]).ptrp = (CMob*)(&(pstMobs->mobs.tripper[LINE_D]));
+	(pstMobs->mobs.bc[LINE_B][BC_L8]).ptrp = (CMob*)(&(pstMobs->mobs.tripper[LINE_E]));
 
 
 	CBC* pbc;
 	for (int i = 0; i < BC_LINES; i++) {
 		for (int j = 0; j < BC_LINE_NUM; j++) {
+
 			pbc = &(pstMobs->mobs.bc[i][j]);
 			pbc->belt_size = (pbc->l) >> 10;
+
+			if (j == 19)
+				int tmp = 1;
 		//# 
 			pbc->Kg100perM = pbc->ability * 2500 / 9 /pbc->base_spd;// pbc->ability * 1000 / 3600 / (pbc->base_spd / 1000)
 			if (pbc->ID != 0) pbc->exist = ON;
@@ -807,16 +816,16 @@ void CActor::init_bc() {//BC関連初期設定
 		//# 画像上の接続ポイント設定
 			//ヘッド画像位置
 			if (pbc->dir & MASK_DIR_Y) {//縦型
-				if (pbc->dir & MASK_DIR_UP) {//下向
+				if (pbc->dir & MASK_DIR_UP) {//上向
 					pbc->imgpt_tail.x = pbc->area.x + pbc->area.w / 2;
 					pbc->imgpt_tail.y = pbc->area.y;
 					for (int k = 0; k < BC_LINK_MAX; k++) {
 						pbc->imgpt_top[k].x = pbc->area.x + pbc->area.w/2 ;
 						if (!(pbc->BCtype & (BC_DUMPER | BC_TSHOOT))) {//ダンパ、シュート無し
-							pbc->imgpt_top[k].y = pbc->area.y + 3;
+							pbc->imgpt_top[k].y = pbc->area.y - 3;
 						}
 						else {
-							pbc->imgpt_top[k].y = pbc->area.y - (pbc->area.w / 2 + pbc->area.w * k);
+							pbc->imgpt_top[k].y = pbc->area.y - 8;
 						}
 						pbc->imgpt_top[k].x = pbc->area.x + pbc->area.w / 2;
 					}
@@ -826,10 +835,10 @@ void CActor::init_bc() {//BC関連初期設定
 					pbc->imgpt_tail.y = pbc->area.y + pbc->area.h;
 					for (int k = 0; k < BC_LINK_MAX; k++) {
 						if (!(pbc->BCtype & (BC_DUMPER | BC_TSHOOT))) {//ダンパ、シュート無し
-							pbc->imgpt_top[k].y = pbc->area.y + pbc->area.h - 3;
+							pbc->imgpt_top[k].y = pbc->area.y + pbc->area.h + 3;
 						}
 						else {
-							pbc->imgpt_top[k].y = pbc->area.y + pbc->area.h + pbc->area.w / 2 + pbc->area.w * k;
+							pbc->imgpt_top[k].y = pbc->area.y + pbc->area.h + 8;
 						}
 						pbc->imgpt_top[k].x = pbc->area.x + pbc->area.w / 2;
 					}
@@ -842,10 +851,10 @@ void CActor::init_bc() {//BC関連初期設定
 					pbc->imgpt_tail.y = pbc->area.y + pbc->area.h / 2;
 					for (int k = 0; k < BC_LINK_MAX; k++) {
 						if (!(pbc->BCtype & (BC_DUMPER | BC_TSHOOT))) {//ダンパ、シュート無し
-							pbc->imgpt_top[k].x = pbc->area.x + 3;
+							pbc->imgpt_top[k].x = pbc->area.x - 3;
 						}
 						else {
-							pbc->imgpt_top[k].x = pbc->area.x + pbc->area.h / 2 - pbc->area.h * k;
+							pbc->imgpt_top[k].x = pbc->area.x - 8;
 						}
 						pbc->imgpt_top[k].y = pbc->area.y + pbc->area.h /2;
 					}
@@ -856,10 +865,10 @@ void CActor::init_bc() {//BC関連初期設定
 					pbc->imgpt_tail.y = pbc->area.y + pbc->area.h / 2;
 					for (int k = 0; k < BC_LINK_MAX; k++) {
 						if (!(pbc->BCtype & (BC_DUMPER | BC_TSHOOT))) {//ダンパ、シュート無し
-							pbc->imgpt_top[k].x = pbc->area.x + pbc->area.w - 3;
+							pbc->imgpt_top[k].x = pbc->area.x + pbc->area.w + 3;
 						}
 						else {
-							pbc->imgpt_top[k].x = pbc->area.x + pbc->area.w - pbc->area.h / 2 + pbc->area.h * k;
+							pbc->imgpt_top[k].x = pbc->area.x + pbc->area.w + 8;
 						}
 						pbc->imgpt_top[k].y = pbc->area.y + pbc->area.h / 2;
 					}
@@ -870,20 +879,24 @@ void CActor::init_bc() {//BC関連初期設定
 				if (pbc->dir & MASK_DIR_Y) {//縦型
 					if (pbc->dir & MASK_DIR_UP) {//上向
 						pbc->imgpt_rcv[k].x = pbc->area.x + pbc->area.w / 2;
-						pbc->imgpt_rcv[k].y = pbc->area.y + pbc->area.h - ((pbc->area.h * pbc->pos_rcv[k]) / pbc->l);
+	//					pbc->imgpt_rcv[k].y = pbc->area.y + pbc->area.h - ((pbc->area.h * pbc->pos_rcv[k]*1000) / pbc->l);
+						pbc->imgpt_rcv[k].y = pbc->area.y + ((pbc->area.h * pbc->pos_rcv[k] * 1000) / pbc->l);
 					}
 					else {
 						pbc->imgpt_rcv[k].x = pbc->area.x + pbc->area.w / 2;
-						pbc->imgpt_rcv[k].y = pbc->area.y + ((pbc->area.h * pbc->pos_rcv[k]) / pbc->l);
+	//					pbc->imgpt_rcv[k].y = pbc->area.y + ((pbc->area.h * pbc->pos_rcv[k]*1000) / pbc->l);
+						pbc->imgpt_rcv[k].y = pbc->area.y + pbc->area.h - ((pbc->area.h * pbc->pos_rcv[k] * 1000) / pbc->l);
 					}
 				}
 				else {
 					if (pbc->dir & MASK_DIR_LEFT) {
-						pbc->imgpt_rcv[k].x = pbc->area.x + pbc->area.w - ((pbc->area.w * pbc->pos_rcv[k]) / pbc->l);
+//						pbc->imgpt_rcv[k].x = pbc->area.x + pbc->area.w - ((pbc->area.w * pbc->pos_rcv[k]*1000) / pbc->l);
+						pbc->imgpt_rcv[k].x = pbc->area.x + ((pbc->area.w * pbc->pos_rcv[k] * 1000) / pbc->l);
 						pbc->imgpt_rcv[k].y = pbc->area.y + pbc->area.h / 2;
 					}
 					else {
-						pbc->imgpt_rcv[k].x = pbc->area.x + ((pbc->area.w * pbc->pos_rcv[k]) / pbc->l);
+//						pbc->imgpt_rcv[k].x = pbc->area.x + ((pbc->area.w * pbc->pos_rcv[k]*1000) / pbc->l);
+						pbc->imgpt_rcv[k].x = pbc->area.x + pbc->area.w - ((pbc->area.w * pbc->pos_rcv[k] * 1000) / pbc->l);
 						pbc->imgpt_rcv[k].y = pbc->area.y + pbc->area.h / 2;
 					}
 				}
@@ -897,11 +910,17 @@ void CActor::init_trp() {//TRIPPER関連初期設定
 	pstMobs->mobs.tripper[LINE_A].pbc = &(pstMobs->mobs.bc[LINE_A][BC_L5]);
 	pstMobs->mobs.tripper[LINE_B].pbc = &(pstMobs->mobs.bc[LINE_B][BC_L5]);
 	pstMobs->mobs.tripper[LINE_C].pbc = &(pstMobs->mobs.bc[LINE_C][BC_L5]);
+	pstMobs->mobs.tripper[LINE_D].pbc = &(pstMobs->mobs.bc[LINE_A][BC_L8]);
+	pstMobs->mobs.tripper[LINE_E].pbc = &(pstMobs->mobs.bc[LINE_B][BC_L8]);
+
+
 	//SILOセット
 	for (int i = 0; i < 4; i++) {
 		pstMobs->mobs.tripper[LINE_A].psilo[i] = &(pstMobs->mobs.silo[LINE_A][i]);
 		pstMobs->mobs.tripper[LINE_B].psilo[i] = &(pstMobs->mobs.silo[LINE_B][i]);
 		pstMobs->mobs.tripper[LINE_C].psilo[i] = &(pstMobs->mobs.silo[LINE_C][i]);
+		pstMobs->mobs.tripper[LINE_D].psilo[i] = &(pstMobs->mobs.silo[LINE_D][i]);
+		pstMobs->mobs.tripper[LINE_E].psilo[i] = &(pstMobs->mobs.silo[LINE_E][i]);
 
 	}
 
@@ -967,6 +986,50 @@ void CActor::init_bclink() {//BCの接続設定
 		(pstMobs->mobs.bc[LINE_A][BC_L9_2]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_A][BC_L9_2]); (pstMobs->mobs.bc[LINE_A][BC_L9_2]).bclink_i[DUMP2] = 0;//BC9_2B 1
 		(pstMobs->mobs.bc[LINE_A][BC_L9_2]).silolink = &(pstMobs->mobs.silo[LINE_F][0]);
 
+		(pstMobs->mobs.bc[LINE_A][BC_L11]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L19]); (pstMobs->mobs.bc[LINE_A][BC_L11]).bclink_i[DUMP1] = 9;//BC19A 9
+		(pstMobs->mobs.bc[LINE_A][BC_L11]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L19]); (pstMobs->mobs.bc[LINE_A][BC_L11]).bclink_i[DUMP2] = 9;//BC19B 9
+
+		(pstMobs->mobs.bc[LINE_A][BC_L12]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L19]); (pstMobs->mobs.bc[LINE_A][BC_L12]).bclink_i[DUMP1] = 6;//BC19A 6
+		(pstMobs->mobs.bc[LINE_A][BC_L12]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L19]); (pstMobs->mobs.bc[LINE_A][BC_L12]).bclink_i[DUMP2] = 6;//BC19B 6
+
+		(pstMobs->mobs.bc[LINE_A][BC_L13]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L19]); (pstMobs->mobs.bc[LINE_A][BC_L13]).bclink_i[DUMP1] = 3;//BC19A 3
+		(pstMobs->mobs.bc[LINE_A][BC_L13]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L19]); (pstMobs->mobs.bc[LINE_A][BC_L13]).bclink_i[DUMP2] = 3;//BC19B 3
+
+		(pstMobs->mobs.bc[LINE_A][BC_L15]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L18]); (pstMobs->mobs.bc[LINE_A][BC_L15]).bclink_i[DUMP1] = 7;//BC18A 8
+		(pstMobs->mobs.bc[LINE_A][BC_L15]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L18]); (pstMobs->mobs.bc[LINE_A][BC_L15]).bclink_i[DUMP2] = 7;//BC18B 8
+
+		(pstMobs->mobs.bc[LINE_A][BC_L16]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L18]); (pstMobs->mobs.bc[LINE_A][BC_L16]).bclink_i[DUMP1] = 4;//BC18A 5
+		(pstMobs->mobs.bc[LINE_A][BC_L16]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L18]); (pstMobs->mobs.bc[LINE_A][BC_L16]).bclink_i[DUMP2] = 4;//BC18B 5
+
+		(pstMobs->mobs.bc[LINE_A][BC_L17]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L18]); (pstMobs->mobs.bc[LINE_A][BC_L17]).bclink_i[DUMP1] = 1;//BC18A 2
+		(pstMobs->mobs.bc[LINE_A][BC_L17]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L18]); (pstMobs->mobs.bc[LINE_A][BC_L17]).bclink_i[DUMP2] = 1;//BC18B 2
+
+		(pstMobs->mobs.bc[LINE_A][BC_L18]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L19]); (pstMobs->mobs.bc[LINE_A][BC_L19]).bclink_i[DUMP1] = 0;//BC19A 1
+		(pstMobs->mobs.bc[LINE_A][BC_L18]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L19]); (pstMobs->mobs.bc[LINE_A][BC_L19]).bclink_i[DUMP2] = 0;//BC19B 1
+		(pstMobs->mobs.bc[LINE_A][BC_L18]).bclink[DUMP3] = &(pstMobs->mobs.bc[LINE_C][BC_L19]); (pstMobs->mobs.bc[LINE_A][BC_L19]).bclink_i[DUMP3] = 0;//BC19C 1
+		(pstMobs->mobs.bc[LINE_A][BC_L18]).bclink[DUMP4] = &(pstMobs->mobs.bc[LINE_C][BC_L32]); (pstMobs->mobs.bc[LINE_A][BC_L19]).bclink_i[DUMP4] = 0;//BC32C 1
+
+		(pstMobs->mobs.bc[LINE_A][BC_L19]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L20]); (pstMobs->mobs.bc[LINE_A][BC_L19]).bclink_i[DUMP1] = 0;//BC20A 1
+		(pstMobs->mobs.bc[LINE_A][BC_L19]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L20]); (pstMobs->mobs.bc[LINE_A][BC_L19]).bclink_i[DUMP2] = 0;//BC20B 1
+		(pstMobs->mobs.bc[LINE_A][BC_L19]).bclink[DUMP3] = &(pstMobs->mobs.bc[LINE_C][BC_L30]); (pstMobs->mobs.bc[LINE_A][BC_L19]).bclink_i[DUMP3] = 0;//BC30C 1
+
+		(pstMobs->mobs.bc[LINE_A][BC_L20]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L21]); (pstMobs->mobs.bc[LINE_A][BC_L20]).bclink_i[DUMP1] = 0;//BC21A 1
+		(pstMobs->mobs.bc[LINE_A][BC_L20]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_A][BC_L21]); (pstMobs->mobs.bc[LINE_A][BC_L20]).bclink_i[DUMP2] = 0;//BC21A 1
+
+		(pstMobs->mobs.bc[LINE_A][BC_L21]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L22]); (pstMobs->mobs.bc[LINE_A][BC_L21]).bclink_i[DUMP1] = 0;//BC22A 1
+		(pstMobs->mobs.bc[LINE_A][BC_L21]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_A][BC_L22]); (pstMobs->mobs.bc[LINE_A][BC_L21]).bclink_i[DUMP2] = 0;//BC22A 1
+
+		(pstMobs->mobs.bc[LINE_A][BC_L22]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L23]); (pstMobs->mobs.bc[LINE_A][BC_L22]).bclink_i[DUMP1] = 0;//BC23A 1
+		(pstMobs->mobs.bc[LINE_A][BC_L22]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_A][BC_L23]); (pstMobs->mobs.bc[LINE_A][BC_L22]).bclink_i[DUMP2] = 0;//BC23A 1
+
+
+		(pstMobs->mobs.bc[LINE_A][BC_L23]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L23]); (pstMobs->mobs.bc[LINE_A][BC_L23]).bclink_i[DUMP1] = 0;//BC23A 1
+		(pstMobs->mobs.bc[LINE_A][BC_L23]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_A][BC_L23]); (pstMobs->mobs.bc[LINE_A][BC_L23]).bclink_i[DUMP2] = 0;//BC23A 1
+		(pstMobs->mobs.bc[LINE_A][BC_L23]).silolink = &(pstMobs->mobs.silo[LINE_I][0]);//BANKER 2号機
+
+		(pstMobs->mobs.bc[LINE_A][BC_LRC]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L9_2]); (pstMobs->mobs.bc[LINE_A][BC_LRC]).bclink_i[DUMP1] = 0;//BC9_2A 1
+		(pstMobs->mobs.bc[LINE_A][BC_LRC]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_A][BC_L9_2]); (pstMobs->mobs.bc[LINE_A][BC_LRC]).bclink_i[DUMP2] = 0;//BC9_2A 1
+
 	}
 //BCB
 	{
@@ -1013,6 +1076,48 @@ void CActor::init_bclink() {//BCの接続設定
 		(pstMobs->mobs.bc[LINE_B][BC_L9_2]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L9_2]); (pstMobs->mobs.bc[LINE_A][BC_L9_2]).bclink_i[DUMP2] = 0;//BC9_2B 1
 		(pstMobs->mobs.bc[LINE_B][BC_L9_2]).silolink = &(pstMobs->mobs.silo[LINE_G][0]);
 
+		(pstMobs->mobs.bc[LINE_B][BC_L11]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L19]); (pstMobs->mobs.bc[LINE_B][BC_L11]).bclink_i[DUMP1] = 8;//BC19A 8
+		(pstMobs->mobs.bc[LINE_B][BC_L11]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L19]); (pstMobs->mobs.bc[LINE_B][BC_L11]).bclink_i[DUMP2] = 8;//BC19B 8
+
+		(pstMobs->mobs.bc[LINE_B][BC_L12]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L19]); (pstMobs->mobs.bc[LINE_B][BC_L12]).bclink_i[DUMP1] = 5;//BC19A 5
+		(pstMobs->mobs.bc[LINE_B][BC_L12]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L19]); (pstMobs->mobs.bc[LINE_B][BC_L12]).bclink_i[DUMP2] = 5;//BC19B 5
+
+		(pstMobs->mobs.bc[LINE_B][BC_L13]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L19]); (pstMobs->mobs.bc[LINE_B][BC_L13]).bclink_i[DUMP1] = 2;//BC19A 2
+		(pstMobs->mobs.bc[LINE_B][BC_L13]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L19]); (pstMobs->mobs.bc[LINE_B][BC_L13]).bclink_i[DUMP2] = 2;//BC19B 2
+
+		(pstMobs->mobs.bc[LINE_B][BC_L15]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L18]); (pstMobs->mobs.bc[LINE_B][BC_L15]).bclink_i[DUMP1] = 6;//BC18A 7
+		(pstMobs->mobs.bc[LINE_B][BC_L15]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L18]); (pstMobs->mobs.bc[LINE_B][BC_L15]).bclink_i[DUMP2] = 6;//BC18B 7
+
+		(pstMobs->mobs.bc[LINE_B][BC_L16]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L18]); (pstMobs->mobs.bc[LINE_B][BC_L16]).bclink_i[DUMP1] = 3;//BC18A 4
+		(pstMobs->mobs.bc[LINE_B][BC_L16]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L18]); (pstMobs->mobs.bc[LINE_B][BC_L16]).bclink_i[DUMP2] = 3;//BC18B 4
+
+		(pstMobs->mobs.bc[LINE_B][BC_L17]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L18]); (pstMobs->mobs.bc[LINE_B][BC_L17]).bclink_i[DUMP1] = 0;//BC18A 1
+		(pstMobs->mobs.bc[LINE_B][BC_L17]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L18]); (pstMobs->mobs.bc[LINE_B][BC_L17]).bclink_i[DUMP2] = 0;//BC18B 1
+
+		(pstMobs->mobs.bc[LINE_B][BC_L18]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L19]); (pstMobs->mobs.bc[LINE_B][BC_L19]).bclink_i[DUMP1] = 0;//BC19A 1
+		(pstMobs->mobs.bc[LINE_B][BC_L18]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L19]); (pstMobs->mobs.bc[LINE_B][BC_L19]).bclink_i[DUMP2] = 0;//BC19B 1
+		(pstMobs->mobs.bc[LINE_B][BC_L18]).bclink[DUMP3] = &(pstMobs->mobs.bc[LINE_C][BC_L19]); (pstMobs->mobs.bc[LINE_B][BC_L19]).bclink_i[DUMP3] = 0;//BC19C 1
+		(pstMobs->mobs.bc[LINE_B][BC_L18]).bclink[DUMP4] = &(pstMobs->mobs.bc[LINE_C][BC_L32]); (pstMobs->mobs.bc[LINE_B][BC_L19]).bclink_i[DUMP4] = 0;//BC32C 1
+
+		(pstMobs->mobs.bc[LINE_B][BC_L19]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L20]); (pstMobs->mobs.bc[LINE_B][BC_L19]).bclink_i[DUMP1] = 0;//BC20A 1
+		(pstMobs->mobs.bc[LINE_B][BC_L19]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L20]); (pstMobs->mobs.bc[LINE_B][BC_L19]).bclink_i[DUMP2] = 0;//BC20B 1
+		(pstMobs->mobs.bc[LINE_B][BC_L19]).bclink[DUMP3] = &(pstMobs->mobs.bc[LINE_C][BC_L30]); (pstMobs->mobs.bc[LINE_B][BC_L19]).bclink_i[DUMP3] = 0;//BC30C 1
+
+		(pstMobs->mobs.bc[LINE_B][BC_L20]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_B][BC_L21]); (pstMobs->mobs.bc[LINE_B][BC_L20]).bclink_i[DUMP1] = 0;//BC21B 1
+		(pstMobs->mobs.bc[LINE_B][BC_L20]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L21]); (pstMobs->mobs.bc[LINE_B][BC_L20]).bclink_i[DUMP2] = 0;//BC21B 1
+
+		(pstMobs->mobs.bc[LINE_B][BC_L21]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_B][BC_L22]); (pstMobs->mobs.bc[LINE_B][BC_L21]).bclink_i[DUMP1] = 0;//BC22B 1
+		(pstMobs->mobs.bc[LINE_B][BC_L21]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L22]); (pstMobs->mobs.bc[LINE_B][BC_L21]).bclink_i[DUMP2] = 0;//BC22B 1
+
+		(pstMobs->mobs.bc[LINE_B][BC_L22]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_B][BC_L23]); (pstMobs->mobs.bc[LINE_B][BC_L22]).bclink_i[DUMP1] = 0;//BC23B 1
+		(pstMobs->mobs.bc[LINE_B][BC_L22]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L23]); (pstMobs->mobs.bc[LINE_B][BC_L22]).bclink_i[DUMP2] = 0;//BC23B 1
+
+		(pstMobs->mobs.bc[LINE_B][BC_L23]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_B][BC_L23]); (pstMobs->mobs.bc[LINE_B][BC_L23]).bclink_i[DUMP1] = 0;//BC23B 1
+		(pstMobs->mobs.bc[LINE_B][BC_L23]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L23]); (pstMobs->mobs.bc[LINE_B][BC_L23]).bclink_i[DUMP2] = 0;//BC23B 1
+		(pstMobs->mobs.bc[LINE_B][BC_L23]).silolink = &(pstMobs->mobs.silo[LINE_I][0]);//BANKER 2号機
+
+		(pstMobs->mobs.bc[LINE_B][BC_LRC]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_B][BC_L9_2]); (pstMobs->mobs.bc[LINE_B][BC_LRC]).bclink_i[DUMP1] = 0;//BC9_2B 1
+		(pstMobs->mobs.bc[LINE_B][BC_LRC]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L9_2]); (pstMobs->mobs.bc[LINE_B][BC_LRC]).bclink_i[DUMP2] = 0;//BC9_2B 1
 	}
 //BCC
 	{
@@ -1020,6 +1125,43 @@ void CActor::init_bclink() {//BCの接続設定
 		(pstMobs->mobs.bc[LINE_C][BC_L5]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_C][BC_L5]); (pstMobs->mobs.bc[LINE_C][BC_L5]).bclink_i[DUMP1] = 0;//BC5C 1
 		(pstMobs->mobs.bc[LINE_C][BC_L5]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_C][BC_L5]); (pstMobs->mobs.bc[LINE_C][BC_L5]).bclink_i[DUMP2] = 0;//BC5C 1
 		(pstMobs->mobs.bc[LINE_C][BC_L5]).silolink = &(pstMobs->mobs.silo[LINE_C][3]);
+
+		(pstMobs->mobs.bc[LINE_C][BC_L11]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L19]); (pstMobs->mobs.bc[LINE_C][BC_L11]).bclink_i[DUMP1] = 7;//BC19A 7
+		(pstMobs->mobs.bc[LINE_C][BC_L11]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L19]); (pstMobs->mobs.bc[LINE_C][BC_L11]).bclink_i[DUMP2] = 7;//BC19B 7
+
+		(pstMobs->mobs.bc[LINE_C][BC_L12]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L19]); (pstMobs->mobs.bc[LINE_C][BC_L12]).bclink_i[DUMP1] = 4;//BC19A 4
+		(pstMobs->mobs.bc[LINE_C][BC_L12]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L19]); (pstMobs->mobs.bc[LINE_C][BC_L12]).bclink_i[DUMP2] = 4;//BC19B 4
+
+		(pstMobs->mobs.bc[LINE_C][BC_L13]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L19]); (pstMobs->mobs.bc[LINE_C][BC_L13]).bclink_i[DUMP1] = 1;//BC19A 1
+		(pstMobs->mobs.bc[LINE_C][BC_L13]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L19]); (pstMobs->mobs.bc[LINE_C][BC_L13]).bclink_i[DUMP2] = 1;//BC19B 1
+
+		(pstMobs->mobs.bc[LINE_C][BC_L15]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L18]); (pstMobs->mobs.bc[LINE_C][BC_L15]).bclink_i[DUMP1] = 5;//BC18A 6
+		(pstMobs->mobs.bc[LINE_C][BC_L15]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L18]); (pstMobs->mobs.bc[LINE_C][BC_L15]).bclink_i[DUMP2] = 5;//BC18B 6
+
+		(pstMobs->mobs.bc[LINE_C][BC_L16]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L18]); (pstMobs->mobs.bc[LINE_C][BC_L16]).bclink_i[DUMP1] = 2;//BC18A 3
+		(pstMobs->mobs.bc[LINE_C][BC_L16]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L18]); (pstMobs->mobs.bc[LINE_C][BC_L16]).bclink_i[DUMP2] = 2;//BC18B 3
+
+		(pstMobs->mobs.bc[LINE_C][BC_L19]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L20]); (pstMobs->mobs.bc[LINE_C][BC_L19]).bclink_i[DUMP1] = 0;//BC20A 1
+		(pstMobs->mobs.bc[LINE_C][BC_L19]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L20]); (pstMobs->mobs.bc[LINE_C][BC_L19]).bclink_i[DUMP2] = 0;//BC20B 1
+		(pstMobs->mobs.bc[LINE_C][BC_L19]).bclink[DUMP3] = &(pstMobs->mobs.bc[LINE_C][BC_L30]); (pstMobs->mobs.bc[LINE_C][BC_L19]).bclink_i[DUMP3] = 0;//BC30C 1
+
+		(pstMobs->mobs.bc[LINE_C][BC_L30]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_C][BC_L31]); (pstMobs->mobs.bc[LINE_C][BC_L30]).bclink_i[DUMP1] = 0;//BC31C 1
+		(pstMobs->mobs.bc[LINE_C][BC_L30]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_C][BC_L31]); (pstMobs->mobs.bc[LINE_C][BC_L30]).bclink_i[DUMP2] = 0;//BC31C 1
+
+		(pstMobs->mobs.bc[LINE_C][BC_L31]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L4_1]); (pstMobs->mobs.bc[LINE_C][BC_L31]).bclink_i[DUMP1] = 0;//BC4_1A 1
+		(pstMobs->mobs.bc[LINE_C][BC_L31]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L4_1]); (pstMobs->mobs.bc[LINE_C][BC_L31]).bclink_i[DUMP2] = 0;//BC4_1B 1
+
+		(pstMobs->mobs.bc[LINE_C][BC_L32]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_C][BC_L33]); (pstMobs->mobs.bc[LINE_C][BC_L32]).bclink_i[DUMP1] = 0;//BC33C 1
+		(pstMobs->mobs.bc[LINE_C][BC_L32]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_C][BC_L33]); (pstMobs->mobs.bc[LINE_C][BC_L32]).bclink_i[DUMP2] = 0;//BC33C 1
+
+		(pstMobs->mobs.bc[LINE_C][BC_L33]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_C][BC_L34]); (pstMobs->mobs.bc[LINE_C][BC_L33]).bclink_i[DUMP1] = 0;//BC34C 1
+		(pstMobs->mobs.bc[LINE_C][BC_L33]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_A][BC_L8]); (pstMobs->mobs.bc[LINE_C][BC_L33]).bclink_i[DUMP2] = 0;//BC8A 1
+
+		(pstMobs->mobs.bc[LINE_C][BC_L34]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_B][BC_L8]); (pstMobs->mobs.bc[LINE_C][BC_L34]).bclink_i[DUMP1] = 0;//BC8B 1
+		(pstMobs->mobs.bc[LINE_C][BC_L34]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L8]); (pstMobs->mobs.bc[LINE_C][BC_L34]).bclink_i[DUMP2] = 0;//BC8B 1
+
+		(pstMobs->mobs.bc[LINE_C][BC_BIO]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L19]); (pstMobs->mobs.bc[LINE_C][BC_BIO]).bclink_i[DUMP1] = 0;//BC19A 1
+		(pstMobs->mobs.bc[LINE_C][BC_BIO]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L19]); (pstMobs->mobs.bc[LINE_C][BC_BIO]).bclink_i[DUMP2] = 0;//BC19B 1
 	}
  
 }
