@@ -161,10 +161,15 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 				else if ((pmob_dlg->type[0] == L'T') && (pmob_dlg->type[1] == L'R')) {
 					tmpwnd = CreateDialog(pPrInst->inf.hInstance, L"IDD_TRP_HANDLE", hWnd, (DLGPROC)PR_TRPPANEL_PROC);
 				}
+				else if ((pmob_dlg->type[0] == L'H') && (pmob_dlg->type[1] == L'A')) {//払い出し機もTripper用のDialog利用
+					tmpwnd = CreateDialog(pPrInst->inf.hInstance, L"IDD_TRP_HANDLE", hWnd, (DLGPROC)PR_TRPPANEL_PROC);
+				}
 				else if ((pmob_dlg->type[0] == L'S') && (pmob_dlg->type[1] == L'I')) {
 					tmpwnd = CreateDialog(pPrInst->inf.hInstance, L"IDD_SILO_HANDLE", hWnd, (DLGPROC)PR_SILOPANEL_PROC);
 				}
 				else;
+				wsprintf(szBuf, pmob_dlg->name);
+				SetWindowText(tmpwnd, szBuf);
 			}
 		}break;
 		case IDM_PR_ACT_DEACT: {
@@ -183,8 +188,13 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 					}
 				}
 				else if ((pmob_dlg->type[0] == L'H') && (pmob_dlg->type[1] == L'A')) {
-					if (pmob_dlg->status == MOB_STAT_IDLE)pmob_dlg->status = MOB_STAT_ACT0;
-					else pmob_dlg->status = MOB_STAT_IDLE;
+					CHarai * pharai = (CHarai *)pmob_dlg;
+					if (pharai->get_command() & COM_HARAI_DISCHARGE) {
+						pharai->reset_command(COM_HARAI_DISCHARGE);
+					}
+					else {
+						pharai->set_command(COM_HARAI_DISCHARGE);
+					}
 				}
 				else {
 
@@ -202,6 +212,8 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 					else  idev = 2;
 
 					pbc->head_unit.pos = (pbc->head_unit.pos + 1) % idev;
+					if (pbc->head_unit.pos == BC_LINK_REVERSE) pbc->b_rverse = TRUE;
+					else  pbc->b_rverse = FALSE;
 				}
 			}
 		}break;
@@ -940,15 +952,17 @@ void CPublicRelation::update_disp() {
 				if ((pbc->dir) & MASK_DIR_Y) num_draw = pbc->area.h / BC_COAL_DISP_PIXW;//縦配置 RECT描画個数
 				else num_draw = pbc->area.w / BC_COAL_DISP_PIXW;//横配置 RECT描画個数
 
-				num_accumlate = (pbc->pix2mm*BC_COAL_DISP_PIXW)>>10;//描画RECTに対するベルト長さ1024mm単位
+	//			num_accumlate = (pbc->pix2mm*BC_COAL_DISP_PIXW)>>10;//1要素描画の為の積算数　ベルト長さ1024mm単位
+				num_accumlate = pbc->belt_size/num_draw;//1要素描画の為の積算数　ベルト長さ1024mm単位
+
 				i_accum = pbc->ihead;//計算対象belt配列のインデックス 以降ヘッド位置から描画となる
-				level100 = pbc->Kg100perM * num_accumlate;//ベルト搬送能力による1m辺りの」100％荷重量　x　描画で纏めるm数
+				level100 = pbc->Kg100perM * num_accumlate;//ベルト搬送能力による1m辺りの100％荷重量　x　描画で纏めるm数
 
 				for (int k = 0; k < num_draw; k++) {
 					//描画範囲の石炭積算重量
 					level = 0;
 					for (int i_sum = 0; i_sum < num_accumlate; i_sum++,i_accum++) {
-						int i_cal = i_accum + pbc->ihead; if (i_cal > pbc->belt_size) i_cal -= pbc->belt_size;
+					//	int i_cal = i_accum + pbc->ihead; if (i_cal > pbc->belt_size) i_cal -= pbc->belt_size;
 						if (!(i_accum < pbc->belt_size))i_accum = 0;
 						level += pbc->belt[i_accum].weight;
 					}
@@ -1019,8 +1033,8 @@ void CPublicRelation::update_disp() {
 	SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_TRIPPER][0]->hBmp_mob);
 	for (int i = 0; i < NUM_OF_TRIPPER; i++) {
 		i_img2 = pstMobs->pmobs[MOB_ID_TRIPPER][i]->status;
-		mobx = pstMobs->pmobs[MOB_ID_TRIPPER][i]->area.x;	moby = pstMobs->pmobs[MOB_ID_TRIPPER][i]->area.y;
 		mobw = pstMobs->pmobs[MOB_ID_TRIPPER][i]->bmpw;	mobh = pstMobs->pmobs[MOB_ID_TRIPPER][i]->bmph;
+		mobx = pstMobs->pmobs[MOB_ID_TRIPPER][i]->area.x;	moby = pstMobs->pmobs[MOB_ID_TRIPPER][i]->area.y - mobh;
 		//AlphaBlend(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, pPrInst->stdisp.bf);
 		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
 	}
@@ -1090,19 +1104,22 @@ LRESULT CPublicRelation::PR_BCPANEL_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM 
 		switch (LOWORD(wp)) {
 		case IDC_DMPER_RADIO1: {
 			pbc->head_unit.pos = 0;
+			pbc->b_rverse = FALSE;
 			SendMessage(GetDlgItem(hWnd, IDC_DMPER_RADIO1), BM_SETCHECK, BST_CHECKED, 0L);
 		}break;
 		case IDC_DMPER_RADIO2: {
 			pbc->head_unit.pos = 1;
+			pbc->b_rverse = FALSE;
 			SendMessage(GetDlgItem(hWnd, IDC_DMPER_RADIO2), BM_SETCHECK, BST_CHECKED, 0L);
 		}break;
 		case IDC_DMPER_RADIO3: {
 			pbc->head_unit.pos = 2;
+			pbc->b_rverse = TRUE;
 			SendMessage(GetDlgItem(hWnd, IDC_DMPER_RADIO3), BM_SETCHECK, BST_CHECKED, 0L);
 		}break;
 		case IDC_PR_CHECK_BC_PUTLOAD: {
 			if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_PR_CHECK_BC_PUTLOAD)) {
-				pbc->put_test_load = (pbc->l >> 10) - 10;
+				pbc->put_test_load = (pbc->l >> 10) - 10;//テールから10m位置
 				//			pbc->put_test_load = 20;
 			}
 			else {
@@ -1144,29 +1161,53 @@ LRESULT CPublicRelation::PR_TRPPANEL_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM
 	PAINTSTRUCT ps;
 	wstring wstr;
 	static CTripper* ptrp;
+	static CHarai* pharai;
 
 	switch (msg) {
 	case WM_COMMAND: {
 		switch (LOWORD(wp)) {
 		case IDC_TRPCHECK_COM_MOVE: {
-			if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_TRPCHECK_COM_MOVE)) {
-				ptrp->set_command(COM_TRP_MOVE);
-				int n = GetDlgItemText(hWnd, IDC_TRPEDIT_COM_TARGET,(LPTSTR)wstr.c_str(), 128);
-				if (n) ptrp->set_target(stoi(wstr)); 
-			}
-			else {
-				ptrp->reset_command(COM_TRP_MOVE);
-			}
 
+			if (pmob_dlg->type[0] == L'T') {
+				if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_TRPCHECK_COM_MOVE)) {
+					ptrp->set_command(COM_TRP_MOVE);
+					int n = GetDlgItemText(hWnd, IDC_TRPEDIT_COM_TARGET, (LPTSTR)wstr.c_str(), 128);
+					if (n) ptrp->set_target(stoi(wstr));
+				}
+				else {
+					ptrp->reset_command(COM_TRP_MOVE);
+				}
+			}
+			else if (pmob_dlg->type[0] == L'H') {
+				if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_TRPCHECK_COM_MOVE)) {
+					pharai->set_command(COM_HARAI_MOVE);
+					int n = GetDlgItemText(hWnd, IDC_TRPEDIT_COM_TARGET, (LPTSTR)wstr.c_str(), 128);
+					if (n) pharai->set_target(stoi(wstr));
+				}
+				else {
+					pharai->reset_command(COM_HARAI_MOVE);
+				}
+			}
+			else;
 		}break;
 		case IDC_TRPCHECK_COM_DISCHARGE: {
-			if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_TRPCHECK_COM_DISCHARGE)) {
-				ptrp->set_command(COM_TRP_DISCHARGE);
+			if (pmob_dlg->type[0] == L'T') {
+				if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_TRPCHECK_COM_DISCHARGE)) {
+					ptrp->set_command(COM_TRP_DISCHARGE);
+				}
+				else {
+					ptrp->reset_command(COM_TRP_DISCHARGE);
+				}
 			}
-			else {
-				ptrp->reset_command(COM_TRP_DISCHARGE);
+			else if (pmob_dlg->type[0] == L'H') {
+				if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_TRPCHECK_COM_DISCHARGE)) {
+					pharai->set_command(COM_HARAI_DISCHARGE);
+				}
+				else {
+					pharai->reset_command(COM_HARAI_DISCHARGE);
+				}
 			}
-
+			else;
 		}break;
 
 		case IDCANCEL: {
@@ -1174,18 +1215,35 @@ LRESULT CPublicRelation::PR_TRPPANEL_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM
 		}break;
 		case IDOK: {
 			int n = GetDlgItemText(hWnd, IDC_TRPEDIT_COM_TARGET, (LPTSTR)wstr.c_str(), 128);
-			if (n) ptrp->set_target(stoi(wstr));
+			if (pmob_dlg->type[0] == L'T') {
+				if (n) ptrp->set_target(stoi(wstr));
+			}
+			else if (pmob_dlg->type[0] == L'H') {
+				if (n) pharai->set_target(stoi(wstr));
+			}
+			else;
 		}break;
 		default: return FALSE;
 		}
 	}break;
 	case WM_INITDIALOG: {
 		ptrp = (CTripper*)pmob_dlg;//MOUSE MOVEでオブジェクトのポインタはセットされている
-		if (ptrp->command & COM_TRP_MOVE) SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_MOVE), BM_SETCHECK, BST_CHECKED, 0L);
-		else  SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_MOVE), BM_SETCHECK, BST_UNCHECKED, 0L);
+		pharai = (CHarai*)pmob_dlg;//トリッパーと払い出し機共用
+		if (pmob_dlg->type[0] == L'T'){
+			if (ptrp->command & COM_TRP_MOVE) SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_MOVE), BM_SETCHECK, BST_CHECKED, 0L);
+			else  SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_MOVE), BM_SETCHECK, BST_UNCHECKED, 0L);
+			if (ptrp->command & COM_TRP_DISCHARGE) SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_DISCHARGE), BM_SETCHECK, BST_CHECKED, 0L);
+			else  SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_DISCHARGE), BM_SETCHECK, BST_UNCHECKED, 0L);
+		}
+		else if (pmob_dlg->type[0] == L'H') {
+			if (pharai->command & COM_HARAI_MOVE) SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_MOVE), BM_SETCHECK, BST_CHECKED, 0L);
+			else  SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_MOVE), BM_SETCHECK, BST_UNCHECKED, 0L);
+			if (pharai->command & COM_TRP_DISCHARGE) SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_DISCHARGE), BM_SETCHECK, BST_CHECKED, 0L);
+			else  SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_DISCHARGE), BM_SETCHECK, BST_UNCHECKED, 0L);
+		}
+		else;
 
-		if (ptrp->command & COM_TRP_DISCHARGE) SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_DISCHARGE), BM_SETCHECK, BST_CHECKED, 0L);
-		else  SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_DISCHARGE), BM_SETCHECK, BST_UNCHECKED, 0L);
+
 	}break;
 	case WM_PAINT: {
 		BeginPaint(hWnd, &ps);

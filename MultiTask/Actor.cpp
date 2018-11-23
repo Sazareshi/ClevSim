@@ -333,7 +333,7 @@ void CActor::init_task(void* pobj) {
 					break;
 				case 6: pobj->l = _wtol(wstrtmp.c_str()); break;
 				case 7: pobj->w = _wtol(wstrtmp.c_str()); break;
-				case 8: break;
+				case 8: pobj->ini_stock_percent = _wtoi(wstrtmp.c_str()); break;
 				case 9: pobj->SILOtype = stoi(wstrtmp.c_str(), nullptr, 16); break;
 				case 10: pobj->dir = stoi(wstrtmp.c_str(), nullptr, 16); break;
 				case 11: pobj->capa_all = _wtoi(wstrtmp.c_str()); break;
@@ -355,6 +355,7 @@ void CActor::init_task(void* pobj) {
 	init_bc();//BC関連初期化
 	init_trp();//Tripper関連初期化
 	init_silo();//BCサイロ関連初期化
+	init_harai();//払い出し機関連初期化
 
 
 	///CUL積荷初期値
@@ -414,10 +415,12 @@ void CActor::routine_work(void *param) {
 	}
 	//HARAIDASHIKI
 	for (int i = 0; i < NUM_OF_HARAI; i++) {
-		if (pstMobs->pmobs[MOB_ID_HARAI][i]->status == MOB_STAT_IDLE);
+		if (pstMobs->pmobs[MOB_ID_HARAI][i]->command == COM_HARAI_IDLE) pstMobs->pmobs[MOB_ID_HARAI][i]->status = MOB_STAT_IDLE;
+		else if (!(pstMobs->pmobs[MOB_ID_HARAI][i]->command & COM_HARAI_DISCHARGE)) pstMobs->pmobs[MOB_ID_HARAI][i]->status = MOB_STAT_ACT0;
 		else if (pstMobs->pmobs[MOB_ID_HARAI][i]->status == MOB_STAT_ACT0)pstMobs->pmobs[MOB_ID_HARAI][i]->status = MOB_STAT_ACT1;
 		else if (pstMobs->pmobs[MOB_ID_HARAI][i]->status == MOB_STAT_ACT1)pstMobs->pmobs[MOB_ID_HARAI][i]->status = MOB_STAT_ACT2;
 		else pstMobs->pmobs[MOB_ID_HARAI][i]->status = MOB_STAT_ACT0;
+		cal_harai(i, ms_dt, pstMobs->pmobs[MOB_ID_HARAI][i]->command);
 	}
 	//TRIPPER
 	for (int i = 0; i < NUM_OF_TRIPPER; i++) {
@@ -926,6 +929,7 @@ void CActor::init_trp() {//TRIPPER関連初期設定
 
 	for (int i = 0; i < NUM_OF_TRIPPER; i++) {
 		pstMobs->mobs.tripper[i].set_param();
+		pstMobs->mobs.tripper[i].move(COM_TRP_IDLE,1,0);
 	}
 
 	return;
@@ -1150,6 +1154,7 @@ void CActor::init_bclink() {//BCの接続設定
 
 		(pstMobs->mobs.bc[LINE_C][BC_L31]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L4_1]); (pstMobs->mobs.bc[LINE_C][BC_L31]).bclink_i[DUMP1] = 0;//BC4_1A 1
 		(pstMobs->mobs.bc[LINE_C][BC_L31]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L4_1]); (pstMobs->mobs.bc[LINE_C][BC_L31]).bclink_i[DUMP2] = 0;//BC4_1B 1
+		(pstMobs->mobs.bc[LINE_C][BC_L31]).bclink[BC_LINK_REVERSE] = &(pstMobs->mobs.bc[LINE_A][BC_L5]); (pstMobs->mobs.bc[LINE_C][BC_L31]).bclink_i[BC_LINK_REVERSE] = 0;//BC4_1B 1
 
 		(pstMobs->mobs.bc[LINE_C][BC_L32]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_C][BC_L33]); (pstMobs->mobs.bc[LINE_C][BC_L32]).bclink_i[DUMP1] = 0;//BC33C 1
 		(pstMobs->mobs.bc[LINE_C][BC_L32]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_C][BC_L33]); (pstMobs->mobs.bc[LINE_C][BC_L32]).bclink_i[DUMP2] = 0;//BC33C 1
@@ -1180,8 +1185,8 @@ void CActor::init_silo() {
 			}
 			else  psilo->exist = OFF;
 
-			for (int i = 0; i < SILO_COLUMN_NUM; i++) {
-				psilo->column[i].weight = 0;
+			for (int k = 0; k < SILO_COLUMN_NUM; k++) {
+				psilo->column[k].weight = psilo->capa1* psilo->ini_stock_percent/100;
 			}
 		}
 	}
@@ -1202,18 +1207,19 @@ void CActor::init_harai() {//HARAI関連初期設定
 	//SILOセット
 	for (int i = 0; i < 4; i++) {
 		pstMobs->mobs.haraiki[HARAI_11A].psilo[i] = &(pstMobs->mobs.silo[LINE_A][i]);
-		pstMobs->mobs.haraiki[HARAI_11B].psilo[i] = &(pstMobs->mobs.silo[LINE_B][i]);
-		pstMobs->mobs.haraiki[HARAI_11C].psilo[i] = &(pstMobs->mobs.silo[LINE_C][i]);
-		pstMobs->mobs.haraiki[HARAI_12A].psilo[i] = &(pstMobs->mobs.silo[LINE_A][i]);
+		pstMobs->mobs.haraiki[HARAI_11B].psilo[i] = &(pstMobs->mobs.silo[LINE_A][i]);
+		pstMobs->mobs.haraiki[HARAI_11C].psilo[i] = &(pstMobs->mobs.silo[LINE_A][i]);
+		pstMobs->mobs.haraiki[HARAI_12A].psilo[i] = &(pstMobs->mobs.silo[LINE_B][i]);
 		pstMobs->mobs.haraiki[HARAI_12B].psilo[i] = &(pstMobs->mobs.silo[LINE_B][i]);
-		pstMobs->mobs.haraiki[HARAI_12C].psilo[i] = &(pstMobs->mobs.silo[LINE_C][i]);		
-		pstMobs->mobs.haraiki[HARAI_13A].psilo[i] = &(pstMobs->mobs.silo[LINE_A][i]);
-		pstMobs->mobs.haraiki[HARAI_13B].psilo[i] = &(pstMobs->mobs.silo[LINE_B][i]);
+		pstMobs->mobs.haraiki[HARAI_12C].psilo[i] = &(pstMobs->mobs.silo[LINE_B][i]);		
+		pstMobs->mobs.haraiki[HARAI_13A].psilo[i] = &(pstMobs->mobs.silo[LINE_C][i]);
+		pstMobs->mobs.haraiki[HARAI_13B].psilo[i] = &(pstMobs->mobs.silo[LINE_C][i]);
 		pstMobs->mobs.haraiki[HARAI_13C].psilo[i] = &(pstMobs->mobs.silo[LINE_C][i]);
 	}
 
 	for (int i = 0; i < NUM_OF_HARAI; i++) {
 		pstMobs->mobs.haraiki[i].set_param();
+		pstMobs->mobs.haraiki[i].move(COM_HARAI_IDLE, 1, 0);;
 	}
 
 	return;

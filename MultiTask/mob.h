@@ -126,11 +126,12 @@ public:
 	DWORD dir;//画面での向き　HIWORD　縦横　0が横　LOWORD　0が正方向
 
 	STLOAD column[SILO_COLUMN_NUM];//サイロ区分エリア
-	int put_load(int pos, STLOAD load);//pos サイロ上実位置m
+	int put_load(int pos, STLOAD load);//pos サイロ上受け位置ｍ
 	STLOAD pop_load(int pos, STLOAD load);
 	int clear_load();
 	LONG pix2kg;
 	int pix_columw;
+	int ini_stock_percent;//初期ストック量
 
 private:
 
@@ -142,6 +143,8 @@ private:
 #define BC_HEAD_DUAL	0x0002
 #define BC_HEAD_SHOOT3	0x0004
 #define BC_HEAD_SHOOT4	0x0008
+
+#define BC_LINK_REVERSE	2 //可逆コンベヤ　逆方向時のリンク先は配列2に固定
 
 class CBCHead
 {
@@ -185,14 +188,16 @@ public:
 	CBC* bclink[BC_LINK_MAX];//排出先BCポインタ
 	CSilo* silolink;//排出先サイロポインタ　トリッパ、スクレーパ付きBCのみ
 	int bclink_i[BC_LINK_MAX];//排出先BCの接続Drop位置インデックス
-	int put_load(int pos, STLOAD load);//pos BC上実位置m
+	int put_load_i(int i_pos, STLOAD load);//i_pos BC上実位置配列インデックス
+	STLOAD put_load(int pos, STLOAD load);//pos BC上実位置m
 	STLOAD pop_load(int pos, STLOAD load);//pos BC上実位置m
 	void conveyor(DWORD com, LONG dt);
 	void bc_reset() { headpos_mm = 0; memset(&pos_rcv, 0, sizeof(STLOAD) * BC_MAX_LEN); return; };//ベルトヘッド位置を0リセットして全石炭をクリア
 	CMotor motor[BC_MOTOR_MAX];
 	LONG pix2mm;
 	LONG put_test_load;//0以外でテールポジションからのインデックス位置に重量投入
-	
+
+	BOOL b_rverse;
 private:
 
 };
@@ -271,7 +276,9 @@ public:
 	int get_target() { return pos_target; }
 	void set_param();//パラメータを展開
 
-	void set_area(int pos) { area.y = pbc->area.y + pos / pbc->pix2mm; return; };
+	void set_area(int pos) { 
+		area.y = pbc->area.y + pos / pbc->pix2mm; 
+		return; };
 
 private:
 	int pos_target;
