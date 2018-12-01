@@ -168,5 +168,11 @@
     <Image Include="bmp\e-room.bmp">
       <Filter>リソース ファイル</Filter>
     </Image>
+    <Image Include="bmp\scraper.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="bmp\scraper2.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
   </ItemGroup>
 </Project>

@@ -11,6 +11,7 @@
 #define MOB_ID_TRIPPER			4 //積み付け機 ID
 #define MOB_ID_EROOM			5//屋外設備制御室 ID
 #define MOB_ID_SILO				6//SILO ID
+#define MOB_ID_SCRAPER			7//スクレーパー ID
 
 #define MOB_STAT_IDLE			0
 #define MOB_STAT_FAULT			0xFF
@@ -26,6 +27,7 @@
 #define MOB_TYPE_TRIPPER	TEXT("TRIP00")
 #define MOB_TYPE_EROOM		TEXT("EROOM0")
 #define MOB_TYPE_SILO		TEXT("SILO00")
+#define MOB_TYPE_SCRAPER	TEXT("SCRP00")
 
 #define MASK_DIR_X			0x00ff
 #define MASK_DIR_LEFT		0x00ff
@@ -67,6 +69,7 @@ public:
 	ULONG* ptime_now;//シミュレーション現在時刻参照アドレス
 	ULONG  time_last;//シミュレーション前回時刻保持値
 	BOOL exist;//存在するかどうか、ONなら定期処理実施
+	BOOL b_bmp_aline_bottom;
 
 	void setpos(LONG x, LONG y, LONG z) { area.x = x; area.y = y; area.z = z; return; }
 	void setpos(int x, int y, int z) { area.x = x; area.y = y; area.z = z; return; }
@@ -97,6 +100,7 @@ typedef struct _stLoad {
 #define BC_SQR		0x0200//スクレーパ付
 #define BC_DROP1	0x0400//払出用1号
 #define BC_DROP2	0x0800//払出用2号
+#define BC_DROPB	0x1000//払出用バイオ
 #define BC_RCV_MAX	12//BCの荷受け場所最大数
 #define BC_MAX_LEN	800//BCの最大長さ
 #define BC_MOTOR_MAX	3//最大モータ数
@@ -104,11 +108,14 @@ typedef struct _stLoad {
 
 #define BC_COAL_DISP_PIXW	5//BC　石炭表示ピクセル幅
 
-#define SILO_COLUMN_NUM	12//サイロ区分数
-#define SILO_TYPE_1		0x0001//1号サイロ
-#define SILO_TYPE_2		0x0002//2号サイロ
-#define SILO_TYPE_BIO	0x0004//バイオサイロ
-#define SILO_TYPE_BANK	0x0008//バンカー
+#define SILO_COLUMN_NUM			12//サイロ区分数
+#define SILO_COLUMN_NUM_BIO		8//サイロ区分数
+#define SILO_COLUMN_NUM_BANK	6//サイロ区分数
+#define SILO_TYPE_1				0x0001//1号サイロ
+#define SILO_TYPE_2				0x0002//2号サイロ
+#define SILO_TYPE_BIO			0x0004//バイオサイロ
+#define SILO_TYPE_BANK			0x0008//バンカー
+
 
 class CSilo : public CMob
 {
@@ -117,9 +124,9 @@ public:
 	~CSilo() {};
 	LONG SILOtype;
 	LONG l;//長さmm
+	LONG w;//幅mm
 	LONG pos_bc_origin_put;//積コンベヤライン上のオフセット位置m　テールから
 	LONG pos_bc_origin_pop;//払コンベヤライン上のオフセット位置m　テールから
-	LONG w;//幅mm
 	LONG capa_all;//全容量　kg
 	LONG capa1;//1区画あたり定格
 	LONG thresh_level;//積山平準化の判定値（隣セルとの差）
@@ -143,6 +150,7 @@ private:
 #define BC_HEAD_DUAL	0x0002
 #define BC_HEAD_SHOOT3	0x0004
 #define BC_HEAD_SHOOT4	0x0008
+#define BC_SILO_LINK_MAX	4
 
 #define BC_LINK_REVERSE	2 //可逆コンベヤ　逆方向時のリンク先は配列2に固定
 
@@ -186,7 +194,7 @@ public:
 	CMob* ptrp;
 	
 	CBC* bclink[BC_LINK_MAX];//排出先BCポインタ
-	CSilo* silolink;//排出先サイロポインタ　トリッパ、スクレーパ付きBCのみ
+	CSilo* silolink[BC_SILO_LINK_MAX];//排出先サイロポインタ　トリッパ、スクレーパ付きBCのみ
 	int bclink_i[BC_LINK_MAX];//排出先BCの接続Drop位置インデックス
 	int put_load_i(int i_pos, STLOAD load);//i_pos BC上実位置配列インデックス
 	STLOAD put_load(int pos, STLOAD load);//pos BC上実位置m
@@ -225,7 +233,7 @@ public:
 	int ability;//払い出し能力　kg/s　900ton/h->250kg/s
 	CSilo* psilo[4];//紐付きサイロ
 	CBC* pbc;//紐付BC
-
+	
 
 	int discharge(DWORD com, LONG dt);//紐付きBCから紐付きサイロへ石炭を移載
 	int move(DWORD com, LONG dt,int target);//移動/移載　戻り値1：移動有り
@@ -238,6 +246,66 @@ public:
 
 	void set_area(int pos) { area.y = pbc->area.y + pos/ pbc->pix2mm; return; };
 
+private:
+	int pos_target;
+
+};
+
+#define COM_SCRP_IDLE	0
+#define COM_SCRP_DISCHARGE	0x0001
+#define COM_SCRP_ACT1		0x0002
+#define COM_SCRP_ACT2		0x0004
+#define COM_SCRP_ACT3		0x0008
+#define COM_SCRP_ACT4		0x0010
+#define COM_SCRP_ACT5		0x0020
+#define COM_SCRP_ACT6		0x0040
+#define COM_SCRP_ACT7		0x0080
+#define COM_SCRP_ACT8		0x0100
+#define COM_SCRP_ACT9		0x0200
+#define COM_SCRP_ACT10		0x0400
+#define COM_SCRP_ACT11		0x0800
+#define COM_SCRP_ACT12		0x1000
+
+#define SCRP_SIRO_DRP_NUM	6
+#define SCRP_SIRO_DRP_LAYER	2
+#define SCRP_MOVE_COMPLETE_RANGE	500
+#define SCRP_8		0x0002
+#define SCRP_9_2	0x0004
+#define SCRP_23		0x0008
+
+class CScraper: public CMob
+{
+public:
+	CScraper() {};
+	~CScraper() {};
+
+	int  spd;//現在速度　mm/s
+	int  pos;//現在位置　mm/s　紐付きBC上テールからの位置
+	int  pos_max, pos_min;//移動範囲最大値、最小値mm
+
+
+	int pos_drop[SCRP_SIRO_DRP_LAYER][SCRP_SIRO_DRP_NUM];//SILO上目標位置ｍ
+	int ability;//払い出し能力　kg/s　900ton/h->250kg/s
+	CSilo* psilo[4];//紐付きサイロ
+	CBC* pbc;//紐付BC
+	DWORD SCRPtype;
+
+
+	int discharge(DWORD com, LONG dt);//紐付きBCから紐付きサイロへ石炭を移載
+	int move(DWORD com, LONG dt, int target);//移動/移載　戻り値1：移動有り
+	void set_command(DWORD com) { command |= com; };//指示コマンド
+	void reset_command(DWORD com) { command &= ~com; };//指示コマンド
+	DWORD get_command() { return command; };//指示コマンド
+	void set_target(int target) { if (target < pos_min)pos_target = pos_min; else if (target > pos_max)pos_target = pos_max; else pos_target = target; };//指示コマンド
+	int get_target() { return pos_target; }
+	void set_param();//パラメータを展開
+
+	void set_area(int pos) { 
+		if (SCRPtype == SCRP_23) area.x = pbc->area.x + pos / pbc->pix2mm;
+		else area.y = pbc->area.y + pos / pbc->pix2mm; 
+		return; 
+	};
+		
 private:
 	int pos_target;
 
@@ -334,13 +402,17 @@ private:
 
 #define BC_LINES	3//BCの系統数A,B,C+循環
 #define BC_LINE_NUM	26//BCの各系統の数
-#define NUM_OF_HARAI			9
+#define NUM_OF_HARAI			15
 #define NUM_OF_CRUSH			2
 #define NUM_OF_CUL				2
-#define NUM_OF_TRIPPER			5
+#define NUM_OF_TRIPPER			3
+#define NUM_OF_SCRAPER			6
 #define NUM_OF_EROOM			3
 #define SILO_LINES				9	// 1号3line　2号設備2line　BIO　2line BANKER 2line
-#define SILO_LINE_NUM			4	//各ラインのサイロ数　Max　1号　4　（BIOは8サイロで1つに換算 BANKERは6サイロで1つに換算）
+#define SILO_LINE_NUM			4	//1期工事各ラインのサイロ数
+#define SILO_LINE_NUM2			3	//2期工事各ラインのサイロ数
+#define SILO_LINE_NUM_BIO		1	//バイオ各ラインのサイロ数
+#define SILO_LINE_NUM_BANK		2	//バンカーラインのサイロ数
 
 
 //共有メモリ配置定義
@@ -352,6 +424,7 @@ typedef struct _stMobsBody {
 	CTripper	tripper[NUM_OF_TRIPPER];
 	CEroom		eroom[NUM_OF_EROOM];
 	CSilo		silo[SILO_LINES][SILO_LINE_NUM];
+	CScraper	scraper[NUM_OF_SCRAPER];
 }STMobsBody, *LPSTMobsBody;
 
 
@@ -371,6 +444,12 @@ typedef struct _stMobs {
 #define LINE_G 6
 #define LINE_H 7
 #define LINE_I 8
+#define LINE_D_SCR 0
+#define LINE_E_SCR 1
+#define LINE_F_SCR 2
+#define LINE_G_SCR 3
+#define LINE_H_SCR 4
+#define LINE_I_SCR 5
 #define DUMP1 0
 #define DUMP2 1
 #define DUMP3 2
@@ -419,5 +498,11 @@ typedef struct _stMobs {
 #define HARAI_13A	6
 #define HARAI_13B	7
 #define HARAI_13C	8
+#define HARAI_15A	9
+#define HARAI_15B	10
+#define HARAI_15C	11
+#define HARAI_16A	12
+#define HARAI_16B	13
+#define HARAI_16C	14
 
 

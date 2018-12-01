@@ -15,7 +15,7 @@ CActor::~CActor(){
 
 CActor * CActor::pActInst;
 //表示用アイコンBitMapのサイズをここでまとめて設定
-int CActor::BMP_WH[MOB_TYPE_NUM][2] = { { 32,32 },{ 16,16 },{ 32,32 } ,{ 48,40 },{16,24 },{ 24,24 } };
+int CActor::BMP_WH[MOB_TYPE_NUM][2] = { { 32,32 },{ 16,16 },{ 32,32 } ,{ 48,40 },{16,24 },{ 24,24 },{ 24,24 },{ 16,24 } };
 
 void CActor::init_task(void* pobj) {
 
@@ -38,6 +38,7 @@ void CActor::init_task(void* pobj) {
 			pstMobs->mobs.bc[i][j].status = MOB_STAT_IDLE;
 			wsprintf(pstMobs->mobs.bc[i][j].type, MOB_TYPE_BC);
 			pstMobs->mobs.bc[i][j].ptime_now = pSimtime_ms;
+			pstMobs->mobs.bc[i][j].b_bmp_aline_bottom = FALSE;
 		}
 	}
 
@@ -47,6 +48,7 @@ void CActor::init_task(void* pobj) {
 			pstMobs->mobs.silo[i][j].status = MOB_STAT_IDLE;
 			wsprintf(pstMobs->mobs.silo[i][j].type, MOB_TYPE_SILO);
 			pstMobs->mobs.silo[i][j].ptime_now = pSimtime_ms;
+			pstMobs->mobs.silo[i][j].b_bmp_aline_bottom = FALSE;
 		}
 	}
 
@@ -59,6 +61,7 @@ void CActor::init_task(void* pobj) {
 		pstMobs->pmobs[MOB_ID_HARAI][i]->bmpw = BMP_WH[MOB_ID_HARAI][0];
 		pstMobs->pmobs[MOB_ID_HARAI][i]->bmph = BMP_WH[MOB_ID_HARAI][1];
 		pstMobs->pmobs[MOB_ID_HARAI][i]->ptime_now = pSimtime_ms;
+		pstMobs->pmobs[MOB_ID_HARAI][i]->b_bmp_aline_bottom = FALSE;
 	}
 
 	hbmp = (HBITMAP)LoadImage(pActInst->inf.hInstance, TEXT("IDB_CRUSH0"), IMAGE_BITMAP, 0, 0, LR_DEFAULTCOLOR);
@@ -70,6 +73,7 @@ void CActor::init_task(void* pobj) {
 		pstMobs->pmobs[MOB_ID_CRUSH][i]->bmpw = BMP_WH[MOB_ID_CRUSH][0];
 		pstMobs->pmobs[MOB_ID_CRUSH][i]->bmph = BMP_WH[MOB_ID_CRUSH][1];
 		pstMobs->pmobs[MOB_ID_CRUSH][i]->ptime_now = pSimtime_ms;
+		pstMobs->pmobs[MOB_ID_CRUSH][i]->b_bmp_aline_bottom = FALSE;
 	}
 	
 	hbmp = (HBITMAP)LoadImage(pActInst->inf.hInstance, TEXT("IDB_CUL0"), IMAGE_BITMAP, 0, 0, LR_DEFAULTCOLOR);
@@ -81,6 +85,7 @@ void CActor::init_task(void* pobj) {
 		pstMobs->pmobs[MOB_ID_CUL][i]->bmpw = BMP_WH[MOB_ID_CUL][0];
 		pstMobs->pmobs[MOB_ID_CUL][i]->bmph = BMP_WH[MOB_ID_CUL][1];
 		pstMobs->pmobs[MOB_ID_CUL][i]->ptime_now = pSimtime_ms;
+		pstMobs->pmobs[MOB_ID_CUL][i]->b_bmp_aline_bottom = FALSE;
 
 		//CUL払い出し能力
 		//((CCUL*)(pstMobs->pmobs[MOB_ID_CUL][i]))->ability = 250;//250kg/s = 900ton/h
@@ -98,8 +103,26 @@ void CActor::init_task(void* pobj) {
 		pstMobs->pmobs[MOB_ID_TRIPPER][i]->bmpw = BMP_WH[MOB_ID_TRIPPER][0];
 		pstMobs->pmobs[MOB_ID_TRIPPER][i]->bmph = BMP_WH[MOB_ID_TRIPPER][1];
 		pstMobs->pmobs[MOB_ID_TRIPPER][i]->ptime_now = pSimtime_ms;
-
+		pstMobs->pmobs[MOB_ID_TRIPPER][i]->b_bmp_aline_bottom = TRUE;
 	}
+
+
+	for (int i = 0; i < NUM_OF_SCRAPER; i++) {
+		if(i > 3)
+			hbmp = (HBITMAP)LoadImage(pActInst->inf.hInstance, TEXT("IDB_SCRP0"), IMAGE_BITMAP, 0, 0, LR_DEFAULTCOLOR);
+		else
+			hbmp = (HBITMAP)LoadImage(pActInst->inf.hInstance, TEXT("IDB_SCRP1"), IMAGE_BITMAP, 0, 0, LR_DEFAULTCOLOR);
+
+		pstMobs->pmobs[MOB_ID_SCRAPER][i] = &(pstMobs->mobs.scraper[i]);
+		pstMobs->mobs.scraper[i].status = MOB_STAT_IDLE;
+		wsprintf(pstMobs->mobs.scraper[i].type, MOB_TYPE_SCRAPER);
+		pstMobs->mobs.scraper[i].hBmp_mob = hbmp;
+		pstMobs->pmobs[MOB_ID_SCRAPER][i]->bmpw = BMP_WH[MOB_ID_SCRAPER][0];
+		pstMobs->pmobs[MOB_ID_SCRAPER][i]->bmph = BMP_WH[MOB_ID_SCRAPER][1];
+		pstMobs->pmobs[MOB_ID_SCRAPER][i]->ptime_now = pSimtime_ms;
+		pstMobs->pmobs[MOB_ID_SCRAPER][i]-> b_bmp_aline_bottom = TRUE;;
+	}
+
 
 	hbmp = (HBITMAP)LoadImage(pActInst->inf.hInstance, TEXT("IDB_ERM0"), IMAGE_BITMAP, 0, 0, LR_DEFAULTCOLOR);
 	for (int i = 0; i < NUM_OF_EROOM; i++) {
@@ -295,6 +318,46 @@ void CActor::init_task(void* pobj) {
 			}
 			itype[MOB_ID_TRIPPER]++;
 		}
+		else if (wstrtmp == MOB_TYPE_SCRAPER) {
+			if (itype[MOB_ID_SCRAPER] >= NUM_OF_SCRAPER) continue;
+			int k = 0;
+
+			pstMobs->pmobs[MOB_ID_SCRAPER][itype[MOB_ID_SCRAPER]]->exist = ON;
+			while (getline(wstream, wstrtmp, L',')) {
+				CScraper* pobj = (CScraper *)(pstMobs->pmobs[MOB_ID_SCRAPER][itype[MOB_ID_SCRAPER]]);
+				switch (k) {
+				case 0:pobj->ID = _wtoi(wstrtmp.c_str()); break;
+				case 1:pobj->area.x = _wtoi(wstrtmp.c_str()); break;
+				case 2:pobj->area.y = _wtoi(wstrtmp.c_str()); break;
+				case 3:pobj->area.w = _wtoi(wstrtmp.c_str()); break;
+				case 4:pobj->area.h = _wtoi(wstrtmp.c_str()); break;
+				case 5:
+					for (int j = 0; j < wstrtmp.size(); j++) pobj->name[j] = wstrtmp[j];
+					break;
+				case 6: break;
+				case 7: break;
+				case 8: pobj->spd = _wtoi(wstrtmp.c_str()); break;
+				case 9:  pobj->SCRPtype = stoi(wstrtmp.c_str(), nullptr, 16); break; 
+				case 10: break;
+				case 11: pobj->ability = _wtoi(wstrtmp.c_str()); break;
+				case 12:pobj->pos_drop[0][0] = _wtoi(wstrtmp.c_str()); break;
+				case 13:pobj->pos_drop[0][1] = _wtoi(wstrtmp.c_str()); break;
+				case 14:pobj->pos_drop[0][2] = _wtoi(wstrtmp.c_str()); break;
+				case 15:pobj->pos_drop[0][3] = _wtoi(wstrtmp.c_str()); break;
+				case 16:pobj->pos_drop[0][4] = _wtoi(wstrtmp.c_str()); break;
+				case 17:pobj->pos_drop[0][5] = _wtoi(wstrtmp.c_str()); break;
+				case 18:pobj->pos_drop[1][0] = _wtoi(wstrtmp.c_str()); break;
+				case 19:pobj->pos_drop[1][1] = _wtoi(wstrtmp.c_str()); break;
+				case 20:pobj->pos_drop[1][2] = _wtoi(wstrtmp.c_str()); break;
+				case 21:pobj->pos_drop[1][3] = _wtoi(wstrtmp.c_str()); break;
+				case 22:pobj->pos_drop[1][4] = _wtoi(wstrtmp.c_str()); break;
+				case 23:pobj->pos_drop[1][5] = _wtoi(wstrtmp.c_str()); break;
+				default:break;
+				}
+				k++;
+			}
+			itype[MOB_ID_SCRAPER]++;
+		}
 		else if (wstrtmp == MOB_TYPE_EROOM) {
 			if (itype[MOB_ID_EROOM] >= NUM_OF_EROOM) continue;
 			int k = 0;
@@ -339,6 +402,18 @@ void CActor::init_task(void* pobj) {
 				case 11: pobj->capa_all = _wtoi(wstrtmp.c_str()); break;
 				case 12: pobj->pos_bc_origin_put = _wtoi(wstrtmp.c_str()); break;
 				case 13: pobj->pos_bc_origin_pop = _wtoi(wstrtmp.c_str()); break;
+				case 14: break;
+				case 15: break;
+				case 16: break;
+				case 17: break;
+				case 18: break;
+				case 19: break;
+				case 20: break;
+				case 21: break;
+				case 22: break;
+				case 23: break;
+				case 24: break;
+				case 25: break;
 				default:break;
 				}
 				k++;
@@ -354,6 +429,7 @@ void CActor::init_task(void* pobj) {
 	init_bclink();//BCの接続設定
 	init_bc();//BC関連初期化
 	init_trp();//Tripper関連初期化
+	init_scraper();//Scraper関連初期化
 	init_silo();//BCサイロ関連初期化
 	init_harai();//払い出し機関連初期化
 
@@ -432,6 +508,16 @@ void CActor::routine_work(void *param) {
 		else pstMobs->pmobs[MOB_ID_TRIPPER][i]->status = MOB_STAT_ACT0;
 		cal_tripper(i,ms_dt, pstMobs->pmobs[MOB_ID_TRIPPER][i]->command);
 	}
+	//SCRAPER
+	for (int i = 0; i < NUM_OF_SCRAPER; i++) {
+		if (pstMobs->pmobs[MOB_ID_SCRAPER][i]->command == COM_SCRP_IDLE) pstMobs->pmobs[MOB_ID_SCRAPER][i]->status = MOB_STAT_IDLE;
+		else if (!(pstMobs->pmobs[MOB_ID_SCRAPER][i]->command & COM_SCRP_DISCHARGE)) pstMobs->pmobs[MOB_ID_SCRAPER][i]->status = MOB_STAT_ACT0;
+		else if (pstMobs->pmobs[MOB_ID_SCRAPER][i]->status == MOB_STAT_IDLE) pstMobs->pmobs[MOB_ID_SCRAPER][i]->status = MOB_STAT_ACT0;
+		else if (pstMobs->pmobs[MOB_ID_SCRAPER][i]->status == MOB_STAT_ACT0)pstMobs->pmobs[MOB_ID_SCRAPER][i]->status = MOB_STAT_ACT1;
+		else if (pstMobs->pmobs[MOB_ID_SCRAPER][i]->status == MOB_STAT_ACT1)pstMobs->pmobs[MOB_ID_SCRAPER][i]->status = MOB_STAT_ACT2;
+		else pstMobs->pmobs[MOB_ID_SCRAPER][i]->status = MOB_STAT_ACT0;
+		cal_scraper(i, ms_dt, pstMobs->pmobs[MOB_ID_SCRAPER][i]->command);
+	}
 
 	ms_lasttime = ((P_ST_SMEM_FORMAT)inf.pSmem)->stSmem.simtime_ms; //前回シミュレーション時間保持
 
@@ -466,45 +552,52 @@ int CActor::cal_silo(DWORD index, LONG dt, DWORD com) {
 	int line = HIWORD(index);
 	int npos = LOWORD(index);
 	CSilo* pobj = &(pstMobs->mobs.silo[line][npos]);
-#if 1
-	for (int i = 0; i < SILO_COLUMN_NUM; i++) {
-		int def1, def2;
-		if (i == SILO_COLUMN_NUM - 1) {
-			def1 = pobj->column[i].weight - pobj->column[i - 1].weight;
-			if (def1 > pobj->thresh_level) {
-				pobj->column[i].weight -= pobj->thresh_level / 4;
-				pobj->column[i-1].weight += pobj->thresh_level / 4;
-			}
-		}
-		else if(i == 0) {
-			def2 = pobj->column[i].weight - pobj->column[i + 1].weight;
-			if (def2 > pobj->thresh_level) {
-				pobj->column[i].weight -= pobj->thresh_level / 4;
-				pobj->column[i+1].weight += pobj->thresh_level / 4;
-			}
-		}
-		else {
-			def1 = pobj->column[i].weight - pobj->column[i - 1].weight;
-			def2 = pobj->column[i].weight - pobj->column[i + 1].weight;
-	
-			if ((def1> pobj->thresh_level/2) && (def2 > pobj->thresh_level/2)){
-				pobj->column[i].weight -= pobj->thresh_level / 4;
-				pobj->column[i + 1].weight += pobj->thresh_level / 8;
-				pobj->column[i - 1].weight += pobj->thresh_level / 8;
-			}
-			else if (def2 > pobj->thresh_level) {
-				pobj->column[i].weight -= pobj->thresh_level / 4;
-				pobj->column[i + 1].weight += pobj->thresh_level / 4;
-			}
-			else if (def1 > pobj->thresh_level) {
-				pobj->column[i].weight -= pobj->thresh_level / 4;
-				pobj->column[i-1].weight += pobj->thresh_level / 4;
-			}
-			else;
 
+	if (pobj->SILOtype == SILO_TYPE_BIO) {
+		;
+	}
+	else if (pobj->SILOtype == SILO_TYPE_BANK) {
+		;
+	}
+	else{
+		for (int i = 0; i < SILO_COLUMN_NUM; i++) {
+			int def1, def2;
+			if (i == SILO_COLUMN_NUM - 1) {
+				def1 = pobj->column[i].weight - pobj->column[i - 1].weight;
+				if (def1 > pobj->thresh_level) {
+					pobj->column[i].weight -= pobj->thresh_level / 4;
+					pobj->column[i-1].weight += pobj->thresh_level / 4;
+				}
+			}
+			else if(i == 0) {
+				def2 = pobj->column[i].weight - pobj->column[i + 1].weight;
+				if (def2 > pobj->thresh_level) {
+					pobj->column[i].weight -= pobj->thresh_level / 4;
+					pobj->column[i+1].weight += pobj->thresh_level / 4;
+				}
+			}
+			else {
+				def1 = pobj->column[i].weight - pobj->column[i - 1].weight;
+				def2 = pobj->column[i].weight - pobj->column[i + 1].weight;
+	
+				if ((def1> pobj->thresh_level/2) && (def2 > pobj->thresh_level/2)){
+					pobj->column[i].weight -= pobj->thresh_level / 4;
+					pobj->column[i + 1].weight += pobj->thresh_level / 8;
+					pobj->column[i - 1].weight += pobj->thresh_level / 8;
+				}
+				else if (def2 > pobj->thresh_level) {
+					pobj->column[i].weight -= pobj->thresh_level / 4;
+					pobj->column[i + 1].weight += pobj->thresh_level / 4;
+				}
+				else if (def1 > pobj->thresh_level) {
+					pobj->column[i].weight -= pobj->thresh_level / 4;
+					pobj->column[i-1].weight += pobj->thresh_level / 4;
+				}
+				else;
+
+			}
 		}
 	}
-#endif
 	return 0;
 };
 
@@ -539,6 +632,25 @@ int CActor::cal_harai(DWORD index, LONG dt, DWORD com) {
 		else if (pobj->ID == HARAI_13A)  pr.set_mobmap(COM_MOBMAP_13A);
 		else if (pobj->ID == HARAI_13B) pr.set_mobmap(COM_MOBMAP_13B);
 		else if (pobj->ID == HARAI_13C) pr.set_mobmap(COM_MOBMAP_13C);
+		else;
+	}
+
+	return 0;
+};
+int CActor::cal_scraper(DWORD index, LONG dt, DWORD com) {
+	CScraper* pobj = &(pstMobs->mobs.scraper[index]);
+	
+	int iret = pobj->move(com, dt, pobj->get_target());
+
+	//スクレーパ移動でマップ更新
+	if (iret) {//移動有り
+		CPublicRelation pr;
+		if (pobj->ID == LINE_D_SCR)  pr.set_mobmap(COM_MOBMAP_8A);
+		else if (pobj->ID == LINE_E_SCR)  pr.set_mobmap(COM_MOBMAP_8B);
+		else if (pobj->ID == LINE_F_SCR)  pr.set_mobmap(COM_MOBMAP_9_2A);
+		else if (pobj->ID == LINE_G_SCR)  pr.set_mobmap(COM_MOBMAP_9_2B);
+		else if (pobj->ID == LINE_H_SCR)  pr.set_mobmap(COM_MOBMAP_23A);
+		else if (pobj->ID == LINE_I_SCR)  pr.set_mobmap(COM_MOBMAP_23B);
 		else;
 	}
 
@@ -795,8 +907,12 @@ void CActor::init_bc() {//BC関連初期設定
 	(pstMobs->mobs.bc[LINE_A][BC_L5]).ptrp = (CMob*)(&(pstMobs->mobs.tripper[LINE_A]));
 	(pstMobs->mobs.bc[LINE_B][BC_L5]).ptrp = (CMob*)(&(pstMobs->mobs.tripper[LINE_B]));
 	(pstMobs->mobs.bc[LINE_C][BC_L5]).ptrp = (CMob*)(&(pstMobs->mobs.tripper[LINE_C]));
-	(pstMobs->mobs.bc[LINE_A][BC_L8]).ptrp = (CMob*)(&(pstMobs->mobs.tripper[LINE_D]));
-	(pstMobs->mobs.bc[LINE_B][BC_L8]).ptrp = (CMob*)(&(pstMobs->mobs.tripper[LINE_E]));
+	(pstMobs->mobs.bc[LINE_A][BC_L8]).ptrp = (CMob*)(&(pstMobs->mobs.scraper[LINE_D_SCR]));
+	(pstMobs->mobs.bc[LINE_B][BC_L8]).ptrp = (CMob*)(&(pstMobs->mobs.scraper[LINE_E_SCR]));
+	(pstMobs->mobs.bc[LINE_A][BC_L9_2]).ptrp = (CMob*)(&(pstMobs->mobs.scraper[LINE_F_SCR]));
+	(pstMobs->mobs.bc[LINE_B][BC_L9_2]).ptrp = (CMob*)(&(pstMobs->mobs.scraper[LINE_G_SCR]));
+	(pstMobs->mobs.bc[LINE_A][BC_L23]).ptrp = (CMob*)(&(pstMobs->mobs.scraper[LINE_H_SCR]));
+	(pstMobs->mobs.bc[LINE_B][BC_L23]).ptrp = (CMob*)(&(pstMobs->mobs.scraper[LINE_I_SCR]));
 
 
 	CBC* pbc;
@@ -913,27 +1029,49 @@ void CActor::init_trp() {//TRIPPER関連初期設定
 	pstMobs->mobs.tripper[LINE_A].pbc = &(pstMobs->mobs.bc[LINE_A][BC_L5]);
 	pstMobs->mobs.tripper[LINE_B].pbc = &(pstMobs->mobs.bc[LINE_B][BC_L5]);
 	pstMobs->mobs.tripper[LINE_C].pbc = &(pstMobs->mobs.bc[LINE_C][BC_L5]);
-	pstMobs->mobs.tripper[LINE_D].pbc = &(pstMobs->mobs.bc[LINE_A][BC_L8]);
-	pstMobs->mobs.tripper[LINE_E].pbc = &(pstMobs->mobs.bc[LINE_B][BC_L8]);
-
 
 	//SILOセット
 	for (int i = 0; i < 4; i++) {
 		pstMobs->mobs.tripper[LINE_A].psilo[i] = &(pstMobs->mobs.silo[LINE_A][i]);
 		pstMobs->mobs.tripper[LINE_B].psilo[i] = &(pstMobs->mobs.silo[LINE_B][i]);
 		pstMobs->mobs.tripper[LINE_C].psilo[i] = &(pstMobs->mobs.silo[LINE_C][i]);
-		pstMobs->mobs.tripper[LINE_D].psilo[i] = &(pstMobs->mobs.silo[LINE_D][i]);
-		pstMobs->mobs.tripper[LINE_E].psilo[i] = &(pstMobs->mobs.silo[LINE_E][i]);
-
 	}
 
 	for (int i = 0; i < NUM_OF_TRIPPER; i++) {
 		pstMobs->mobs.tripper[i].set_param();
 		pstMobs->mobs.tripper[i].move(COM_TRP_IDLE,1,0);
 	}
+	return;
+};
+void CActor::init_scraper() {//SRAPER関連初期設定
+						 //BCセット
+	pstMobs->mobs.scraper[LINE_D_SCR].pbc = &(pstMobs->mobs.bc[LINE_A][BC_L8]);
+	pstMobs->mobs.scraper[LINE_E_SCR].pbc = &(pstMobs->mobs.bc[LINE_B][BC_L8]);
+	pstMobs->mobs.scraper[LINE_F_SCR].pbc = &(pstMobs->mobs.bc[LINE_A][BC_L9_2]);
+	pstMobs->mobs.scraper[LINE_G_SCR].pbc = &(pstMobs->mobs.bc[LINE_B][BC_L9_2]);
+	pstMobs->mobs.scraper[LINE_H_SCR].pbc = &(pstMobs->mobs.bc[LINE_A][BC_L23]);
+	pstMobs->mobs.scraper[LINE_I_SCR].pbc = &(pstMobs->mobs.bc[LINE_B][BC_L23]);
+
+	//SILOセット
+	for (int i = 0; i < 4; i++) {
+		pstMobs->mobs.scraper[LINE_D_SCR].psilo[i] = &(pstMobs->mobs.silo[LINE_D][i]);
+		pstMobs->mobs.scraper[LINE_E_SCR].psilo[i] = &(pstMobs->mobs.silo[LINE_E][i]);
+		pstMobs->mobs.scraper[LINE_F_SCR].psilo[i] = &(pstMobs->mobs.silo[LINE_F][i]);
+		pstMobs->mobs.scraper[LINE_G_SCR].psilo[i] = &(pstMobs->mobs.silo[LINE_G][i]);
+		pstMobs->mobs.scraper[LINE_H_SCR].psilo[i] = &(pstMobs->mobs.silo[LINE_H][i]);
+		pstMobs->mobs.scraper[LINE_I_SCR].psilo[i] = &(pstMobs->mobs.silo[LINE_H][i]);
+	}
+
+	for (int i = 0; i < NUM_OF_SCRAPER; i++) {
+		pstMobs->mobs.scraper[i].set_param();
+		pstMobs->mobs.scraper[i].move(COM_SCRP_IDLE, 1, 0);
+	}
+
+
 
 	return;
 };
+
 void CActor::init_bclink() {//BCの接続設定
 
 	//CUL
@@ -965,7 +1103,7 @@ void CActor::init_bclink() {//BCの接続設定
 																																						//5A
 		(pstMobs->mobs.bc[LINE_A][BC_L5]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L5]); (pstMobs->mobs.bc[LINE_A][BC_L5]).bclink_i[DUMP1] = 0;//BC5A 1
 		(pstMobs->mobs.bc[LINE_A][BC_L5]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_A][BC_L5]); (pstMobs->mobs.bc[LINE_A][BC_L5]).bclink_i[DUMP2] = 0;//BC5A 1
-		(pstMobs->mobs.bc[LINE_A][BC_L5]).silolink = &(pstMobs->mobs.silo[LINE_A][3]);
+		(pstMobs->mobs.bc[LINE_A][BC_L5]).silolink[0] = &(pstMobs->mobs.silo[LINE_A][3]);
 
 		(pstMobs->mobs.bc[LINE_A][BC_L4_3]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L6]); (pstMobs->mobs.bc[LINE_A][BC_L4_3]).bclink_i[DUMP1] = 0;//BC6A 1
 		(pstMobs->mobs.bc[LINE_A][BC_L4_3]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_A][BC_L6]); (pstMobs->mobs.bc[LINE_A][BC_L4_3]).bclink_i[DUMP2] = 0;//BC6A 1
@@ -978,7 +1116,7 @@ void CActor::init_bclink() {//BCの接続設定
 
 		(pstMobs->mobs.bc[LINE_A][BC_L8]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L8]); (pstMobs->mobs.bc[LINE_A][BC_L8]).bclink_i[DUMP1] = 0;//BC8A 1
 		(pstMobs->mobs.bc[LINE_A][BC_L8]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_A][BC_L8]); (pstMobs->mobs.bc[LINE_A][BC_L8]).bclink_i[DUMP2] = 0;//BC8A 1
-		(pstMobs->mobs.bc[LINE_A][BC_L8]).silolink = &(pstMobs->mobs.silo[LINE_D][2]);
+		(pstMobs->mobs.bc[LINE_A][BC_L8]).silolink[0] = &(pstMobs->mobs.silo[LINE_D][2]);
 
 		(pstMobs->mobs.bc[LINE_A][BC_L9]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L9_1]); (pstMobs->mobs.bc[LINE_A][BC_L9]).bclink_i[DUMP1] = 0;//BC9_1A 1
 		(pstMobs->mobs.bc[LINE_A][BC_L9]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_A][BC_L9_2]); (pstMobs->mobs.bc[LINE_A][BC_L9]).bclink_i[DUMP2] = 0;//BC9_2A 1
@@ -988,7 +1126,7 @@ void CActor::init_bclink() {//BCの接続設定
 
 		(pstMobs->mobs.bc[LINE_A][BC_L9_2]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L9_2]); (pstMobs->mobs.bc[LINE_A][BC_L9_2]).bclink_i[DUMP1] = 0;//BC9_2B 1
 		(pstMobs->mobs.bc[LINE_A][BC_L9_2]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_A][BC_L9_2]); (pstMobs->mobs.bc[LINE_A][BC_L9_2]).bclink_i[DUMP2] = 0;//BC9_2B 1
-		(pstMobs->mobs.bc[LINE_A][BC_L9_2]).silolink = &(pstMobs->mobs.silo[LINE_F][0]);
+		(pstMobs->mobs.bc[LINE_A][BC_L9_2]).silolink[0] = &(pstMobs->mobs.silo[LINE_F][0]);
 
 		(pstMobs->mobs.bc[LINE_A][BC_L11]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L19]); (pstMobs->mobs.bc[LINE_A][BC_L11]).bclink_i[DUMP1] = 9;//BC19A 9
 		(pstMobs->mobs.bc[LINE_A][BC_L11]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L19]); (pstMobs->mobs.bc[LINE_A][BC_L11]).bclink_i[DUMP2] = 9;//BC19B 9
@@ -1025,11 +1163,12 @@ void CActor::init_bclink() {//BCの接続設定
 
 		(pstMobs->mobs.bc[LINE_A][BC_L22]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L23]); (pstMobs->mobs.bc[LINE_A][BC_L22]).bclink_i[DUMP1] = 0;//BC23A 1
 		(pstMobs->mobs.bc[LINE_A][BC_L22]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_A][BC_L23]); (pstMobs->mobs.bc[LINE_A][BC_L22]).bclink_i[DUMP2] = 0;//BC23A 1
-
+		(pstMobs->mobs.bc[LINE_A][BC_L22]).silolink[0] = &(pstMobs->mobs.silo[LINE_H][0]);//BANKER 2号機
 
 		(pstMobs->mobs.bc[LINE_A][BC_L23]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L23]); (pstMobs->mobs.bc[LINE_A][BC_L23]).bclink_i[DUMP1] = 0;//BC23A 1
 		(pstMobs->mobs.bc[LINE_A][BC_L23]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_A][BC_L23]); (pstMobs->mobs.bc[LINE_A][BC_L23]).bclink_i[DUMP2] = 0;//BC23A 1
-		(pstMobs->mobs.bc[LINE_A][BC_L23]).silolink = &(pstMobs->mobs.silo[LINE_I][0]);//BANKER 2号機
+		(pstMobs->mobs.bc[LINE_A][BC_L23]).silolink[0] = &(pstMobs->mobs.silo[LINE_H][1]);//BANKER 2号機
+		(pstMobs->mobs.bc[LINE_A][BC_L23]).silolink[1] = &(pstMobs->mobs.silo[LINE_H][0]);//BANKER 1号機
 
 		(pstMobs->mobs.bc[LINE_A][BC_LRC]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L9_2]); (pstMobs->mobs.bc[LINE_A][BC_LRC]).bclink_i[DUMP1] = 0;//BC9_2A 1
 		(pstMobs->mobs.bc[LINE_A][BC_LRC]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_A][BC_L9_2]); (pstMobs->mobs.bc[LINE_A][BC_LRC]).bclink_i[DUMP2] = 0;//BC9_2A 1
@@ -1055,7 +1194,7 @@ void CActor::init_bclink() {//BCの接続設定
 																																						//5B
 		(pstMobs->mobs.bc[LINE_B][BC_L5]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_B][BC_L5]); (pstMobs->mobs.bc[LINE_B][BC_L5]).bclink_i[DUMP1] = 0;//BC5B 1
 		(pstMobs->mobs.bc[LINE_B][BC_L5]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L5]); (pstMobs->mobs.bc[LINE_B][BC_L5]).bclink_i[DUMP2] = 0;//BC5B 1
-		(pstMobs->mobs.bc[LINE_B][BC_L5]).silolink = &(pstMobs->mobs.silo[LINE_B][3]);
+		(pstMobs->mobs.bc[LINE_B][BC_L5]).silolink[0] = &(pstMobs->mobs.silo[LINE_B][3]);
 
 		(pstMobs->mobs.bc[LINE_B][BC_L4_3]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_B][BC_L6]); (pstMobs->mobs.bc[LINE_B][BC_L4_3]).bclink_i[DUMP1] = 0;//BC6B 1
 		(pstMobs->mobs.bc[LINE_B][BC_L4_3]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L6]); (pstMobs->mobs.bc[LINE_B][BC_L4_3]).bclink_i[DUMP2] = 0;//BC6B 1
@@ -1068,7 +1207,7 @@ void CActor::init_bclink() {//BCの接続設定
 
 		(pstMobs->mobs.bc[LINE_B][BC_L8]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_B][BC_L8]); (pstMobs->mobs.bc[LINE_B][BC_L8]).bclink_i[DUMP1] = 0;//BC8B 1
 		(pstMobs->mobs.bc[LINE_B][BC_L8]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L8]); (pstMobs->mobs.bc[LINE_B][BC_L8]).bclink_i[DUMP2] = 0;//BC8B 1
-		(pstMobs->mobs.bc[LINE_B][BC_L8]).silolink = &(pstMobs->mobs.silo[LINE_E][2]);
+		(pstMobs->mobs.bc[LINE_B][BC_L8]).silolink[0] = &(pstMobs->mobs.silo[LINE_E][2]);
 
 		(pstMobs->mobs.bc[LINE_B][BC_L9]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_B][BC_L9_1]); (pstMobs->mobs.bc[LINE_B][BC_L9]).bclink_i[DUMP1] = 0;//BC9_1B 1
 		(pstMobs->mobs.bc[LINE_B][BC_L9]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_A][BC_L9_2]); (pstMobs->mobs.bc[LINE_B][BC_L9]).bclink_i[DUMP2] = 0;//BC9_2A 1
@@ -1078,7 +1217,7 @@ void CActor::init_bclink() {//BCの接続設定
 
 		(pstMobs->mobs.bc[LINE_B][BC_L9_2]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_B][BC_L9_2]); (pstMobs->mobs.bc[LINE_A][BC_L9_2]).bclink_i[DUMP1] = 0;//BC9_2B 1
 		(pstMobs->mobs.bc[LINE_B][BC_L9_2]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L9_2]); (pstMobs->mobs.bc[LINE_A][BC_L9_2]).bclink_i[DUMP2] = 0;//BC9_2B 1
-		(pstMobs->mobs.bc[LINE_B][BC_L9_2]).silolink = &(pstMobs->mobs.silo[LINE_G][0]);
+		(pstMobs->mobs.bc[LINE_B][BC_L9_2]).silolink[0] = &(pstMobs->mobs.silo[LINE_G][0]);
 
 		(pstMobs->mobs.bc[LINE_B][BC_L11]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L19]); (pstMobs->mobs.bc[LINE_B][BC_L11]).bclink_i[DUMP1] = 8;//BC19A 8
 		(pstMobs->mobs.bc[LINE_B][BC_L11]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L19]); (pstMobs->mobs.bc[LINE_B][BC_L11]).bclink_i[DUMP2] = 8;//BC19B 8
@@ -1115,10 +1254,12 @@ void CActor::init_bclink() {//BCの接続設定
 
 		(pstMobs->mobs.bc[LINE_B][BC_L22]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_B][BC_L23]); (pstMobs->mobs.bc[LINE_B][BC_L22]).bclink_i[DUMP1] = 0;//BC23B 1
 		(pstMobs->mobs.bc[LINE_B][BC_L22]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L23]); (pstMobs->mobs.bc[LINE_B][BC_L22]).bclink_i[DUMP2] = 0;//BC23B 1
+		(pstMobs->mobs.bc[LINE_B][BC_L22]).silolink[0] = &(pstMobs->mobs.silo[LINE_H][0]);//BANKER 1号機
 
 		(pstMobs->mobs.bc[LINE_B][BC_L23]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_B][BC_L23]); (pstMobs->mobs.bc[LINE_B][BC_L23]).bclink_i[DUMP1] = 0;//BC23B 1
 		(pstMobs->mobs.bc[LINE_B][BC_L23]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L23]); (pstMobs->mobs.bc[LINE_B][BC_L23]).bclink_i[DUMP2] = 0;//BC23B 1
-		(pstMobs->mobs.bc[LINE_B][BC_L23]).silolink = &(pstMobs->mobs.silo[LINE_I][0]);//BANKER 2号機
+		(pstMobs->mobs.bc[LINE_B][BC_L23]).silolink[0] = &(pstMobs->mobs.silo[LINE_H][1]);//BANKER 2号機
+		(pstMobs->mobs.bc[LINE_B][BC_L23]).silolink[1] = &(pstMobs->mobs.silo[LINE_H][0]);//BANKER 1号機
 
 		(pstMobs->mobs.bc[LINE_B][BC_LRC]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_B][BC_L9_2]); (pstMobs->mobs.bc[LINE_B][BC_LRC]).bclink_i[DUMP1] = 0;//BC9_2B 1
 		(pstMobs->mobs.bc[LINE_B][BC_LRC]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L9_2]); (pstMobs->mobs.bc[LINE_B][BC_LRC]).bclink_i[DUMP2] = 0;//BC9_2B 1
@@ -1128,7 +1269,7 @@ void CActor::init_bclink() {//BCの接続設定
 		//5C
 		(pstMobs->mobs.bc[LINE_C][BC_L5]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_C][BC_L5]); (pstMobs->mobs.bc[LINE_C][BC_L5]).bclink_i[DUMP1] = 0;//BC5C 1
 		(pstMobs->mobs.bc[LINE_C][BC_L5]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_C][BC_L5]); (pstMobs->mobs.bc[LINE_C][BC_L5]).bclink_i[DUMP2] = 0;//BC5C 1
-		(pstMobs->mobs.bc[LINE_C][BC_L5]).silolink = &(pstMobs->mobs.silo[LINE_C][3]);
+		(pstMobs->mobs.bc[LINE_C][BC_L5]).silolink[0] = &(pstMobs->mobs.silo[LINE_C][3]);
 
 		(pstMobs->mobs.bc[LINE_C][BC_L11]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L19]); (pstMobs->mobs.bc[LINE_C][BC_L11]).bclink_i[DUMP1] = 7;//BC19A 7
 		(pstMobs->mobs.bc[LINE_C][BC_L11]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L19]); (pstMobs->mobs.bc[LINE_C][BC_L11]).bclink_i[DUMP2] = 7;//BC19B 7
@@ -1179,15 +1320,28 @@ void CActor::init_silo() {
 			if (psilo->ID != 0) {
 				psilo->capa1 = psilo->capa_all / SILO_COLUMN_NUM;
 				psilo->exist = ON;
-				psilo->pix_columw = psilo->area.h / SILO_COLUMN_NUM;
+
+				if (psilo->SILOtype == SILO_TYPE_BIO) psilo->pix_columw = psilo->area.h / SILO_COLUMN_NUM_BIO;
+				else if (psilo->SILOtype == SILO_TYPE_BANK) psilo->pix_columw = psilo->area.w / SILO_COLUMN_NUM_BANK;
+				else psilo->pix_columw = psilo->area.h / SILO_COLUMN_NUM;
+
 				psilo->pix2kg = psilo->capa1 / psilo->area.w;
 				psilo->thresh_level = psilo->capa1 / 10;
 			}
 			else  psilo->exist = OFF;
 
-			for (int k = 0; k < SILO_COLUMN_NUM; k++) {
-				psilo->column[k].weight = psilo->capa1* psilo->ini_stock_percent/100;
-			}
+	
+				if (psilo->SILOtype == SILO_TYPE_BIO) {
+					for (int k= 0; k < SILO_COLUMN_NUM_BIO; k++) psilo->column[k].weight = psilo->capa1 * 10*(k%4) / 100;
+				}
+				else if (psilo->SILOtype == SILO_TYPE_BANK) {
+					for (int k = 0; k < SILO_COLUMN_NUM_BANK; k++) psilo->column[k].weight = psilo->capa1* 15 * (k % 3) /100;
+				}
+				else {
+					for (int k = 0; k < SILO_COLUMN_NUM; k++) psilo->column[k].weight = psilo->capa1* psilo->ini_stock_percent / 100;
+				}
+
+			
 		}
 	}
 
@@ -1204,6 +1358,12 @@ void CActor::init_harai() {//HARAI関連初期設定
 	pstMobs->mobs.haraiki[HARAI_13A].pbc = &(pstMobs->mobs.bc[LINE_A][BC_L13]);
 	pstMobs->mobs.haraiki[HARAI_13B].pbc = &(pstMobs->mobs.bc[LINE_B][BC_L13]);
 	pstMobs->mobs.haraiki[HARAI_13C].pbc = &(pstMobs->mobs.bc[LINE_C][BC_L13]);
+	pstMobs->mobs.haraiki[HARAI_15A].pbc = &(pstMobs->mobs.bc[LINE_A][BC_L15]);
+	pstMobs->mobs.haraiki[HARAI_15B].pbc = &(pstMobs->mobs.bc[LINE_B][BC_L15]);
+	pstMobs->mobs.haraiki[HARAI_15C].pbc = &(pstMobs->mobs.bc[LINE_C][BC_L15]);
+	pstMobs->mobs.haraiki[HARAI_16A].pbc = &(pstMobs->mobs.bc[LINE_A][BC_L16]);
+	pstMobs->mobs.haraiki[HARAI_16B].pbc = &(pstMobs->mobs.bc[LINE_B][BC_L16]);
+	pstMobs->mobs.haraiki[HARAI_16C].pbc = &(pstMobs->mobs.bc[LINE_C][BC_L16]);
 	//SILOセット
 	for (int i = 0; i < 4; i++) {
 		pstMobs->mobs.haraiki[HARAI_11A].psilo[i] = &(pstMobs->mobs.silo[LINE_A][i]);
@@ -1215,6 +1375,12 @@ void CActor::init_harai() {//HARAI関連初期設定
 		pstMobs->mobs.haraiki[HARAI_13A].psilo[i] = &(pstMobs->mobs.silo[LINE_C][i]);
 		pstMobs->mobs.haraiki[HARAI_13B].psilo[i] = &(pstMobs->mobs.silo[LINE_C][i]);
 		pstMobs->mobs.haraiki[HARAI_13C].psilo[i] = &(pstMobs->mobs.silo[LINE_C][i]);
+		pstMobs->mobs.haraiki[HARAI_15A].psilo[i] = &(pstMobs->mobs.silo[LINE_D][i]);
+		pstMobs->mobs.haraiki[HARAI_15B].psilo[i] = &(pstMobs->mobs.silo[LINE_D][i]);
+		pstMobs->mobs.haraiki[HARAI_15C].psilo[i] = &(pstMobs->mobs.silo[LINE_D][i]);
+		pstMobs->mobs.haraiki[HARAI_16A].psilo[i] = &(pstMobs->mobs.silo[LINE_E][i]);
+		pstMobs->mobs.haraiki[HARAI_16B].psilo[i] = &(pstMobs->mobs.silo[LINE_E][i]);
+		pstMobs->mobs.haraiki[HARAI_16C].psilo[i] = &(pstMobs->mobs.silo[LINE_E][i]);
 	}
 
 	for (int i = 0; i < NUM_OF_HARAI; i++) {

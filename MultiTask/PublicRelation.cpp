@@ -161,6 +161,9 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 				else if ((pmob_dlg->type[0] == L'T') && (pmob_dlg->type[1] == L'R')) {
 					tmpwnd = CreateDialog(pPrInst->inf.hInstance, L"IDD_TRP_HANDLE", hWnd, (DLGPROC)PR_TRPPANEL_PROC);
 				}
+				else if ((pmob_dlg->type[0] == L'S') && (pmob_dlg->type[1] == L'C')) {
+					tmpwnd = CreateDialog(pPrInst->inf.hInstance, L"IDD_TRP_HANDLE", hWnd, (DLGPROC)PR_TRPPANEL_PROC);
+				}
 				else if ((pmob_dlg->type[0] == L'H') && (pmob_dlg->type[1] == L'A')) {//払い出し機もTripper用のDialog利用
 					tmpwnd = CreateDialog(pPrInst->inf.hInstance, L"IDD_TRP_HANDLE", hWnd, (DLGPROC)PR_TRPPANEL_PROC);
 				}
@@ -185,6 +188,15 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 					}
 					else {
 						ptrp->set_command(COM_TRP_DISCHARGE);
+					}
+				}
+				else if ((pmob_dlg->type[0] == L'S') && (pmob_dlg->type[1] == L'C')) {
+					CScraper * ptrp = (CScraper *)pmob_dlg;
+					if (ptrp->get_command() & COM_SCRP_DISCHARGE) {
+						ptrp->reset_command(COM_TRP_DISCHARGE);
+					}
+					else {
+						ptrp->set_command(COM_SCRP_DISCHARGE);
 					}
 				}
 				else if ((pmob_dlg->type[0] == L'H') && (pmob_dlg->type[1] == L'A')) {
@@ -215,6 +227,26 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 					if (pbc->head_unit.pos == BC_LINK_REVERSE) pbc->b_rverse = TRUE;
 					else  pbc->b_rverse = FALSE;
 				}
+				else if ((pmob_dlg->type[0] == L'S') && (pmob_dlg->type[1] == L'C')) {
+					CScraper* pscrp = (CScraper*)pmob_dlg;
+					if (pscrp->SCRPtype == SCRP_8) {
+						if (pscrp->command < COM_SCRP_ACT1) pscrp->command = COM_SCRP_ACT1;
+						else if (pscrp->command > COM_SCRP_ACT2) pscrp->command = COM_SCRP_ACT1;
+						else pscrp->command *=2;
+					}
+					else if (pscrp->SCRPtype == SCRP_9_2) {
+						if (pscrp->command < COM_SCRP_ACT1) pscrp->command = COM_SCRP_ACT1;
+						else if (pscrp->command > COM_SCRP_ACT7) pscrp->command = COM_SCRP_ACT1;
+						else pscrp->command *= 2;
+					}
+					else if (pscrp->SCRPtype == SCRP_23) {
+						if (pscrp->command < COM_SCRP_ACT1) pscrp->command = COM_SCRP_ACT1;
+						else if (pscrp->command > COM_SCRP_ACT11) pscrp->command = COM_SCRP_ACT1;
+						else pscrp->command *= 2;
+					}
+					else;
+				}
+				else;
 			}
 		}break;
 		default:
@@ -326,6 +358,9 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 			else if ((pmob_dlg->type[0] == L'T') && (pmob_dlg->type[1] == L'R')) {
 				EnableMenuItem(hsubmenu, IDM_PR_ACT_DEACT, MF_ENABLED);
 			}
+			else if ((pmob_dlg->type[0] == L'S') && (pmob_dlg->type[1] == L'C')) {
+				EnableMenuItem(hsubmenu, IDM_PR_ACT_DEACT, MF_ENABLED);
+			}
 			else if ((pmob_dlg->type[0] == L'H') && (pmob_dlg->type[1] == L'A')) {
 				EnableMenuItem(hsubmenu, IDM_PR_ACT_DEACT, MF_ENABLED);
 			}
@@ -336,11 +371,15 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 			if ((pmob_dlg->type[0] == L'B') && (pmob_dlg->type[1] == L'C')) {
 				EnableMenuItem(hsubmenu, IDM_PR_DMP_CHNG, MF_ENABLED);
 			}
+			else if ((pmob_dlg->type[0] == L'S') && (pmob_dlg->type[1] == L'C')) {
+				EnableMenuItem(hsubmenu, IDM_PR_ACT_DEACT, MF_ENABLED);
+			}
 			else {
 				EnableMenuItem(hsubmenu, IDM_PR_DMP_CHNG, MF_GRAYED);
 			}
 		}
 		else {
+			EnableMenuItem(hsubmenu, IDM_PR_OPEN_DLG, MF_GRAYED);
 			EnableMenuItem(hsubmenu, IDM_PR_ACT_DEACT, MF_GRAYED);
 			EnableMenuItem(hsubmenu, IDM_PR_DMP_CHNG, MF_GRAYED);
 		}
@@ -730,6 +769,11 @@ void CPublicRelation::set_mobmap(int com) {
 			pobj = pstMobs->pmobs[MOB_ID_TRIPPER][i];
 			putobj2map(pobj);
 		}
+		//SCRAPER
+		for (int i = 0; i < NUM_OF_SCRAPER; i++) {
+			pobj = pstMobs->pmobs[MOB_ID_SCRAPER][i];
+			putobj2map(pobj);
+		}
 	}
 	else if (com == COM_MOBMAP_5A) {
 		pobj = pstMobs->pmobs[MOB_ID_BC][LINE_A*BC_LINE_NUM +BC_L5];
@@ -814,6 +858,42 @@ void CPublicRelation::set_mobmap(int com) {
 		putobj2map(pobj);
 
 	}
+	else if (com == COM_MOBMAP_8A) {
+		pobj = pstMobs->pmobs[MOB_ID_BC][LINE_A*BC_LINE_NUM + BC_L8];
+		putobj2map(pobj);
+		pobj = pstMobs->pmobs[MOB_ID_SCRAPER][LINE_D_SCR];
+		putobj2map(pobj);
+	}
+	else if (com == COM_MOBMAP_8B) {
+		pobj = pstMobs->pmobs[MOB_ID_BC][LINE_B*BC_LINE_NUM + BC_L8];
+		putobj2map(pobj);
+		pobj = pstMobs->pmobs[MOB_ID_SCRAPER][LINE_E_SCR];
+		putobj2map(pobj);
+	}
+	else if (com == COM_MOBMAP_9_2A) {
+		pobj = pstMobs->pmobs[MOB_ID_BC][LINE_A*BC_LINE_NUM + BC_L9_2];
+		putobj2map(pobj);
+		pobj = pstMobs->pmobs[MOB_ID_SCRAPER][LINE_F_SCR];
+		putobj2map(pobj);
+	}
+	else if (com == COM_MOBMAP_9_2B) {
+		pobj = pstMobs->pmobs[MOB_ID_BC][LINE_B*BC_LINE_NUM + BC_L9_2];
+		putobj2map(pobj);
+		pobj = pstMobs->pmobs[MOB_ID_SCRAPER][LINE_G_SCR];
+		putobj2map(pobj);
+	}
+	else if (com == COM_MOBMAP_23A) {
+		pobj = pstMobs->pmobs[MOB_ID_BC][LINE_A*BC_LINE_NUM + BC_L23];
+		putobj2map(pobj);
+		pobj = pstMobs->pmobs[MOB_ID_SCRAPER][LINE_H_SCR];
+		putobj2map(pobj);
+	}
+	else if (com == COM_MOBMAP_23B) {
+		pobj = pstMobs->pmobs[MOB_ID_BC][LINE_B*BC_LINE_NUM + BC_L23];
+		putobj2map(pobj);
+		pobj = pstMobs->pmobs[MOB_ID_SCRAPER][LINE_I_SCR];
+		putobj2map(pobj);
+	}
 	else;
 }
 
@@ -821,7 +901,13 @@ void CPublicRelation::putobj2map(CMob* pobj) {
 
 	if (pobj->exist == ON) {
 		int map_x = pobj->area.x >> 3;
-		int map_y = pobj->area.y >> 3;
+		int map_y;
+		if (pobj->b_bmp_aline_bottom) {
+			map_y = (pobj->area.y - pobj->area.h) >> 3;
+		}
+		else {
+			map_y = pobj->area.y >> 3;
+		}
 		for (int ii = 0; ii < (pobj->area.w >> 3); ii++) {
 			for (int jj = 0; jj < (pobj->area.h >> 3); jj++) {
 				stdisp.mobmap[map_x + ii][map_y + jj] = pobj;
@@ -920,11 +1006,11 @@ void CPublicRelation::update_disp() {
 				linkpt[0] = pbc->imgpt_top[pbc->head_unit.pos];
 				pbc2 = pbc->bclink[pbc->head_unit.pos];
 				if ((pbc->BCtype & BC_TRP)|| (pbc->BCtype & BC_SQR)) {
-					if (pbc->silolink->dir & MASK_DIR_Y) {
-						linkpt[1].x = pbc->silolink->area.x + pbc->silolink->area.w; linkpt[1].y = pbc->silolink->area.y + pbc->silolink->area.h/2;
+					if (pbc->silolink[0]->dir & MASK_DIR_Y) {
+						linkpt[1].x = pbc->silolink[0]->area.x; linkpt[1].y = pbc->silolink[0]->area.y + pbc->silolink[0]->area.h;
 					}
 					else {
-						linkpt[1].x = pbc->silolink->area.x; linkpt[1].y = pbc->silolink->area.y + pbc->silolink->area.h;
+						linkpt[1].x = pbc->silolink[0]->area.x + pbc->silolink[0]->area.w; linkpt[1].y = pbc->silolink[0]->area.y + pbc->silolink[0]->area.h / 2;
 					}
 
 				}
@@ -1039,6 +1125,18 @@ void CPublicRelation::update_disp() {
 		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
 	}
 
+	//#スクレーパー
+
+	for (int i = 0; i < NUM_OF_SCRAPER; i++) {
+		SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_SCRAPER][i]->hBmp_mob);
+		CMob* pobj = pstMobs->pmobs[MOB_ID_SCRAPER][i];
+		i_img2 = pobj->status;
+		mobw = pobj->bmpw;	mobh = pobj->bmph;
+		mobx = pobj->area.x;	moby = pobj->area.y - mobh;
+		//AlphaBlend(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, pPrInst->stdisp.bf);
+		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
+	}
+
 	//#電気室
 	SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_EROOM][0]->hBmp_mob);
 	for (int i = 0; i < NUM_OF_EROOM; i++) {
@@ -1048,6 +1146,8 @@ void CPublicRelation::update_disp() {
 		//AlphaBlend(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, pPrInst->stdisp.bf);
 		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
 	}
+
+
 
 	//#サイロ
 	CSilo* psilo;
@@ -1061,7 +1161,17 @@ void CPublicRelation::update_disp() {
 		for (int j = 0; j < SILO_LINE_NUM; j++) {
 			if ((pstMobs->pmobs[MOB_ID_SILO][i*SILO_LINE_NUM + j])->exist == ON) {
 				psilo = (CSilo*)(pstMobs->pmobs[MOB_ID_SILO][i*SILO_LINE_NUM + j]);
-				Rectangle(pPrInst->stdisp.hdc_mem0, psilo->area.x, psilo->area.y, psilo->area.x + psilo->area.w, psilo->area.y + psilo->area.h);
+				if (psilo->SILOtype == SILO_TYPE_BIO) {
+					for(int i_column = 0; i_column < SILO_COLUMN_NUM_BIO ; i_column++)
+						Rectangle(pPrInst->stdisp.hdc_mem0, psilo->area.x, psilo->area.y + psilo->pix_columw * i_column, psilo->area.x + psilo->area.w, psilo->area.y + psilo->pix_columw * (i_column +1));
+				}
+				else if (psilo->SILOtype == SILO_TYPE_BANK) {
+					for (int i_column = 0; i_column < SILO_COLUMN_NUM_BANK; i_column++)
+						Rectangle(pPrInst->stdisp.hdc_mem0, psilo->area.x + psilo->pix_columw * i_column, psilo->area.y, psilo->area.x + psilo->pix_columw * (i_column + 1), psilo->area.y + psilo->area.h );
+				}
+				else {
+					Rectangle(pPrInst->stdisp.hdc_mem0, psilo->area.x, psilo->area.y, psilo->area.x + psilo->area.w, psilo->area.y + psilo->area.h);
+				}
 			}
 		}
 	}
@@ -1074,14 +1184,31 @@ void CPublicRelation::update_disp() {
 		for (int j = 0; j < SILO_LINE_NUM; j++) {
 			psilo = &(pstMobs->mobs.silo[i][j]);
 			if (psilo->exist == ON) {
-				for (int k = 0; k < SILO_COLUMN_NUM; k++) {
-					ptr = psilo->area.x + psilo->area.w;
-					ptl = ptr - (psilo->area.w * psilo->column[k].weight)/ psilo->capa1;
-					ptt = psilo->area.y + psilo->pix_columw * k;
-					ptb = ptt + psilo->pix_columw;
-					Rectangle(pPrInst->stdisp.hdc_mem0, ptl, ptt, ptr, ptb);
-					if (i == 0 && j == 3 && k == 11) {
-						int temp = psilo->column[k].weight;
+				if (psilo->SILOtype == SILO_TYPE_BIO) {
+					for (int k = 0; k < SILO_COLUMN_NUM_BIO; k++) {
+						ptr = psilo->area.x + psilo->area.w;
+						ptl = ptr - (psilo->area.w * psilo->column[k].weight) / psilo->capa1;
+						ptt = psilo->area.y + psilo->pix_columw * k;
+						ptb = ptt + psilo->pix_columw;
+						Rectangle(pPrInst->stdisp.hdc_mem0, ptl, ptt, ptr, ptb);
+					}
+				}
+				else if (psilo->SILOtype == SILO_TYPE_BANK) {
+					for (int k = 0; k < SILO_COLUMN_NUM_BANK; k++) {
+						ptr = psilo->area.x + psilo->pix_columw * (k +1);
+						ptl = ptr - (psilo->pix_columw * psilo->column[k].weight) / psilo->capa1;
+						ptt = psilo->area.y;
+						ptb = ptt + psilo->area.h;
+						Rectangle(pPrInst->stdisp.hdc_mem0, ptl, ptt, ptr, ptb);
+					}
+				}
+				else {
+					for (int k = 0; k < SILO_COLUMN_NUM; k++) {
+						ptr = psilo->area.x + psilo->area.w;
+						ptl = ptr - (psilo->area.w * psilo->column[k].weight) / psilo->capa1;
+						ptt = psilo->area.y + psilo->pix_columw * k;
+						ptb = ptt + psilo->pix_columw;
+						Rectangle(pPrInst->stdisp.hdc_mem0, ptl, ptt, ptr, ptb);
 					}
 				}
 			}
@@ -1093,7 +1220,6 @@ void CPublicRelation::update_disp() {
 	InvalidateRect(pPrInst->inf.hWnd_work, NULL, FALSE);
 	return;
 };
-
 LRESULT CPublicRelation::PR_BCPANEL_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 	PAINTSTRUCT ps;
 	
@@ -1162,6 +1288,8 @@ LRESULT CPublicRelation::PR_TRPPANEL_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM
 	wstring wstr;
 	static CTripper* ptrp;
 	static CHarai* pharai;
+	static CScraper* pscrp;
+
 
 	switch (msg) {
 	case WM_COMMAND: {
@@ -1188,6 +1316,16 @@ LRESULT CPublicRelation::PR_TRPPANEL_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM
 					pharai->reset_command(COM_HARAI_MOVE);
 				}
 			}
+			else if (pmob_dlg->type[0] == L'S') {
+				if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_TRPCHECK_COM_MOVE)) {
+					ptrp->set_command(COM_SCRP_ACT1);
+					int n = GetDlgItemText(hWnd, IDC_TRPEDIT_COM_TARGET, (LPTSTR)wstr.c_str(), 128);
+					if (n) ptrp->set_target(stoi(wstr));
+				}
+				else {
+					ptrp->reset_command(COM_SCRP_ACT1);
+				}
+			}
 			else;
 		}break;
 		case IDC_TRPCHECK_COM_DISCHARGE: {
@@ -1205,6 +1343,14 @@ LRESULT CPublicRelation::PR_TRPPANEL_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM
 				}
 				else {
 					pharai->reset_command(COM_HARAI_DISCHARGE);
+				}
+			}
+			if (pmob_dlg->type[0] == L'S') {
+				if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_TRPCHECK_COM_DISCHARGE)) {
+					pscrp->set_command(COM_SCRP_DISCHARGE);
+				}
+				else {
+					pscrp->reset_command(COM_SCRP_DISCHARGE);
 				}
 			}
 			else;
@@ -1229,6 +1375,7 @@ LRESULT CPublicRelation::PR_TRPPANEL_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM
 	case WM_INITDIALOG: {
 		ptrp = (CTripper*)pmob_dlg;//MOUSE MOVEでオブジェクトのポインタはセットされている
 		pharai = (CHarai*)pmob_dlg;//トリッパーと払い出し機共用
+		pscrp = (CScraper*)pmob_dlg;//トリッパーと払い出し機共用
 		if (pmob_dlg->type[0] == L'T'){
 			if (ptrp->command & COM_TRP_MOVE) SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_MOVE), BM_SETCHECK, BST_CHECKED, 0L);
 			else  SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_MOVE), BM_SETCHECK, BST_UNCHECKED, 0L);
@@ -1239,6 +1386,12 @@ LRESULT CPublicRelation::PR_TRPPANEL_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM
 			if (pharai->command & COM_HARAI_MOVE) SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_MOVE), BM_SETCHECK, BST_CHECKED, 0L);
 			else  SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_MOVE), BM_SETCHECK, BST_UNCHECKED, 0L);
 			if (pharai->command & COM_TRP_DISCHARGE) SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_DISCHARGE), BM_SETCHECK, BST_CHECKED, 0L);
+			else  SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_DISCHARGE), BM_SETCHECK, BST_UNCHECKED, 0L);
+		}
+		else if (pmob_dlg->type[0] == L'S') {
+			if (pscrp->command > COM_SCRP_DISCHARGE) SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_MOVE), BM_SETCHECK, BST_CHECKED, 0L);
+			else  SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_MOVE), BM_SETCHECK, BST_UNCHECKED, 0L);
+			if (pscrp->command & COM_SCRP_DISCHARGE) SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_DISCHARGE), BM_SETCHECK, BST_CHECKED, 0L);
 			else  SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_DISCHARGE), BM_SETCHECK, BST_UNCHECKED, 0L);
 		}
 		else;
