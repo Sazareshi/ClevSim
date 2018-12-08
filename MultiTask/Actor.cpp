@@ -15,7 +15,7 @@ CActor::~CActor(){
 
 CActor * CActor::pActInst;
 //表示用アイコンBitMapのサイズをここでまとめて設定
-int CActor::BMP_WH[MOB_TYPE_NUM][2] = { { 32,32 },{ 16,16 },{ 32,32 } ,{ 48,40 },{16,24 },{ 24,24 },{ 24,24 },{ 16,24 } };
+int CActor::BMP_WH[MOB_TYPE_NUM][2] = { { 32,32 },{ 16,16 },{ 32,32 } ,{ 48,40 },{16,24 },{ 24,24 },{ 24,24 },{ 16,24 },{ 16,16 },{ 64,32 } };
 
 void CActor::init_task(void* pobj) {
 
@@ -62,6 +62,18 @@ void CActor::init_task(void* pobj) {
 		pstMobs->pmobs[MOB_ID_HARAI][i]->bmph = BMP_WH[MOB_ID_HARAI][1];
 		pstMobs->pmobs[MOB_ID_HARAI][i]->ptime_now = pSimtime_ms;
 		pstMobs->pmobs[MOB_ID_HARAI][i]->b_bmp_aline_bottom = FALSE;
+	}
+
+	hbmp = (HBITMAP)LoadImage(pActInst->inf.hInstance, TEXT("IDB_HARAIB"), IMAGE_BITMAP, 0, 0, LR_DEFAULTCOLOR);
+	for (int i = 0; i < NUM_OF_HARAI_BIO; i++) {
+		pstMobs->pmobs[MOB_ID_HARAI_BIO][i] = &(pstMobs->mobs.haraikiBio[i]);
+		pstMobs->mobs.haraikiBio[i].status = MOB_STAT_IDLE;
+		wsprintf(pstMobs->mobs.haraikiBio[i].type, MOB_TYPE_HARAI_BIO);
+		pstMobs->mobs.haraikiBio[i].hBmp_mob = hbmp;
+		pstMobs->pmobs[MOB_ID_HARAI_BIO][i]->bmpw = BMP_WH[MOB_ID_HARAI_BIO][0];
+		pstMobs->pmobs[MOB_ID_HARAI_BIO][i]->bmph = BMP_WH[MOB_ID_HARAI_BIO][1];
+		pstMobs->pmobs[MOB_ID_HARAI_BIO][i]->ptime_now = pSimtime_ms;
+		pstMobs->pmobs[MOB_ID_HARAI_BIO][i]->b_bmp_aline_bottom = FALSE;
 	}
 
 	hbmp = (HBITMAP)LoadImage(pActInst->inf.hInstance, TEXT("IDB_CRUSH0"), IMAGE_BITMAP, 0, 0, LR_DEFAULTCOLOR);
@@ -123,7 +135,6 @@ void CActor::init_task(void* pobj) {
 		pstMobs->pmobs[MOB_ID_SCRAPER][i]-> b_bmp_aline_bottom = TRUE;;
 	}
 
-
 	hbmp = (HBITMAP)LoadImage(pActInst->inf.hInstance, TEXT("IDB_ERM0"), IMAGE_BITMAP, 0, 0, LR_DEFAULTCOLOR);
 	for (int i = 0; i < NUM_OF_EROOM; i++) {
 		pstMobs->pmobs[MOB_ID_EROOM][i] = &(pstMobs->mobs.eroom[i]);
@@ -133,6 +144,18 @@ void CActor::init_task(void* pobj) {
 		pstMobs->pmobs[MOB_ID_EROOM][i]->bmpw = BMP_WH[MOB_ID_EROOM][0];
 		pstMobs->pmobs[MOB_ID_EROOM][i]->bmph = BMP_WH[MOB_ID_EROOM][1];
 		pstMobs->pmobs[MOB_ID_EROOM][i]->ptime_now = pSimtime_ms;
+	}
+
+	hbmp = (HBITMAP)LoadImage(pActInst->inf.hInstance, TEXT("IDB_SCREEN"), IMAGE_BITMAP, 0, 0, LR_DEFAULTCOLOR);
+	for (int i = 0; i < NUM_OF_SCREEN; i++) {
+		pstMobs->pmobs[MOB_ID_SCREEN][i] = &(pstMobs->mobs.crusher[i]);
+		pstMobs->mobs.crusher[i].status = MOB_STAT_IDLE;
+		wsprintf(pstMobs->mobs.crusher[i].type, MOB_TYPE_SCREEN);
+		pstMobs->mobs.crusher[i].hBmp_mob = hbmp;
+		pstMobs->pmobs[MOB_ID_SCREEN][i]->bmpw = BMP_WH[MOB_ID_SCREEN][0];
+		pstMobs->pmobs[MOB_ID_SCREEN][i]->bmph = BMP_WH[MOB_ID_SCREEN][1];
+		pstMobs->pmobs[MOB_ID_SCREEN][i]->ptime_now = pSimtime_ms;
+		pstMobs->pmobs[MOB_ID_SCREEN][i]->b_bmp_aline_bottom = FALSE;
 	}
 
 	///# INIファイル読み込み
@@ -230,6 +253,35 @@ void CActor::init_task(void* pobj) {
 			}
 			itype[MOB_ID_HARAI]++;
 		}
+		else if (wstrtmp == MOB_TYPE_HARAI_BIO) {
+			if (itype[MOB_ID_HARAI_BIO] >= NUM_OF_HARAI_BIO) continue;
+			int k = 0;
+
+			CHaraiBio* pobj = (CHaraiBio *)pstMobs->pmobs[MOB_ID_HARAI_BIO][itype[MOB_ID_HARAI_BIO]];
+			pobj->exist = ON;
+			while (getline(wstream, wstrtmp, L',')) {
+				switch (k) {
+				case 0:pobj->ID = _wtoi(wstrtmp.c_str()); break;
+				case 1:pobj->area.x = _wtoi(wstrtmp.c_str()); break;
+				case 2:pobj->area.y = _wtoi(wstrtmp.c_str()); break;
+				case 3:pobj->area.w = _wtoi(wstrtmp.c_str()); break;
+				case 4:pobj->area.h = _wtoi(wstrtmp.c_str()); break;
+				case 5:
+					for (int j = 0; j < wstrtmp.size(); j++) pstMobs->pmobs[MOB_ID_HARAI_BIO][itype[MOB_ID_HARAI_BIO]]->name[j] = wstrtmp[j];
+					break;
+				case 6: break;
+				case 7: break;
+				case 8: break;
+				case 9: break;
+				case 10: break;
+				case 11: pobj->ability = _wtoi(wstrtmp.c_str()); break;
+
+				default:break;
+				}
+				k++;
+			}
+			itype[MOB_ID_HARAI_BIO]++;
+		}
 		else if (wstrtmp == MOB_TYPE_CRUSH) {
 			if (itype[MOB_ID_CRUSH] >= NUM_OF_CRUSH) continue;
 			int k = 0;
@@ -245,11 +297,46 @@ void CActor::init_task(void* pobj) {
 				case 5:
 					for (int j = 0; j<wstrtmp.size(); j++) pstMobs->pmobs[MOB_ID_CRUSH][itype[MOB_ID_CRUSH]]->name[j] = wstrtmp[j];
 					break;
+				case 6: break;
+				case 7: break;
+				case 8: break;
+				case 9: break;
+				case 10: break;
+				case 11: break;
+				case 12: break;
 				default:break;
 				}
 				k++;
 			}
 			itype[MOB_ID_CRUSH]++;
+		}
+		else if (wstrtmp == MOB_TYPE_SCREEN) {
+			if (itype[MOB_ID_CRUSH] >= NUM_OF_SCREEN) continue;
+			int k = 0;
+
+			pstMobs->pmobs[MOB_ID_SCREEN][itype[MOB_ID_SCREEN]]->exist = ON;
+			while (getline(wstream, wstrtmp, L',')) {
+				switch (k) {
+				case 0:pstMobs->pmobs[MOB_ID_SCREEN][itype[MOB_ID_SCREEN]]->ID = _wtoi(wstrtmp.c_str()); break;
+				case 1:pstMobs->pmobs[MOB_ID_SCREEN][itype[MOB_ID_SCREEN]]->area.x = _wtoi(wstrtmp.c_str()); break;
+				case 2:pstMobs->pmobs[MOB_ID_SCREEN][itype[MOB_ID_SCREEN]]->area.y = _wtoi(wstrtmp.c_str()); break;
+				case 3:pstMobs->pmobs[MOB_ID_SCREEN][itype[MOB_ID_SCREEN]]->area.w = _wtoi(wstrtmp.c_str()); break;
+				case 4:pstMobs->pmobs[MOB_ID_SCREEN][itype[MOB_ID_SCREEN]]->area.h = _wtoi(wstrtmp.c_str()); break;
+				case 5:
+					for (int j = 0; j<wstrtmp.size(); j++) pstMobs->pmobs[MOB_ID_SCREEN][itype[MOB_ID_SCREEN]]->name[j] = wstrtmp[j];
+					break;
+				case 6: break;
+				case 7: break;
+				case 8: break;
+				case 9: break;
+				case 10: break;
+				case 11: break;
+				case 12: break;
+				default:break;
+				}
+				k++;
+			}
+			itype[MOB_ID_SCREEN]++;
 		}
 		else if (wstrtmp == MOB_TYPE_CUL) {
 			if (itype[MOB_ID_CUL] >= NUM_OF_CUL) continue;
@@ -498,6 +585,25 @@ void CActor::routine_work(void *param) {
 		else pstMobs->pmobs[MOB_ID_HARAI][i]->status = MOB_STAT_ACT0;
 		cal_harai(i, ms_dt, pstMobs->pmobs[MOB_ID_HARAI][i]->command);
 	}
+
+	//BIO HARAIDASHIKI
+	CHaraiBio* pharaib;
+	for (int i = 0; i < NUM_OF_HARAI_BIO; i++) {
+		pharaib = (CHaraiBio *)(pstMobs->pmobs[MOB_ID_HARAI_BIO][i]);
+		pharaib->command = 0;
+		for(int k=0; k<SILO_COLUMN_NUM_BIO;k++){
+			if (pharaib->com_column[k] == COM_HARAI_BIO_IDLE) pharaib->stat[k] = MOB_STAT_IDLE;
+			else if (pharaib->stat[k] == MOB_STAT_ACT0)pharaib->stat[k] = MOB_STAT_ACT1;
+			else if (pharaib->stat[k] == MOB_STAT_ACT1)pharaib->stat[k] = MOB_STAT_ACT2;
+			else pharaib->stat[k] = MOB_STAT_ACT0;
+			if (pharaib->com_column[k] == STAT_HARAI_BIO_DISCHARGE) {
+				pharaib->command |= (1 << k);
+			}
+		}
+		cal_harai_bio(i, ms_dt, pharaib->command);
+	}
+
+
 	//TRIPPER
 	for (int i = 0; i < NUM_OF_TRIPPER; i++) {
 		if (pstMobs->pmobs[MOB_ID_TRIPPER][i]->command == COM_TRP_IDLE) pstMobs->pmobs[MOB_ID_TRIPPER][i]->status = MOB_STAT_IDLE;
@@ -632,11 +738,24 @@ int CActor::cal_harai(DWORD index, LONG dt, DWORD com) {
 		else if (pobj->ID == HARAI_13A)  pr.set_mobmap(COM_MOBMAP_13A);
 		else if (pobj->ID == HARAI_13B) pr.set_mobmap(COM_MOBMAP_13B);
 		else if (pobj->ID == HARAI_13C) pr.set_mobmap(COM_MOBMAP_13C);
+		else if (pobj->ID == HARAI_15A)  pr.set_mobmap(COM_MOBMAP_15A);
+		else if (pobj->ID == HARAI_15B) pr.set_mobmap(COM_MOBMAP_15B);
+		else if (pobj->ID == HARAI_15C) pr.set_mobmap(COM_MOBMAP_15C);
+		else if (pobj->ID == HARAI_16A)  pr.set_mobmap(COM_MOBMAP_16A);
+		else if (pobj->ID == HARAI_16B) pr.set_mobmap(COM_MOBMAP_16B);
+		else if (pobj->ID == HARAI_16C) pr.set_mobmap(COM_MOBMAP_16C);
 		else;
 	}
 
 	return 0;
 };
+int CActor::cal_harai_bio(DWORD index, LONG dt, DWORD com) {
+	CHaraiBio* pobj = &(pstMobs->mobs.haraikiBio[index]);
+	int iret = pobj->move(com, dt, 0);
+
+	return 0;
+};
+
 int CActor::cal_scraper(DWORD index, LONG dt, DWORD com) {
 	CScraper* pobj = &(pstMobs->mobs.scraper[index]);
 	
@@ -656,7 +775,6 @@ int CActor::cal_scraper(DWORD index, LONG dt, DWORD com) {
 
 	return 0;
 };
-
 
 LRESULT CALLBACK  CActor::PanelProc(HWND hDlg, UINT msg, WPARAM wp, LPARAM lp) {
 	int n;
@@ -1071,7 +1189,6 @@ void CActor::init_scraper() {//SRAPER関連初期設定
 
 	return;
 };
-
 void CActor::init_bclink() {//BCの接続設定
 
 	//CUL
@@ -1145,6 +1262,7 @@ void CActor::init_bclink() {//BCの接続設定
 
 		(pstMobs->mobs.bc[LINE_A][BC_L17]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L18]); (pstMobs->mobs.bc[LINE_A][BC_L17]).bclink_i[DUMP1] = 1;//BC18A 2
 		(pstMobs->mobs.bc[LINE_A][BC_L17]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L18]); (pstMobs->mobs.bc[LINE_A][BC_L17]).bclink_i[DUMP2] = 1;//BC18B 2
+		(pstMobs->mobs.bc[LINE_A][BC_L17]).bclink[DUMP3] = &(pstMobs->mobs.bc[LINE_A][BC_LRC]); (pstMobs->mobs.bc[LINE_A][BC_L17]).bclink_i[DUMP3] = 0;//BC RC 0
 
 		(pstMobs->mobs.bc[LINE_A][BC_L18]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L19]); (pstMobs->mobs.bc[LINE_A][BC_L19]).bclink_i[DUMP1] = 0;//BC19A 1
 		(pstMobs->mobs.bc[LINE_A][BC_L18]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L19]); (pstMobs->mobs.bc[LINE_A][BC_L19]).bclink_i[DUMP2] = 0;//BC19B 1
@@ -1163,7 +1281,7 @@ void CActor::init_bclink() {//BCの接続設定
 
 		(pstMobs->mobs.bc[LINE_A][BC_L22]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L23]); (pstMobs->mobs.bc[LINE_A][BC_L22]).bclink_i[DUMP1] = 0;//BC23A 1
 		(pstMobs->mobs.bc[LINE_A][BC_L22]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_A][BC_L23]); (pstMobs->mobs.bc[LINE_A][BC_L22]).bclink_i[DUMP2] = 0;//BC23A 1
-		(pstMobs->mobs.bc[LINE_A][BC_L22]).silolink[0] = &(pstMobs->mobs.silo[LINE_H][0]);//BANKER 2号機
+		(pstMobs->mobs.bc[LINE_A][BC_L22]).silolink[0] = &(pstMobs->mobs.silo[LINE_H][0]);//BANKER 1号機
 
 		(pstMobs->mobs.bc[LINE_A][BC_L23]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L23]); (pstMobs->mobs.bc[LINE_A][BC_L23]).bclink_i[DUMP1] = 0;//BC23A 1
 		(pstMobs->mobs.bc[LINE_A][BC_L23]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_A][BC_L23]); (pstMobs->mobs.bc[LINE_A][BC_L23]).bclink_i[DUMP2] = 0;//BC23A 1
@@ -1236,6 +1354,7 @@ void CActor::init_bclink() {//BCの接続設定
 
 		(pstMobs->mobs.bc[LINE_B][BC_L17]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L18]); (pstMobs->mobs.bc[LINE_B][BC_L17]).bclink_i[DUMP1] = 0;//BC18A 1
 		(pstMobs->mobs.bc[LINE_B][BC_L17]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L18]); (pstMobs->mobs.bc[LINE_B][BC_L17]).bclink_i[DUMP2] = 0;//BC18B 1
+		(pstMobs->mobs.bc[LINE_B][BC_L17]).bclink[DUMP3] = &(pstMobs->mobs.bc[LINE_B][BC_LRC]); (pstMobs->mobs.bc[LINE_B][BC_L17]).bclink_i[DUMP3] = 0;//BC18B 1
 
 		(pstMobs->mobs.bc[LINE_B][BC_L18]).bclink[DUMP1] = &(pstMobs->mobs.bc[LINE_A][BC_L19]); (pstMobs->mobs.bc[LINE_B][BC_L19]).bclink_i[DUMP1] = 0;//BC19A 1
 		(pstMobs->mobs.bc[LINE_B][BC_L18]).bclink[DUMP2] = &(pstMobs->mobs.bc[LINE_B][BC_L19]); (pstMobs->mobs.bc[LINE_B][BC_L19]).bclink_i[DUMP2] = 0;//BC19B 1
@@ -1364,6 +1483,10 @@ void CActor::init_harai() {//HARAI関連初期設定
 	pstMobs->mobs.haraiki[HARAI_16A].pbc = &(pstMobs->mobs.bc[LINE_A][BC_L16]);
 	pstMobs->mobs.haraiki[HARAI_16B].pbc = &(pstMobs->mobs.bc[LINE_B][BC_L16]);
 	pstMobs->mobs.haraiki[HARAI_16C].pbc = &(pstMobs->mobs.bc[LINE_C][BC_L16]);
+
+	pstMobs->mobs.haraikiBio[HARAI_17A].pbc = &(pstMobs->mobs.bc[LINE_A][BC_L17]);
+	pstMobs->mobs.haraikiBio[HARAI_17B].pbc = &(pstMobs->mobs.bc[LINE_B][BC_L17]);
+
 	//SILOセット
 	for (int i = 0; i < 4; i++) {
 		pstMobs->mobs.haraiki[HARAI_11A].psilo[i] = &(pstMobs->mobs.silo[LINE_A][i]);
@@ -1381,12 +1504,20 @@ void CActor::init_harai() {//HARAI関連初期設定
 		pstMobs->mobs.haraiki[HARAI_16A].psilo[i] = &(pstMobs->mobs.silo[LINE_E][i]);
 		pstMobs->mobs.haraiki[HARAI_16B].psilo[i] = &(pstMobs->mobs.silo[LINE_E][i]);
 		pstMobs->mobs.haraiki[HARAI_16C].psilo[i] = &(pstMobs->mobs.silo[LINE_E][i]);
+
 	}
+	pstMobs->mobs.haraikiBio[HARAI_17A].psilo = &(pstMobs->mobs.silo[LINE_F][0]);
+	pstMobs->mobs.haraikiBio[HARAI_17B].psilo = &(pstMobs->mobs.silo[LINE_G][0]);
 
 	for (int i = 0; i < NUM_OF_HARAI; i++) {
 		pstMobs->mobs.haraiki[i].set_param();
 		pstMobs->mobs.haraiki[i].move(COM_HARAI_IDLE, 1, 0);;
 	}
+	for (int i = 0; i < NUM_OF_HARAI_BIO; i++) {
+		pstMobs->mobs.haraikiBio[i].set_param();
+		pstMobs->mobs.haraikiBio[i].move(COM_HARAI_IDLE, 1, 0);;
+	}
+
 
 	return;
 };

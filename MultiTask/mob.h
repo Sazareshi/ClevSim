@@ -12,6 +12,9 @@
 #define MOB_ID_EROOM			5//屋外設備制御室 ID
 #define MOB_ID_SILO				6//SILO ID
 #define MOB_ID_SCRAPER			7//スクレーパー ID
+#define MOB_ID_HARAI_BIO		8//バイオサイロ払い出し機 ID
+#define MOB_ID_SCREEN			9//スクリーン ID
+
 
 #define MOB_STAT_IDLE			0
 #define MOB_STAT_FAULT			0xFF
@@ -28,6 +31,8 @@
 #define MOB_TYPE_EROOM		TEXT("EROOM0")
 #define MOB_TYPE_SILO		TEXT("SILO00")
 #define MOB_TYPE_SCRAPER	TEXT("SCRP00")
+#define MOB_TYPE_HARAI_BIO	TEXT("HARAIB")
+#define MOB_TYPE_SCREEN		TEXT("SCREEN")
 
 #define MASK_DIR_X			0x00ff
 #define MASK_DIR_LEFT		0x00ff
@@ -101,6 +106,7 @@ typedef struct _stLoad {
 #define BC_DROP1	0x0400//払出用1号
 #define BC_DROP2	0x0800//払出用2号
 #define BC_DROPB	0x1000//払出用バイオ
+#define BC_CRUSH	0x2000//クラッシャー付
 #define BC_RCV_MAX	12//BCの荷受け場所最大数
 #define BC_MAX_LEN	800//BCの最大長さ
 #define BC_MOTOR_MAX	3//最大モータ数
@@ -145,6 +151,13 @@ private:
 private:
 };
 
+
+#define NUM_DROP_POINT_CUL 2
+#define COM_CUL_IDLE	0
+#define COM_CUL_DISCHARGE	1
+
+
+
 #define BC_HEAD_0		0x0000
 #define BC_HEAD_DUMPER	0x0001
 #define BC_HEAD_DUAL	0x0002
@@ -153,6 +166,7 @@ private:
 #define BC_SILO_LINK_MAX	4
 
 #define BC_LINK_REVERSE	2 //可逆コンベヤ　逆方向時のリンク先は配列2に固定
+#define BC_22HEAD_BANK	1 
 
 class CBCHead
 {
@@ -206,6 +220,34 @@ public:
 	LONG put_test_load;//0以外でテールポジションからのインデックス位置に重量投入
 
 	BOOL b_rverse;
+private:
+
+};
+
+
+class CScreen : public CMob
+{
+public:
+	CScreen() {};
+	~CScreen() {};
+	STLOAD buffer;//クラッシャー用バッファ
+	CBC* pbc;
+	int trans_ratio;//透過率
+
+	STLOAD pop_load(STLOAD load);//クラッシャー用バッファからPop
+
+private:
+
+};
+
+class CCrush : public CMob
+{
+public:
+	CCrush() {};
+	~CCrush() {};
+	CBC* pbc;
+	CScreen* pscreen;
+	STLOAD crush_load(STLOAD load);//クラッシャー用バッファからPopしてBCへPut
 private:
 
 };
@@ -314,6 +356,7 @@ private:
 
 #define COM_HARAI_IDLE	0
 #define COM_HARAI_DISCHARGE	1
+
 #define COM_HARAI_MOVE		2
 #define HARAI_SIRO_DRP_NUM	12
 #define HARAI_MOVE_COMPLETE_RANGE	500
@@ -355,19 +398,50 @@ private:
 private:
 
 };
-class CCrush : public CMob
+
+#define COM_HARAI_BIO_IDLE	0
+#define COM_HARAI_BIO_DISCHARGE1	0x0001
+#define COM_HARAI_BIO_DISCHARGE2	0x0002
+#define COM_HARAI_BIO_DISCHARGE3	0x0004
+#define COM_HARAI_BIO_DISCHARGE4	0x0008
+#define COM_HARAI_BIO_DISCHARGE5	0x0010
+#define COM_HARAI_BIO_DISCHARGE6	0x0020
+#define COM_HARAI_BIO_DISCHARGE7	0x0040
+#define COM_HARAI_BIO_DISCHARGE8	0x0080
+
+#define STAT_HARAI_BIO_IDLE			0x0000
+#define STAT_HARAI_BIO_DISCHARGE	0x0001
+
+
+class CHaraiBio : public CMob
 {
 public:
-	CCrush() {};
-	~CCrush() {};
+	CHaraiBio() {};
+	~CHaraiBio() {};
+
+	int stat[SILO_COLUMN_NUM_BIO];//各払い出し装置の状態
+	int com_column[SILO_COLUMN_NUM_BIO];//各払い出し装置へのコマンド状態
+	int ability;//払い出し能力　kg/s　900ton/h->250kg/s
+	CSilo* psilo;//紐付きサイロ
+	CBC* pbc;//紐付BC
+
+	int discharge(DWORD com, LONG dt);//紐付きBCへ紐付きサイロから石炭を移載
+	int move(DWORD com, LONG dt, int target);//移動/移載　戻り値1：移動有り
+	void set_command(DWORD com, int i) { com_column[i] |= com; };//指示コマンド
+	void reset_command(DWORD com, int i) { com_column[i] &= ~com; };//指示コマンド
+	DWORD get_command() { return command; };//指示コマンド
+	void set_param();//パラメータを展開
+
+	void set_area(int pos) {
+		area.y = pbc->area.y + pos / pbc->pix2mm;
+		return;
+	};
+
+private:
+
 private:
 
 };
-
-#define NUM_DROP_POINT_CUL 2
-#define COM_CUL_IDLE	0
-#define COM_CUL_DISCHARGE	1
-
 
 class CCUL : public CMob
 {
@@ -413,6 +487,8 @@ private:
 #define SILO_LINE_NUM2			3	//2期工事各ラインのサイロ数
 #define SILO_LINE_NUM_BIO		1	//バイオ各ラインのサイロ数
 #define SILO_LINE_NUM_BANK		2	//バンカーラインのサイロ数
+#define NUM_OF_HARAI_BIO		2   //バイオサイロのサイロ数
+#define NUM_OF_SCREEN			2
 
 
 //共有メモリ配置定義
@@ -425,8 +501,9 @@ typedef struct _stMobsBody {
 	CEroom		eroom[NUM_OF_EROOM];
 	CSilo		silo[SILO_LINES][SILO_LINE_NUM];
 	CScraper	scraper[NUM_OF_SCRAPER];
+	CHaraiBio	haraikiBio[NUM_OF_HARAI_BIO];
+	CScreen		screen[NUM_OF_SCREEN];
 }STMobsBody, *LPSTMobsBody;
-
 
 typedef struct _stMobs {
 	BOOL	bUpdate;
@@ -504,5 +581,7 @@ typedef struct _stMobs {
 #define HARAI_16A	12
 #define HARAI_16B	13
 #define HARAI_16C	14
+#define HARAI_17A	0
+#define HARAI_17B	1
 
 

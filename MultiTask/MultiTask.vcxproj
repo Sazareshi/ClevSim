@@ -218,6 +218,7 @@
     <Image Include="bmp\harai2.bmp" />
     <Image Include="bmp\scraper.bmp" />
     <Image Include="bmp\scraper2.bmp" />
+    <Image Include="bmp\Screen.bmp" />
     <Image Include="bmp\tripper.bmp" />
     <Image Include="bmp\yu.bmp" />
     <Image Include="MultiTask.ico" />

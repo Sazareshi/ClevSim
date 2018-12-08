@@ -129,8 +129,32 @@ void CBC::conveyor(DWORD com, LONG dt) {
 		if(BCtype & BC_TRP){
 			silolink[0]->put_load(SILO_COLUMN_NUM-1, belt[ihead_last]);
 		}
+		else if (BCtype & BC_SQR) {
+			if (ID == BC_L8) {
+				silolink[0]->put_load(SILO_COLUMN_NUM - 1, belt[ihead_last]);
+			}
+			else if (ID == BC_L9_2) {
+				silolink[0]->put_load(SILO_COLUMN_NUM_BIO - 1, belt[ihead_last]);
+			}
+			else if (ID == BC_L23) {
+				silolink[0]->put_load(SILO_COLUMN_NUM_BANK - 1, belt[ihead_last]);
+			}
+			else;
+		}
 		else {
-			bclink[head_unit.pos]->put_load_i(bclink_i[head_unit.pos], belt[ihead_last]);
+			if (ID == BC_L22) {
+				if (head_unit.pos == BC_22HEAD_BANK) {
+					silolink[0]->put_load(0, belt[ihead_last]);
+				}
+				else {
+					bclink[head_unit.pos]->put_load_i(bclink_i[head_unit.pos], belt[ihead_last]);
+				}
+
+			}
+			else{
+				bclink[head_unit.pos]->put_load_i(bclink_i[head_unit.pos], belt[ihead_last]);
+			}
+
 		}
 		belt[ihead_last].weight = 0;
 //		if(ihead_last > 0)	belt[ihead_last-1].weight = 0;
@@ -338,6 +362,62 @@ void CHarai::set_param() {
 		pos_max = 224000;
 	}
 	pos = pos_min;
+	return;
+};
+
+/* HARAIKI BIO***************************************************/
+int CHaraiBio::discharge(DWORD com, LONG dt) {
+	int i_column;
+
+	if (!(com & 0x00ff)) 	return 0;
+
+	if (com & COM_HARAI_BIO_DISCHARGE1) com_column[0] = STAT_HARAI_BIO_DISCHARGE;
+	else com_column[0] = STAT_HARAI_BIO_IDLE;
+	if (com & COM_HARAI_BIO_DISCHARGE2) com_column[1] = STAT_HARAI_BIO_DISCHARGE;
+	else com_column[1] = STAT_HARAI_BIO_IDLE;
+	if (com & COM_HARAI_BIO_DISCHARGE3) com_column[2] = STAT_HARAI_BIO_DISCHARGE;
+	else com_column[2] = STAT_HARAI_BIO_IDLE;
+	if (com & COM_HARAI_BIO_DISCHARGE4) com_column[3] = STAT_HARAI_BIO_DISCHARGE;
+	else com_column[3] = STAT_HARAI_BIO_IDLE;
+	if (com & COM_HARAI_BIO_DISCHARGE5) com_column[4] = STAT_HARAI_BIO_DISCHARGE;
+	else com_column[4] = STAT_HARAI_BIO_IDLE;
+	if (com & COM_HARAI_BIO_DISCHARGE6) com_column[5] = STAT_HARAI_BIO_DISCHARGE;
+	else com_column[5] = STAT_HARAI_BIO_IDLE;
+	if (com & COM_HARAI_BIO_DISCHARGE7) com_column[6] = STAT_HARAI_BIO_DISCHARGE;
+	else com_column[6] = STAT_HARAI_BIO_IDLE;
+	if (com & COM_HARAI_BIO_DISCHARGE8) com_column[7] = STAT_HARAI_BIO_DISCHARGE;
+	else com_column[7] = STAT_HARAI_BIO_IDLE;
+
+	STLOAD load;
+	for (i_column = 0; i_column < SILO_COLUMN_NUM_BIO; i_column++) {
+		if (com_column[i_column] == STAT_HARAI_BIO_IDLE) continue;
+	
+		if (psilo->column[i_column].weight < ability * dt / 1000) {
+			load.weight = psilo->column[i_column].weight;
+		}
+		else {
+			load.weight = ability * dt / 1000;
+		}
+		psilo->pop_load(i_column, pbc->put_load(pbc->pos_rcv[i_column], load));
+	}
+	return 1;
+};
+int CHaraiBio::move(DWORD com, LONG dt, int target) {
+	int iret;
+
+	iret = 1;
+
+	if (com == COM_HARAI_IDLE) {
+		status = MOB_STAT_IDLE;
+	}
+	else if (com & 0x00ff) {
+		discharge(com, dt);
+	}
+	else;
+
+	return iret;
+};
+void CHaraiBio::set_param() {
 	return;
 };
 

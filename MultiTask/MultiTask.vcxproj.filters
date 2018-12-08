@@ -174,5 +174,8 @@
     <Image Include="bmp\scraper2.bmp">
       <Filter>リソース ファイル</Filter>
     </Image>
+    <Image Include="bmp\Screen.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
   </ItemGroup>
 </Project>

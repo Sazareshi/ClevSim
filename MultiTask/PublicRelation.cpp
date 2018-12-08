@@ -164,8 +164,8 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 				else if ((pmob_dlg->type[0] == L'S') && (pmob_dlg->type[1] == L'C')) {
 					tmpwnd = CreateDialog(pPrInst->inf.hInstance, L"IDD_TRP_HANDLE", hWnd, (DLGPROC)PR_TRPPANEL_PROC);
 				}
-				else if ((pmob_dlg->type[0] == L'H') && (pmob_dlg->type[1] == L'A')) {//払い出し機もTripper用のDialog利用
-					tmpwnd = CreateDialog(pPrInst->inf.hInstance, L"IDD_TRP_HANDLE", hWnd, (DLGPROC)PR_TRPPANEL_PROC);
+				else if ((pmob_dlg->type[0] == L'H') && (pmob_dlg->type[1] == L'A')) {
+					tmpwnd = CreateDialog(pPrInst->inf.hInstance, L"IDD_HARAI_HANDLE", hWnd, (DLGPROC)PR_HARAIPANEL_PROC);
 				}
 				else if ((pmob_dlg->type[0] == L'S') && (pmob_dlg->type[1] == L'I')) {
 					tmpwnd = CreateDialog(pPrInst->inf.hInstance, L"IDD_SILO_HANDLE", hWnd, (DLGPROC)PR_SILOPANEL_PROC);
@@ -764,6 +764,12 @@ void CPublicRelation::set_mobmap(int com) {
 			pobj = pstMobs->pmobs[MOB_ID_HARAI][i];
 			putobj2map(pobj);
 		}
+		//HARAIDASHIKI_BIO
+		for (int i = 0; i < NUM_OF_HARAI_BIO; i++) {
+			pobj = pstMobs->pmobs[MOB_ID_HARAI_BIO][i];
+			putobj2map(pobj);
+		}
+
 		//TRIPPER
 		for (int i = 0; i < NUM_OF_TRIPPER; i++) {
 			pobj = pstMobs->pmobs[MOB_ID_TRIPPER][i];
@@ -858,6 +864,42 @@ void CPublicRelation::set_mobmap(int com) {
 		putobj2map(pobj);
 
 	}
+	else if (com == COM_MOBMAP_15A) {
+		pobj = pstMobs->pmobs[MOB_ID_BC][LINE_A*BC_LINE_NUM + BC_L15];
+		putobj2map(pobj);
+		pobj = pstMobs->pmobs[MOB_ID_HARAI][HARAI_15A];
+		putobj2map(pobj);
+	}
+	else if (com == COM_MOBMAP_15B) {
+		pobj = pstMobs->pmobs[MOB_ID_BC][LINE_B*BC_LINE_NUM + BC_L15];
+		putobj2map(pobj);
+		pobj = pstMobs->pmobs[MOB_ID_HARAI][HARAI_15B];
+		putobj2map(pobj);
+	}
+	else if (com == COM_MOBMAP_15C) {
+		pobj = pstMobs->pmobs[MOB_ID_BC][LINE_C*BC_LINE_NUM + BC_L15];
+		putobj2map(pobj);
+		pobj = pstMobs->pmobs[MOB_ID_HARAI][HARAI_15C];
+		putobj2map(pobj);
+	}
+	else if (com == COM_MOBMAP_16A) {
+		pobj = pstMobs->pmobs[MOB_ID_BC][LINE_A*BC_LINE_NUM + BC_L16];
+		putobj2map(pobj);
+		pobj = pstMobs->pmobs[MOB_ID_HARAI][HARAI_16A];
+		putobj2map(pobj);
+	}
+	else if (com == COM_MOBMAP_16B) {
+		pobj = pstMobs->pmobs[MOB_ID_BC][LINE_B*BC_LINE_NUM + BC_L16];
+		putobj2map(pobj);
+		pobj = pstMobs->pmobs[MOB_ID_HARAI][HARAI_16B];
+		putobj2map(pobj);
+	}
+	else if (com == COM_MOBMAP_16C) {
+		pobj = pstMobs->pmobs[MOB_ID_BC][LINE_C*BC_LINE_NUM + BC_L16];
+		putobj2map(pobj);
+		pobj = pstMobs->pmobs[MOB_ID_HARAI][HARAI_16C];
+		putobj2map(pobj);
+	}
 	else if (com == COM_MOBMAP_8A) {
 		pobj = pstMobs->pmobs[MOB_ID_BC][LINE_A*BC_LINE_NUM + BC_L8];
 		putobj2map(pobj);
@@ -898,19 +940,32 @@ void CPublicRelation::set_mobmap(int com) {
 }
 
 void CPublicRelation::putobj2map(CMob* pobj) {
-
+	int map_x, map_y;
 	if (pobj->exist == ON) {
-		int map_x = pobj->area.x >> 3;
-		int map_y;
-		if (pobj->b_bmp_aline_bottom) {
-			map_y = (pobj->area.y - pobj->area.h) >> 3;
+		if ((pobj->type[0] == L'H') && (pobj->type[5] == L'B')) {
+			for (int k = 0; k < SILO_COLUMN_NUM_BIO;k++) {
+				map_x = pobj->area.x >> 3;
+				map_y = (pobj->area.y + pobj->area.h/ SILO_COLUMN_NUM_BIO *(2*k + 1)/2 - pobj->area.w/2) >> 3;
+
+				for (int ii = 0; ii < (pobj->area.w >> 3); ii++) {
+					for (int jj = 0; jj < (pobj->area.w >> 3); jj++) {
+						stdisp.mobmap[map_x + ii][map_y + jj] = pobj;
+					}
+				}
+			}
 		}
 		else {
-			map_y = pobj->area.y >> 3;
-		}
-		for (int ii = 0; ii < (pobj->area.w >> 3); ii++) {
-			for (int jj = 0; jj < (pobj->area.h >> 3); jj++) {
-				stdisp.mobmap[map_x + ii][map_y + jj] = pobj;
+			map_x = pobj->area.x >> 3;
+			if (pobj->b_bmp_aline_bottom) {
+				map_y = (pobj->area.y - pobj->area.h) >> 3;
+			}
+			else {
+				map_y = pobj->area.y >> 3;
+			}
+			for (int ii = 0; ii < (pobj->area.w >> 3); ii++) {
+				for (int jj = 0; jj < (pobj->area.h >> 3); jj++) {
+					stdisp.mobmap[map_x + ii][map_y + jj] = pobj;
+				}
 			}
 		}
 	}
@@ -1014,6 +1069,9 @@ void CPublicRelation::update_disp() {
 					}
 
 				}
+				else if ((pbc->ID == BC_L22) &&(pbc->head_unit.pos == BC_22HEAD_BANK)){
+					linkpt[1].x = pbc->silolink[0]->area.x; linkpt[1].y = pbc->silolink[0]->area.y + pbc->silolink[0]->area.h / 2;
+				}
 				else {
 					linkpt[1] = pbc2->imgpt_rcv[pbc->bclink_i[pbc->head_unit.pos]];
 				}
@@ -1104,6 +1162,19 @@ void CPublicRelation::update_disp() {
 		//	AlphaBlend(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, pPrInst->stdisp.bf);
 		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
 	}
+
+	SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_HARAI_BIO][0]->hBmp_mob);
+	for (int i = 0; i < NUM_OF_HARAI_BIO; i++) {
+		CHaraiBio* pobj = (CHaraiBio *)pstMobs->pmobs[MOB_ID_HARAI_BIO][i];
+		for (int k = 0; k < SILO_COLUMN_NUM_BIO; k++) {
+			i_img2 = pobj->stat[k];
+			mobx = pobj->area.x;	moby = pobj->area.y + pobj->area.h / SILO_COLUMN_NUM_BIO * (2 * k + 1) / 2 - pobj->area.w / 2;
+			mobw = pobj->bmpw;	mobh = pobj->bmpw;
+			//	AlphaBlend(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, pPrInst->stdisp.bf);
+			TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
+		}
+	}
+
 
 	//#CUL
 	SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_CUL][0]->hBmp_mob);
@@ -1287,7 +1358,6 @@ LRESULT CPublicRelation::PR_TRPPANEL_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM
 	PAINTSTRUCT ps;
 	wstring wstr;
 	static CTripper* ptrp;
-	static CHarai* pharai;
 	static CScraper* pscrp;
 
 
@@ -1304,16 +1374,6 @@ LRESULT CPublicRelation::PR_TRPPANEL_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM
 				}
 				else {
 					ptrp->reset_command(COM_TRP_MOVE);
-				}
-			}
-			else if (pmob_dlg->type[0] == L'H') {
-				if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_TRPCHECK_COM_MOVE)) {
-					pharai->set_command(COM_HARAI_MOVE);
-					int n = GetDlgItemText(hWnd, IDC_TRPEDIT_COM_TARGET, (LPTSTR)wstr.c_str(), 128);
-					if (n) pharai->set_target(stoi(wstr));
-				}
-				else {
-					pharai->reset_command(COM_HARAI_MOVE);
 				}
 			}
 			else if (pmob_dlg->type[0] == L'S') {
@@ -1337,14 +1397,6 @@ LRESULT CPublicRelation::PR_TRPPANEL_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM
 					ptrp->reset_command(COM_TRP_DISCHARGE);
 				}
 			}
-			else if (pmob_dlg->type[0] == L'H') {
-				if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_TRPCHECK_COM_DISCHARGE)) {
-					pharai->set_command(COM_HARAI_DISCHARGE);
-				}
-				else {
-					pharai->reset_command(COM_HARAI_DISCHARGE);
-				}
-			}
 			if (pmob_dlg->type[0] == L'S') {
 				if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_TRPCHECK_COM_DISCHARGE)) {
 					pscrp->set_command(COM_SCRP_DISCHARGE);
@@ -1364,9 +1416,6 @@ LRESULT CPublicRelation::PR_TRPPANEL_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM
 			if (pmob_dlg->type[0] == L'T') {
 				if (n) ptrp->set_target(stoi(wstr));
 			}
-			else if (pmob_dlg->type[0] == L'H') {
-				if (n) pharai->set_target(stoi(wstr));
-			}
 			else;
 		}break;
 		default: return FALSE;
@@ -1374,18 +1423,11 @@ LRESULT CPublicRelation::PR_TRPPANEL_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM
 	}break;
 	case WM_INITDIALOG: {
 		ptrp = (CTripper*)pmob_dlg;//MOUSE MOVEでオブジェクトのポインタはセットされている
-		pharai = (CHarai*)pmob_dlg;//トリッパーと払い出し機共用
 		pscrp = (CScraper*)pmob_dlg;//トリッパーと払い出し機共用
 		if (pmob_dlg->type[0] == L'T'){
 			if (ptrp->command & COM_TRP_MOVE) SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_MOVE), BM_SETCHECK, BST_CHECKED, 0L);
 			else  SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_MOVE), BM_SETCHECK, BST_UNCHECKED, 0L);
 			if (ptrp->command & COM_TRP_DISCHARGE) SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_DISCHARGE), BM_SETCHECK, BST_CHECKED, 0L);
-			else  SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_DISCHARGE), BM_SETCHECK, BST_UNCHECKED, 0L);
-		}
-		else if (pmob_dlg->type[0] == L'H') {
-			if (pharai->command & COM_HARAI_MOVE) SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_MOVE), BM_SETCHECK, BST_CHECKED, 0L);
-			else  SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_MOVE), BM_SETCHECK, BST_UNCHECKED, 0L);
-			if (pharai->command & COM_TRP_DISCHARGE) SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_DISCHARGE), BM_SETCHECK, BST_CHECKED, 0L);
 			else  SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_DISCHARGE), BM_SETCHECK, BST_UNCHECKED, 0L);
 		}
 		else if (pmob_dlg->type[0] == L'S') {
@@ -1395,8 +1437,6 @@ LRESULT CPublicRelation::PR_TRPPANEL_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM
 			else  SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_DISCHARGE), BM_SETCHECK, BST_UNCHECKED, 0L);
 		}
 		else;
-
-
 	}break;
 	case WM_PAINT: {
 		BeginPaint(hWnd, &ps);
@@ -1446,6 +1486,168 @@ LRESULT CPublicRelation::PR_SILOPANEL_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARA
 	}break;
 	case WM_INITDIALOG: {
 		psilo = (CSilo*)pmob_dlg;//MOUSE MOVEでオブジェクトのポインタはセットされている
+	}break;
+	case WM_PAINT: {
+		BeginPaint(hWnd, &ps);
+		EndPaint(hWnd, &ps);
+		break;
+	}
+	case WM_DESTROY: {
+		break;
+	}
+	default:
+		return FALSE;
+	}
+	return TRUE;
+};
+LRESULT CPublicRelation::PR_HARAIPANEL_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
+	PAINTSTRUCT ps;
+	wstring wstr;
+
+	static CHarai* pharai;
+	static CHaraiBio* pharaib;
+	switch (msg) {
+	case WM_COMMAND: {
+		switch (LOWORD(wp)) {
+		case IDC_HARAICHECK_COM_MOVE: {
+
+			if (pmob_dlg->type[5] == L'B') {
+				;
+			}
+			else {
+				if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_HARAICHECK_COM_MOVE)) {
+					pharai->set_command(COM_HARAI_MOVE);
+					int n = GetDlgItemText(hWnd, IDC_HARAIEDIT_COM_TARGET, (LPTSTR)wstr.c_str(), 128);
+					if (n) pharai->set_target(stoi(wstr));
+				}
+				else {
+					pharai->reset_command(COM_HARAI_MOVE);
+				}
+			}
+		}break;
+		case IDC_HARAICHECK_COM_DISCHARGE: {
+			if (pmob_dlg->type[5] == L'B') {
+				if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_HARAICHECK_COM_DISCHARGE)) {
+					pharaib->set_command(STAT_HARAI_BIO_DISCHARGE, 0);
+				}
+				else {
+					pharaib->reset_command(STAT_HARAI_BIO_DISCHARGE,0);
+				}
+			}
+			else {
+				if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_HARAICHECK_COM_DISCHARGE)) {
+					pharai->set_command(COM_HARAI_DISCHARGE);
+				}
+				else {
+					pharai->reset_command(COM_HARAI_DISCHARGE);
+				}
+			}
+		}break;
+		case IDC_HARAICHECK_COM_DISCHARGE2:{
+			if (pmob_dlg->type[5] == L'B') {
+				if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_HARAICHECK_COM_DISCHARGE2)) {
+					pharaib->set_command(STAT_HARAI_BIO_DISCHARGE, 1);
+				}
+				else {
+					pharaib->reset_command(STAT_HARAI_BIO_DISCHARGE, 1);
+				}
+			}
+		}break;
+		case IDC_HARAICHECK_COM_DISCHARGE3: {
+			if (pmob_dlg->type[5] == L'B') {
+				if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_HARAICHECK_COM_DISCHARGE3)) {
+					pharaib->set_command(STAT_HARAI_BIO_DISCHARGE, 2);
+				}
+				else {
+					pharaib->reset_command(STAT_HARAI_BIO_DISCHARGE, 2);
+				}
+			}
+		}break;
+		case IDC_HARAICHECK_COM_DISCHARGE4: {
+			if (pmob_dlg->type[5] == L'B') {
+				if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_HARAICHECK_COM_DISCHARGE4)) {
+					pharaib->set_command(STAT_HARAI_BIO_DISCHARGE, 3);
+				}
+				else {
+					pharaib->reset_command(COM_HARAI_BIO_DISCHARGE4, 3);
+				}
+			}
+		}break;
+		case IDC_HARAICHECK_COM_DISCHARGE5: {
+			if (pmob_dlg->type[5] == L'B') {
+				if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_HARAICHECK_COM_DISCHARGE5)) {
+					pharaib->set_command(STAT_HARAI_BIO_DISCHARGE, 4);
+				}
+				else {
+					pharaib->reset_command(STAT_HARAI_BIO_DISCHARGE, 4);
+				}
+			}
+		}break;
+		case IDC_HARAICHECK_COM_DISCHARGE6: {
+			if (pmob_dlg->type[5] == L'B') {
+				if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_HARAICHECK_COM_DISCHARGE6)) {
+					pharaib->set_command(STAT_HARAI_BIO_DISCHARGE, 5);
+				}
+				else {
+					pharaib->reset_command(STAT_HARAI_BIO_DISCHARGE, 5);
+				}
+			}
+		}break;
+		case IDC_HARAICHECK_COM_DISCHARGE7: {
+			if (pmob_dlg->type[5] == L'B') {
+				if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_HARAICHECK_COM_DISCHARGE7)) {
+					pharaib->set_command(STAT_HARAI_BIO_DISCHARGE, 6);
+				}
+				else {
+					pharaib->reset_command(STAT_HARAI_BIO_DISCHARGE, 6);
+				}
+			}
+		}break;
+		case IDC_HARAICHECK_COM_DISCHARGE8: {
+			if (pmob_dlg->type[5] == L'B') {
+				if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_HARAICHECK_COM_DISCHARGE8)) {
+					pharaib->set_command(STAT_HARAI_BIO_DISCHARGE, 7);
+				}
+				else {
+					pharaib->reset_command(STAT_HARAI_BIO_DISCHARGE, 7);
+				}
+			}
+		}break;
+
+		case IDCANCEL: {
+			EndDialog(hWnd, LOWORD(wp));
+		}break;
+		case IDOK: {
+			int n = GetDlgItemText(hWnd, IDC_TRPEDIT_COM_TARGET, (LPTSTR)wstr.c_str(), 128);
+			if (pmob_dlg->type[5] == L'B') {
+				;
+			}
+			else {
+				if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_HARAICHECK_COM_MOVE)) {
+					pharai->set_command(COM_HARAI_MOVE);
+					int n = GetDlgItemText(hWnd, IDC_HARAIEDIT_COM_TARGET, (LPTSTR)wstr.c_str(), 128);
+					if (n) pharai->set_target(stoi(wstr));
+				}
+			};
+		}break;
+		default: return FALSE;
+		}
+	}break;
+	case WM_INITDIALOG: {
+		pharai = (CHarai*)pmob_dlg;
+		pharaib = (CHaraiBio*)pmob_dlg;
+		if (pmob_dlg->type[5] == L'B') {
+			if (pharai->command & COM_HARAI_MOVE) SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_MOVE), BM_SETCHECK, BST_CHECKED, 0L);
+			else  SendMessage(GetDlgItem(hWnd, IDC_TRPCHECK_COM_MOVE), BM_SETCHECK, BST_UNCHECKED, 0L);
+			if (pharai->command & COM_HARAI_DISCHARGE) SendMessage(GetDlgItem(hWnd, IDC_HARAICHECK_COM_DISCHARGE), BM_SETCHECK, BST_CHECKED, 0L);
+			else  SendMessage(GetDlgItem(hWnd, IDC_HARAICHECK_COM_DISCHARGE), BM_SETCHECK, BST_UNCHECKED, 0L);
+		}
+		else {
+			if (pharai->command & COM_HARAI_MOVE) SendMessage(GetDlgItem(hWnd, IDC_HARAICHECK_COM_MOVE), BM_SETCHECK, BST_CHECKED, 0L);
+			else  SendMessage(GetDlgItem(hWnd, IDC_HARAICHECK_COM_MOVE), BM_SETCHECK, BST_UNCHECKED, 0L);
+			if (pharai->command & COM_HARAI_DISCHARGE) SendMessage(GetDlgItem(hWnd, IDC_HARAICHECK_COM_DISCHARGE), BM_SETCHECK, BST_CHECKED, 0L);
+			else  SendMessage(GetDlgItem(hWnd, IDC_HARAICHECK_COM_DISCHARGE), BM_SETCHECK, BST_UNCHECKED, 0L);
+		};
 	}break;
 	case WM_PAINT: {
 		BeginPaint(hWnd, &ps);
