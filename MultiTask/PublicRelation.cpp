@@ -190,10 +190,10 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 						ptrp->set_command(COM_TRP_DISCHARGE);
 					}
 				}
-				else if ((pmob_dlg->type[0] == L'S') && (pmob_dlg->type[1] == L'C')) {
+				else if ((pmob_dlg->type[0] == L'S') && (pmob_dlg->type[3] == L'P')) {
 					CScraper * ptrp = (CScraper *)pmob_dlg;
 					if (ptrp->get_command() & COM_SCRP_DISCHARGE) {
-						ptrp->reset_command(COM_TRP_DISCHARGE);
+						ptrp->reset_command(COM_SCRP_DISCHARGE);
 					}
 					else {
 						ptrp->set_command(COM_SCRP_DISCHARGE);
@@ -206,6 +206,24 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 					}
 					else {
 						pharai->set_command(COM_HARAI_DISCHARGE);
+					}
+				}
+				else if ((pmob_dlg->type[0] == L'C') && (pmob_dlg->type[1] == L'R')) {
+					CCrush * pcrush = (CCrush *)pmob_dlg;
+					if (pcrush->get_command() & CRUSH_COM_WORK) {
+						pcrush->reset_command(CRUSH_COM_WORK);
+					}
+					else {
+						pcrush->set_command(CRUSH_COM_WORK);
+					}
+				}
+				else if ((pmob_dlg->type[0] == L'S') && (pmob_dlg->type[3] == L'E')) {
+					CCrush * pcrush = (CCrush *)pmob_dlg;
+					if (pcrush->get_command() & SCREEN_COM_WORK) {
+						pcrush->reset_command(SCREEN_COM_WORK);
+					}
+					else {
+						pcrush->set_command(SCREEN_COM_WORK);
 					}
 				}
 				else {
@@ -358,10 +376,16 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 			else if ((pmob_dlg->type[0] == L'T') && (pmob_dlg->type[1] == L'R')) {
 				EnableMenuItem(hsubmenu, IDM_PR_ACT_DEACT, MF_ENABLED);
 			}
-			else if ((pmob_dlg->type[0] == L'S') && (pmob_dlg->type[1] == L'C')) {
+			else if ((pmob_dlg->type[0] == L'S') && (pmob_dlg->type[3] == L'P')) {
+				EnableMenuItem(hsubmenu, IDM_PR_ACT_DEACT, MF_ENABLED);
+			}
+			else if ((pmob_dlg->type[0] == L'S') && (pmob_dlg->type[3] == L'E')) {
 				EnableMenuItem(hsubmenu, IDM_PR_ACT_DEACT, MF_ENABLED);
 			}
 			else if ((pmob_dlg->type[0] == L'H') && (pmob_dlg->type[1] == L'A')) {
+				EnableMenuItem(hsubmenu, IDM_PR_ACT_DEACT, MF_ENABLED);
+			}
+			else if ((pmob_dlg->type[0] == L'C') && (pmob_dlg->type[1] == L'R')) {
 				EnableMenuItem(hsubmenu, IDM_PR_ACT_DEACT, MF_ENABLED);
 			}
 			else {
@@ -371,7 +395,7 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 			if ((pmob_dlg->type[0] == L'B') && (pmob_dlg->type[1] == L'C')) {
 				EnableMenuItem(hsubmenu, IDM_PR_DMP_CHNG, MF_ENABLED);
 			}
-			else if ((pmob_dlg->type[0] == L'S') && (pmob_dlg->type[1] == L'C')) {
+			else if ((pmob_dlg->type[0] == L'S') && (pmob_dlg->type[3] == L'P')) {
 				EnableMenuItem(hsubmenu, IDM_PR_ACT_DEACT, MF_ENABLED);
 			}
 			else {
@@ -759,6 +783,11 @@ void CPublicRelation::set_mobmap(int com) {
 			pobj = pstMobs->pmobs[MOB_ID_CRUSH][i];
 			putobj2map(pobj);
 		}
+		//SCREEN
+		for (int i = 0; i < NUM_OF_SCREEN; i++) {
+			pobj = pstMobs->pmobs[MOB_ID_SCREEN][i];
+			putobj2map(pobj);
+		}
 		//HARAIDASHIKI
 		for (int i = 0; i < NUM_OF_HARAI; i++) {
 			pobj = pstMobs->pmobs[MOB_ID_HARAI][i];
@@ -974,6 +1003,8 @@ void CPublicRelation::putobj2map(CMob* pobj) {
 void CPublicRelation::update_disp() {
 	static int i_img2;
 	int mobw, mobh, mobx, moby;
+	CSilo* psilo;
+	CScreen* pscreen;
 
 	//i_img2 += 1; if (i_img2 > 3)i_img2 = 1;
 
@@ -999,6 +1030,27 @@ void CPublicRelation::update_disp() {
 			}
 		}
 	}
+
+	//#クラッシャー
+	SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_CRUSH][0]->hBmp_mob);
+	for (int i = 0; i < NUM_OF_CRUSH; i++) {
+		i_img2 = pstMobs->pmobs[MOB_ID_CRUSH][i]->status;
+		mobx = pstMobs->pmobs[MOB_ID_CRUSH][i]->area.x;	moby = pstMobs->pmobs[MOB_ID_CRUSH][i]->area.y;
+		mobw = pstMobs->pmobs[MOB_ID_CRUSH][i]->bmpw;	mobh = pstMobs->pmobs[MOB_ID_CRUSH][i]->bmph;
+		//AlphaBlend(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, pPrInst->stdisp.bf);
+		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
+	}
+
+	//#スクリーン
+	SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_SCREEN][0]->hBmp_mob);
+	for (int i = 0; i < NUM_OF_SCREEN; i++) {
+		i_img2 = pstMobs->pmobs[MOB_ID_SCREEN][i]->status;
+		mobx = pstMobs->pmobs[MOB_ID_SCREEN][i]->area.x;	moby = pstMobs->pmobs[MOB_ID_SCREEN][i]->area.y;
+		mobw = pstMobs->pmobs[MOB_ID_SCREEN][i]->bmpw;	mobh = pstMobs->pmobs[MOB_ID_SCREEN][i]->bmph;
+		//AlphaBlend(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, pPrInst->stdisp.bf);
+		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
+	}
+
 	//ヘッド位置描画
 	SelectObject(pPrInst->stdisp.hdc_mem0, GetStockObject(DC_BRUSH));
 	SetDCBrushColor(pPrInst->stdisp.hdc_mem0, RGB(192, 0, 192));
@@ -1072,6 +1124,9 @@ void CPublicRelation::update_disp() {
 				else if ((pbc->ID == BC_L22) &&(pbc->head_unit.pos == BC_22HEAD_BANK)){
 					linkpt[1].x = pbc->silolink[0]->area.x; linkpt[1].y = pbc->silolink[0]->area.y + pbc->silolink[0]->area.h / 2;
 				}
+				else if (pbc2->ID == BC_L21) {
+					linkpt[1].x = pbc2->pscreen->area.x; linkpt[1].y = pbc2->pscreen->area.y + pbc2->pscreen->area.h / 2;
+				}
 				else {
 					linkpt[1] = pbc2->imgpt_rcv[pbc->bclink_i[pbc->head_unit.pos]];
 				}
@@ -1080,8 +1135,7 @@ void CPublicRelation::update_disp() {
 			}
 		}
 	}
-
-
+	
 	//搬送石炭描画
 	SelectObject(pPrInst->stdisp.hdc_mem0, GetStockObject(GRAY_BRUSH));
 	SelectObject(pPrInst->stdisp.hdc_mem0, GetStockObject(NULL_PEN));
@@ -1143,15 +1197,54 @@ void CPublicRelation::update_disp() {
 		}
 	}
 
-	//#クラッシャー
-	SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_CRUSH][0]->hBmp_mob);
-	for (int i = 0; i < NUM_OF_CRUSH; i++) {
-		i_img2 = pstMobs->pmobs[MOB_ID_CRUSH][i]->status;
-		mobx = pstMobs->pmobs[MOB_ID_CRUSH][i]->area.x;	moby = pstMobs->pmobs[MOB_ID_CRUSH][i]->area.y;
-		mobw = pstMobs->pmobs[MOB_ID_CRUSH][i]->bmpw;	mobh = pstMobs->pmobs[MOB_ID_CRUSH][i]->bmph;
-		//AlphaBlend(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, pPrInst->stdisp.bf);
-		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
+	//サイロ貯炭描画
+	for (int i = 0; i < SILO_LINES; i++) {
+		for (int j = 0; j < SILO_LINE_NUM; j++) {
+			psilo = &(pstMobs->mobs.silo[i][j]);
+			if (psilo->exist == ON) {
+				if (psilo->SILOtype == SILO_TYPE_BIO) {
+					for (int k = 0; k < SILO_COLUMN_NUM_BIO; k++) {
+						ptr = psilo->area.x + psilo->area.w;
+						ptl = ptr - (psilo->area.w * psilo->column[k].weight) / psilo->capa1;
+						ptt = psilo->area.y + psilo->pix_columw * k;
+						ptb = ptt + psilo->pix_columw;
+						Rectangle(pPrInst->stdisp.hdc_mem0, ptl, ptt, ptr, ptb);
+					}
+				}
+				else if (psilo->SILOtype == SILO_TYPE_BANK) {
+					for (int k = 0; k < SILO_COLUMN_NUM_BANK; k++) {
+						ptr = psilo->area.x + psilo->pix_columw * (k + 1);
+						ptl = ptr - (psilo->pix_columw * psilo->column[k].weight) / psilo->capa1;
+						ptt = psilo->area.y;
+						ptb = ptt + psilo->area.h;
+						Rectangle(pPrInst->stdisp.hdc_mem0, ptl, ptt, ptr, ptb);
+					}
+				}
+				else {
+					for (int k = 0; k < SILO_COLUMN_NUM; k++) {
+						ptr = psilo->area.x + psilo->area.w;
+						ptl = ptr - (psilo->area.w * psilo->column[k].weight) / psilo->capa1;
+						ptt = psilo->area.y + psilo->pix_columw * k;
+						ptb = ptt + psilo->pix_columw;
+						Rectangle(pPrInst->stdisp.hdc_mem0, ptl, ptt, ptr, ptb);
+					}
+				}
+			}
+		}
 	}
+
+	//スクリーン貯炭描画
+	for (int i = 0; i < NUM_OF_SCREEN; i++) {
+		for (int j = 0; j < SCREEN_BUF_NUM; j++) {
+			pscreen = &(pstMobs->mobs.screen[i]);
+			ptl = pscreen->area.x + 20 + j * pscreen->area.w/ SCREEN_BUF_NUM;
+			ptr = ptl + pscreen->pix_columw;
+			ptb = pscreen->area.y + pscreen->area.h;
+			ptt = pscreen->area.y + pscreen->area.h - pscreen->area.h * pscreen->buffer[j].weight /pscreen->buf_capa[j];
+			Rectangle(pPrInst->stdisp.hdc_mem0, ptl, ptt, ptr, ptb);
+		}
+	}
+	
 
 	//#払い出し機
 	SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_HARAI][0]->hBmp_mob);
@@ -1217,11 +1310,9 @@ void CPublicRelation::update_disp() {
 		//AlphaBlend(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, pPrInst->stdisp.bf);
 		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
 	}
-
-
-
+	
 	//#サイロ
-	CSilo* psilo;
+
 
 	//輪郭描画
 	SelectObject(pPrInst->stdisp.hdc_mem0, GetStockObject(NULL_BRUSH));
@@ -1247,44 +1338,6 @@ void CPublicRelation::update_disp() {
 		}
 	}
 
-	//搬送石炭描画
-	SelectObject(pPrInst->stdisp.hdc_mem0, GetStockObject(GRAY_BRUSH));
-	SelectObject(pPrInst->stdisp.hdc_mem0, GetStockObject(NULL_PEN));
-	//貯炭描画
-	for (int i = 0; i < SILO_LINES; i++) {
-		for (int j = 0; j < SILO_LINE_NUM; j++) {
-			psilo = &(pstMobs->mobs.silo[i][j]);
-			if (psilo->exist == ON) {
-				if (psilo->SILOtype == SILO_TYPE_BIO) {
-					for (int k = 0; k < SILO_COLUMN_NUM_BIO; k++) {
-						ptr = psilo->area.x + psilo->area.w;
-						ptl = ptr - (psilo->area.w * psilo->column[k].weight) / psilo->capa1;
-						ptt = psilo->area.y + psilo->pix_columw * k;
-						ptb = ptt + psilo->pix_columw;
-						Rectangle(pPrInst->stdisp.hdc_mem0, ptl, ptt, ptr, ptb);
-					}
-				}
-				else if (psilo->SILOtype == SILO_TYPE_BANK) {
-					for (int k = 0; k < SILO_COLUMN_NUM_BANK; k++) {
-						ptr = psilo->area.x + psilo->pix_columw * (k +1);
-						ptl = ptr - (psilo->pix_columw * psilo->column[k].weight) / psilo->capa1;
-						ptt = psilo->area.y;
-						ptb = ptt + psilo->area.h;
-						Rectangle(pPrInst->stdisp.hdc_mem0, ptl, ptt, ptr, ptb);
-					}
-				}
-				else {
-					for (int k = 0; k < SILO_COLUMN_NUM; k++) {
-						ptr = psilo->area.x + psilo->area.w;
-						ptl = ptr - (psilo->area.w * psilo->column[k].weight) / psilo->capa1;
-						ptt = psilo->area.y + psilo->pix_columw * k;
-						ptb = ptt + psilo->pix_columw;
-						Rectangle(pPrInst->stdisp.hdc_mem0, ptl, ptt, ptr, ptb);
-					}
-				}
-			}
-		}
-	}
 
 
 	if (b_infchecked)TransparentBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_inf, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, RGB(255, 255, 255));

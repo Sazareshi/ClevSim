@@ -77,10 +77,16 @@ STLOAD CBC::put_load(int pos, STLOAD load) {//POPは、出し位置のm位置
 	int i_pos_belt = beltmm >> 10;
 
 	if (load.weight > Kg100perM)load.weight = Kg100perM;
-	belt[i_pos_belt].weight += load.weight;
 	load_ret.weight = load.weight;
-	belt[i_pos_belt].material = load_ret.material = load.material;
-
+	load_ret.material = load.material;
+	if (BCtype & BC_CRUSH) {
+		pscreen->buffer[SCREEN_BUF_BC].weight += load.weight;
+		pscreen->buffer[SCREEN_BUF_BC].material = load.material;
+	}
+	else {
+		belt[i_pos_belt].weight += load.weight;
+		belt[i_pos_belt].material = load_ret.material = load.material;
+	}
 	return load_ret;
 }
 
@@ -115,6 +121,50 @@ void CBC::conveyor(DWORD com, LONG dt) {
 		else;
 	}
 
+	//スクレーパー、クラッシャ付BCの処理
+	if (BCtype & BC_CRUSH) {
+		int iscreen, icrusher, weight;
+		if (pscreen->status != MOB_STAT_IDLE) {
+			iscreen = ihead + pos_rcv[0];
+			if (iscreen > belt_size) iscreen -= belt_size;
+			weight = pscreen->ability * dt / 1000;
+			if (weight < pscreen->buffer[SCREEN_BUF_BC].weight) {
+				pscreen->buffer[SCREEN_BUF_BC].weight -= weight;
+				belt[iscreen].weight += weight;
+			}
+			else {
+				belt[iscreen].weight += pscreen->buffer[SCREEN_BUF_BC].weight;
+				pscreen->buffer[SCREEN_BUF_BC].weight = 0;
+			}
+			belt[iscreen].material = pscreen->buffer[SCREEN_BUF_BC].material;
+
+			weight *= pscreen->trans_ratio / 100;
+			if (weight < pscreen->buffer[SCREEN_BUF_BC].weight) {
+				pscreen->buffer[SCREEN_BUF_BC].weight -= weight;
+				pscreen->buffer[SCREEN_BUF_CRUSH].weight += weight;
+			}
+			else {
+				pscreen->buffer[SCREEN_BUF_BC].weight = 0;
+				pscreen->buffer[SCREEN_BUF_CRUSH].weight += weight;
+			}
+			belt[iscreen].material = pscreen->buffer[SCREEN_BUF_BC].material;
+			pscreen->buffer[SCREEN_BUF_CRUSH].material = pscreen->buffer[SCREEN_BUF_BC].material;
+		}
+		if (pcrush->status != MOB_STAT_IDLE) {
+			icrusher = ihead + pos_rcv[1];
+			if (icrusher > belt_size) icrusher -= belt_size;
+			weight = pcrush->ability * dt / 1000;
+			if (weight < pscreen->buffer[SCREEN_BUF_CRUSH].weight) {
+				pscreen->buffer[SCREEN_BUF_CRUSH].weight -= weight;
+				belt[icrusher].weight += weight;
+			}
+			else {
+				belt[icrusher].weight += pscreen->buffer[SCREEN_BUF_CRUSH].weight;
+				pscreen->buffer[SCREEN_BUF_CRUSH].weight = 0;
+			}
+			belt[icrusher].material = pscreen->buffer[SCREEN_BUF_CRUSH].material;
+		}
+	}
 
 	if (put_test_load) {//put_test_loadは、テストロードを置くiheadからの位置
 		CCUL cul;

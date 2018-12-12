@@ -15,7 +15,7 @@ CActor::~CActor(){
 
 CActor * CActor::pActInst;
 //表示用アイコンBitMapのサイズをここでまとめて設定
-int CActor::BMP_WH[MOB_TYPE_NUM][2] = { { 32,32 },{ 16,16 },{ 32,32 } ,{ 48,40 },{16,24 },{ 24,24 },{ 24,24 },{ 16,24 },{ 16,16 },{ 64,32 } };
+int CActor::BMP_WH[MOB_TYPE_NUM][2] = { { 32,32 },{ 16,16 },{ 32,32 } ,{ 48,40 },{16,24 },{ 24,24 },{ 24,24 },{ 16,24 },{ 16,16 },{ 64,24 } };
 
 void CActor::init_task(void* pobj) {
 
@@ -148,10 +148,10 @@ void CActor::init_task(void* pobj) {
 
 	hbmp = (HBITMAP)LoadImage(pActInst->inf.hInstance, TEXT("IDB_SCREEN"), IMAGE_BITMAP, 0, 0, LR_DEFAULTCOLOR);
 	for (int i = 0; i < NUM_OF_SCREEN; i++) {
-		pstMobs->pmobs[MOB_ID_SCREEN][i] = &(pstMobs->mobs.crusher[i]);
-		pstMobs->mobs.crusher[i].status = MOB_STAT_IDLE;
-		wsprintf(pstMobs->mobs.crusher[i].type, MOB_TYPE_SCREEN);
-		pstMobs->mobs.crusher[i].hBmp_mob = hbmp;
+		pstMobs->pmobs[MOB_ID_SCREEN][i] = &(pstMobs->mobs.screen[i]);
+		pstMobs->mobs.screen[i].status = MOB_STAT_IDLE;
+		wsprintf(pstMobs->mobs.screen[i].type, MOB_TYPE_SCREEN);
+		pstMobs->mobs.screen[i].hBmp_mob = hbmp;
 		pstMobs->pmobs[MOB_ID_SCREEN][i]->bmpw = BMP_WH[MOB_ID_SCREEN][0];
 		pstMobs->pmobs[MOB_ID_SCREEN][i]->bmph = BMP_WH[MOB_ID_SCREEN][1];
 		pstMobs->pmobs[MOB_ID_SCREEN][i]->ptime_now = pSimtime_ms;
@@ -283,17 +283,18 @@ void CActor::init_task(void* pobj) {
 			itype[MOB_ID_HARAI_BIO]++;
 		}
 		else if (wstrtmp == MOB_TYPE_CRUSH) {
+			CCrush* pobj = (CCrush*)(pstMobs->pmobs[MOB_ID_CRUSH][itype[MOB_ID_CRUSH]]);
 			if (itype[MOB_ID_CRUSH] >= NUM_OF_CRUSH) continue;
 			int k = 0;
 
-			pstMobs->pmobs[MOB_ID_CRUSH][itype[MOB_ID_CRUSH]]->exist = ON;
+			pobj->exist = ON;
 			while (getline(wstream, wstrtmp, L',')) {
 				switch (k) {
-				case 0:pstMobs->pmobs[MOB_ID_CRUSH][itype[MOB_ID_CRUSH]]->ID = _wtoi(wstrtmp.c_str()); break;
-				case 1:pstMobs->pmobs[MOB_ID_CRUSH][itype[MOB_ID_CRUSH]]->area.x = _wtoi(wstrtmp.c_str()); break;
-				case 2:pstMobs->pmobs[MOB_ID_CRUSH][itype[MOB_ID_CRUSH]]->area.y = _wtoi(wstrtmp.c_str()); break;
-				case 3:pstMobs->pmobs[MOB_ID_CRUSH][itype[MOB_ID_CRUSH]]->area.w = _wtoi(wstrtmp.c_str()); break;
-				case 4:pstMobs->pmobs[MOB_ID_CRUSH][itype[MOB_ID_CRUSH]]->area.h = _wtoi(wstrtmp.c_str()); break;
+				case 0:pobj->ID = _wtoi(wstrtmp.c_str()); break;
+				case 1:pobj->area.x = _wtoi(wstrtmp.c_str()); break;
+				case 2:pobj->area.y = _wtoi(wstrtmp.c_str()); break;
+				case 3:pobj->area.w = _wtoi(wstrtmp.c_str()); break;
+				case 4:pobj->area.h = _wtoi(wstrtmp.c_str()); break;
 				case 5:
 					for (int j = 0; j<wstrtmp.size(); j++) pstMobs->pmobs[MOB_ID_CRUSH][itype[MOB_ID_CRUSH]]->name[j] = wstrtmp[j];
 					break;
@@ -302,7 +303,7 @@ void CActor::init_task(void* pobj) {
 				case 8: break;
 				case 9: break;
 				case 10: break;
-				case 11: break;
+				case 11: pobj->ability = _wtoi(wstrtmp.c_str()); break; 
 				case 12: break;
 				default:break;
 				}
@@ -311,17 +312,17 @@ void CActor::init_task(void* pobj) {
 			itype[MOB_ID_CRUSH]++;
 		}
 		else if (wstrtmp == MOB_TYPE_SCREEN) {
-			if (itype[MOB_ID_CRUSH] >= NUM_OF_SCREEN) continue;
+			if (itype[MOB_ID_SCREEN] >= NUM_OF_SCREEN) continue;
 			int k = 0;
-
-			pstMobs->pmobs[MOB_ID_SCREEN][itype[MOB_ID_SCREEN]]->exist = ON;
+			CScreen* pobj = (CScreen*)(pstMobs->pmobs[MOB_ID_SCREEN][itype[MOB_ID_SCREEN]]);
+			pobj->exist = ON;
 			while (getline(wstream, wstrtmp, L',')) {
 				switch (k) {
-				case 0:pstMobs->pmobs[MOB_ID_SCREEN][itype[MOB_ID_SCREEN]]->ID = _wtoi(wstrtmp.c_str()); break;
-				case 1:pstMobs->pmobs[MOB_ID_SCREEN][itype[MOB_ID_SCREEN]]->area.x = _wtoi(wstrtmp.c_str()); break;
-				case 2:pstMobs->pmobs[MOB_ID_SCREEN][itype[MOB_ID_SCREEN]]->area.y = _wtoi(wstrtmp.c_str()); break;
-				case 3:pstMobs->pmobs[MOB_ID_SCREEN][itype[MOB_ID_SCREEN]]->area.w = _wtoi(wstrtmp.c_str()); break;
-				case 4:pstMobs->pmobs[MOB_ID_SCREEN][itype[MOB_ID_SCREEN]]->area.h = _wtoi(wstrtmp.c_str()); break;
+				case 0:pobj->ID = _wtoi(wstrtmp.c_str()); break;
+				case 1:pobj->area.x = _wtoi(wstrtmp.c_str()); break;
+				case 2:pobj->area.y = _wtoi(wstrtmp.c_str()); break;
+				case 3:pobj->area.w = _wtoi(wstrtmp.c_str()); break;
+				case 4:pobj->area.h = _wtoi(wstrtmp.c_str()); break;
 				case 5:
 					for (int j = 0; j<wstrtmp.size(); j++) pstMobs->pmobs[MOB_ID_SCREEN][itype[MOB_ID_SCREEN]]->name[j] = wstrtmp[j];
 					break;
@@ -330,7 +331,7 @@ void CActor::init_task(void* pobj) {
 				case 8: break;
 				case 9: break;
 				case 10: break;
-				case 11: break;
+				case 11: pobj->ability = _wtoi(wstrtmp.c_str()); break;
 				case 12: break;
 				default:break;
 				}
@@ -519,6 +520,7 @@ void CActor::init_task(void* pobj) {
 	init_scraper();//Scraper関連初期化
 	init_silo();//BCサイロ関連初期化
 	init_harai();//払い出し機関連初期化
+	init_screen();//スクリーン初期化
 
 
 	///CUL積荷初期値
@@ -569,13 +571,26 @@ void CActor::routine_work(void *param) {
 	}
 	//CUL
 	for (int i = 0; i < NUM_OF_CUL; i++) cal_cul(i, load_cul, ms_dt,COM_CUL_IDLE);
+	//SCREEN
+	for (int i = 0; i < NUM_OF_SCREEN; i++) {
+		if (pstMobs->pmobs[MOB_ID_SCREEN][i]->status == MOB_STAT_IDLE);
+		else if (pstMobs->pmobs[MOB_ID_SCREEN][i]->status == MOB_STAT_ACT0)pstMobs->pmobs[MOB_ID_SCREEN][i]->status = MOB_STAT_ACT1;
+		else if (pstMobs->pmobs[MOB_ID_SCREEN][i]->status == MOB_STAT_ACT1)pstMobs->pmobs[MOB_ID_SCREEN][i]->status = MOB_STAT_ACT2;
+		else pstMobs->pmobs[MOB_ID_SCREEN][i]->status = MOB_STAT_ACT0;
+
+		cal_screen(i, ms_dt, SCREEN_COM_WORK);
+	}
 	//CRUSHER
 	for (int i = 0; i < NUM_OF_CRUSH; i++) {
 		if (pstMobs->pmobs[MOB_ID_CRUSH][i]->status == MOB_STAT_IDLE);
 		else if(pstMobs->pmobs[MOB_ID_CRUSH][i]->status == MOB_STAT_ACT0)pstMobs->pmobs[MOB_ID_CRUSH][i]->status = MOB_STAT_ACT1;
 		else if (pstMobs->pmobs[MOB_ID_CRUSH][i]->status == MOB_STAT_ACT1)pstMobs->pmobs[MOB_ID_CRUSH][i]->status = MOB_STAT_ACT2;
 		else pstMobs->pmobs[MOB_ID_CRUSH][i]->status = MOB_STAT_ACT0;
+		
+		cal_crusher(i, ms_dt, CRUSH_COM_WORK);
 	}
+
+
 	//HARAIDASHIKI
 	for (int i = 0; i < NUM_OF_HARAI; i++) {
 		if (pstMobs->pmobs[MOB_ID_HARAI][i]->command == COM_HARAI_IDLE) pstMobs->pmobs[MOB_ID_HARAI][i]->status = MOB_STAT_IDLE;
@@ -722,6 +737,14 @@ int CActor::cal_tripper(DWORD index, LONG dt, DWORD com) {
 
 	return 0;
 };
+int CActor::cal_screen(DWORD index, LONG dt, DWORD com) {
+	CScreen* pobj = &(pstMobs->mobs.screen[index]);
+	return 0;
+};
+int CActor::cal_crusher(DWORD index, LONG dt, DWORD com) {
+	CCrush* pobj = &(pstMobs->mobs.crusher[index]);
+	return 0;
+};
 int CActor::cal_harai(DWORD index, LONG dt, DWORD com) {
 	CHarai* pobj = &(pstMobs->mobs.haraiki[index]);
 	int iret = pobj->move(com, dt, pobj->get_target());
@@ -760,7 +783,6 @@ int CActor::cal_scraper(DWORD index, LONG dt, DWORD com) {
 	CScraper* pobj = &(pstMobs->mobs.scraper[index]);
 	
 	int iret = pobj->move(com, dt, pobj->get_target());
-
 	//スクレーパ移動でマップ更新
 	if (iret) {//移動有り
 		CPublicRelation pr;
@@ -772,7 +794,6 @@ int CActor::cal_scraper(DWORD index, LONG dt, DWORD com) {
 		else if (pobj->ID == LINE_I_SCR)  pr.set_mobmap(COM_MOBMAP_23B);
 		else;
 	}
-
 	return 0;
 };
 
@@ -1032,7 +1053,11 @@ void CActor::init_bc() {//BC関連初期設定
 	(pstMobs->mobs.bc[LINE_A][BC_L23]).ptrp = (CMob*)(&(pstMobs->mobs.scraper[LINE_H_SCR]));
 	(pstMobs->mobs.bc[LINE_B][BC_L23]).ptrp = (CMob*)(&(pstMobs->mobs.scraper[LINE_I_SCR]));
 
-
+	(pstMobs->mobs.bc[LINE_A][BC_L21]).pscreen = &(pstMobs->mobs.screen[LINE_A]);
+	(pstMobs->mobs.bc[LINE_A][BC_L21]).pcrush = &(pstMobs->mobs.crusher[LINE_A]);
+	(pstMobs->mobs.bc[LINE_B][BC_L21]).pscreen = &(pstMobs->mobs.screen[LINE_B]);
+	(pstMobs->mobs.bc[LINE_B][BC_L21]).pcrush = &(pstMobs->mobs.crusher[LINE_B]);
+	
 	CBC* pbc;
 	for (int i = 0; i < BC_LINES; i++) {
 		for (int j = 0; j < BC_LINE_NUM; j++) {
@@ -1519,5 +1544,15 @@ void CActor::init_harai() {//HARAI関連初期設定
 	}
 
 
+	return;
+};
+void CActor::init_screen() {//SCREEN関連初期設定
+	for (int i = 0; i <	SCREEN_BUF_NUM; i++) {
+		pstMobs->mobs.screen[i].buf_capa[0] = pstMobs->mobs.screen[i].ability*SCREEN_RETIO/100;
+		pstMobs->mobs.screen[i].buf_capa[1] = pstMobs->mobs.screen[i].ability*(100-SCREEN_RETIO)/100;
+
+		pstMobs->mobs.screen[i].buffer[0].weight = pstMobs->mobs.screen[i].buf_capa[0];
+		pstMobs->mobs.screen[i].buffer[1].weight = pstMobs->mobs.screen[i].buf_capa[1];
+	}
 	return;
 };

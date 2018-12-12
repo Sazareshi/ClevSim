@@ -151,12 +151,9 @@ private:
 private:
 };
 
-
 #define NUM_DROP_POINT_CUL 2
 #define COM_CUL_IDLE	0
 #define COM_CUL_DISCHARGE	1
-
-
 
 #define BC_HEAD_0		0x0000
 #define BC_HEAD_DUMPER	0x0001
@@ -179,6 +176,53 @@ public:
 
 	int	activate(int com) { pos = com; };
 };
+#define SCREEN_BUF_BC		0
+#define SCREEN_BUF_CRUSH	1
+#define SCREEN_BUF_NUM		2
+#define SCREEN_COM_IDLE		0
+#define SCREEN_COM_WORK		1
+#define SCREEN_RETIO		80//スクリーンの透過率
+class CScreen : public CMob
+{
+public:
+	CScreen() { trans_ratio = SCREEN_RETIO; pix_columw = 10; };
+	~CScreen() {};
+	STLOAD buffer[SCREEN_BUF_NUM];//クラッシャー用バッファ 0:通過用　1：未通過用
+	CMob* pbc;
+	int trans_ratio;//透過率
+	int ability;//バッファ能力　kg　（搬送能力　900ton/h->250kg/s）
+	int pix_columw;//石炭描画石炭幅
+	int buf_capa[SCREEN_BUF_NUM];//石炭描画石炭幅
+
+	STLOAD pop_load(int index, STLOAD load);//クラッシャー用バッファからPop
+
+	void set_command(DWORD com) { command |= com; };//指示コマンド
+	void reset_command(DWORD com) { command &= ~com; };//指示コマンド
+	DWORD get_command() { return command; };//指示コマンド
+
+private:
+
+};
+
+#define CRUSH_COM_IDLE		0
+#define CRUSH_COM_WORK		1
+class CCrush : public CMob
+{
+public:
+	CCrush() {};
+	~CCrush() {};
+	CMob* pbc;
+	CScreen* pscreen;
+	STLOAD crush_load(STLOAD load);//クラッシャー用バッファからPopしてBCへPut
+	int ability;//払い出し能力　kg/s　900ton/h->250kg/s
+
+	void set_command(DWORD com) { command |= com; };//指示コマンド
+	void reset_command(DWORD com) { command &= ~com; };//指示コマンド
+	DWORD get_command() { return command; };//指示コマンド
+private:
+
+};
+
 class CBC : public CMob
 {
 public:
@@ -206,6 +250,8 @@ public:
 	LONG	Kg100perM;//BC1m当たりの定格搬送重量
 	CBCHead head_unit;
 	CMob* ptrp;
+	CScreen* pscreen;
+	CCrush* pcrush;
 	
 	CBC* bclink[BC_LINK_MAX];//排出先BCポインタ
 	CSilo* silolink[BC_SILO_LINK_MAX];//排出先サイロポインタ　トリッパ、スクレーパ付きBCのみ
@@ -224,33 +270,6 @@ private:
 
 };
 
-
-class CScreen : public CMob
-{
-public:
-	CScreen() {};
-	~CScreen() {};
-	STLOAD buffer;//クラッシャー用バッファ
-	CBC* pbc;
-	int trans_ratio;//透過率
-
-	STLOAD pop_load(STLOAD load);//クラッシャー用バッファからPop
-
-private:
-
-};
-
-class CCrush : public CMob
-{
-public:
-	CCrush() {};
-	~CCrush() {};
-	CBC* pbc;
-	CScreen* pscreen;
-	STLOAD crush_load(STLOAD load);//クラッシャー用バッファからPopしてBCへPut
-private:
-
-};
 
 
 #define COM_TRP_IDLE	0
