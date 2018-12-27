@@ -14,6 +14,10 @@
 #define MOB_ID_SCRAPER			7//スクレーパー ID
 #define MOB_ID_HARAI_BIO		8//バイオサイロ払い出し機 ID
 #define MOB_ID_SCREEN			9//スクリーン ID
+#define MOB_ID_MAGSEPA			10//マグセパ ID
+#define MOB_ID_KEIRYOU			11//計量器 ID
+#define MOB_ID_KINKEN			12//金属検知器 ID
+#define MOB_ID_SAMPLER			13//サンプラ ID
 
 
 #define MOB_STAT_IDLE			0
@@ -33,6 +37,11 @@
 #define MOB_TYPE_SCRAPER	TEXT("SCRP00")
 #define MOB_TYPE_HARAI_BIO	TEXT("HARAIB")
 #define MOB_TYPE_SCREEN		TEXT("SCREEN")
+#define MOB_TYPE_MAGSEPA	TEXT("MAGSEP")
+#define MOB_TYPE_KEIRYOU	TEXT("KEIRYO")
+#define MOB_TYPE_KINKEN		TEXT("KINKEN")
+#define MOB_TYPE_SAMPLER	TEXT("SAMPLA")
+
 
 #define MASK_DIR_X			0x00ff
 #define MASK_DIR_LEFT		0x00ff
@@ -259,13 +268,66 @@ public:
 	int put_load_i(int i_pos, STLOAD load);//i_pos BC上実位置配列インデックス
 	STLOAD put_load(int pos, STLOAD load);//pos BC上実位置m
 	STLOAD pop_load(int pos, STLOAD load);//pos BC上実位置m
-	void conveyor(DWORD com, LONG dt);
+	void conveyor(DWORD com, ULONG dt);
 	void bc_reset() { headpos_mm = 0; memset(&pos_rcv, 0, sizeof(STLOAD) * BC_MAX_LEN); return; };//ベルトヘッド位置を0リセットして全石炭をクリア
 	CMotor motor[BC_MOTOR_MAX];
 	LONG pix2mm;
 	LONG put_test_load;//0以外でテールポジションからのインデックス位置に重量投入
 
 	BOOL b_rverse;
+private:
+
+};
+
+class CMSeparator : public CMob
+{
+public:
+	CMSeparator() {};
+	~CMSeparator() {};
+	CMob* pbc;//設置BC
+
+	void set_command(DWORD com) { command |= com; };//指示コマンド
+	void reset_command(DWORD com) { command &= ~com; };//指示コマンド
+	DWORD get_command() { return command; };//指示コマンド
+private:
+
+};
+class CMDetector : public CMob
+{
+public:
+	CMDetector() {};
+	~CMDetector() {};
+	CMob* pbc;//設置BC
+
+	void set_command(DWORD com) { command |= com; };//指示コマンド
+	void reset_command(DWORD com) { command &= ~com; };//指示コマンド
+	DWORD get_command() { return command; };//指示コマンド
+private:
+
+};
+class CLoadMeter : public CMob
+{
+public:
+	CLoadMeter() {};
+	~CLoadMeter() {};
+	CMob* pbc;//設置BC
+
+	void set_command(DWORD com) { command |= com; };//指示コマンド
+	void reset_command(DWORD com) { command &= ~com; };//指示コマンド
+	DWORD get_command() { return command; };//指示コマンド
+private:
+
+};
+class CSampler : public CMob
+{
+public:
+	CSampler() {};
+	~CSampler() {};
+	CMob* pbc;//設置BC
+
+	void set_command(DWORD com) { command |= com; };//指示コマンド
+	void reset_command(DWORD com) { command &= ~com; };//指示コマンド
+	DWORD get_command() { return command; };//指示コマンド
 private:
 
 };
@@ -477,7 +539,6 @@ public:
 
 	int discharge(DWORD com, LONG dt);
 	
-	STLOAD set_load(WORD material, WORD density, WORD vol, WORD weight);
 	static STLOAD load_base;
 
 private:
@@ -508,6 +569,11 @@ private:
 #define SILO_LINE_NUM_BANK		2	//バンカーラインのサイロ数
 #define NUM_OF_HARAI_BIO		2   //バイオサイロのサイロ数
 #define NUM_OF_SCREEN			2
+#define NUM_OF_MAGSEPA			5
+#define NUM_OF_KINKEN			3
+#define NUM_OF_KEIRYOUKI		7
+#define NUM_OF_SAMPLER			4
+
 
 
 //共有メモリ配置定義
@@ -522,6 +588,10 @@ typedef struct _stMobsBody {
 	CScraper	scraper[NUM_OF_SCRAPER];
 	CHaraiBio	haraikiBio[NUM_OF_HARAI_BIO];
 	CScreen		screen[NUM_OF_SCREEN];
+	CMSeparator magsepa[NUM_OF_MAGSEPA];
+	CMDetector 	kinken[NUM_OF_KINKEN];
+	CLoadMeter 	keiryoki[NUM_OF_KEIRYOUKI];
+	CSampler	sampler[NUM_OF_SAMPLER];
 }STMobsBody, *LPSTMobsBody;
 
 typedef struct _stMobs {
@@ -584,6 +654,40 @@ typedef struct _stMobs {
 #define BC_L33 3
 #define BC_L34 4
 #define BC_BIO 5
+
+#define ID_BC_L1	10
+#define ID_BC_L2	20
+#define ID_BC_L3	30
+#define ID_BC_L4_1 41
+#define ID_BC_L4_2 42
+#define ID_BC_L4_3 43
+#define ID_BC_L5	50
+#define ID_BC_L6	60
+#define ID_BC_L7	70
+#define ID_BC_L8	80
+#define ID_BC_L9	90
+#define ID_BC_L9_1 91
+#define ID_BC_L9_2 92
+#define ID_BC_L11	110
+#define ID_BC_L12	120
+#define ID_BC_L13	130
+#define ID_BC_L15	150
+#define ID_BC_L16	160
+#define ID_BC_L17	170
+#define ID_BC_L18	180
+#define ID_BC_L19	190
+#define ID_BC_L20	200
+#define ID_BC_L21	210
+#define ID_BC_L22	220
+#define ID_BC_L23	230
+#define ID_BC_LRC	240
+
+#define ID_BC_L30 300
+#define ID_BC_L31 310
+#define ID_BC_L32 320
+#define ID_BC_L33 330
+#define ID_BC_L34 340
+#define ID_BC_BIO 350
 
 #define HARAI_11A	0
 #define HARAI_11B	1

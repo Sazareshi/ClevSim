@@ -158,6 +158,31 @@ void CActor::init_task(void* pobj) {
 		pstMobs->pmobs[MOB_ID_SCREEN][i]->b_bmp_aline_bottom = FALSE;
 	}
 
+
+	for (int i = 0; i < NUM_OF_MAGSEPA; i++) {
+		pstMobs->pmobs[MOB_ID_MAGSEPA][i] = &(pstMobs->mobs.magsepa[i]);
+		pstMobs->mobs.magsepa[i].status = MOB_STAT_IDLE;
+		wsprintf(pstMobs->mobs.magsepa[i].type, MOB_TYPE_MAGSEPA);
+	}
+	for (int i = 0; i < NUM_OF_KINKEN; i++) {
+		pstMobs->pmobs[MOB_ID_KINKEN][i] = &(pstMobs->mobs.kinken[i]);
+		pstMobs->mobs.kinken[i].status = MOB_STAT_IDLE;
+		wsprintf(pstMobs->mobs.kinken[i].type, MOB_TYPE_KINKEN);
+	}
+	for (int i = 0; i < NUM_OF_KEIRYOUKI; i++) {
+		pstMobs->pmobs[MOB_ID_KEIRYOU][i] = &(pstMobs->mobs.keiryoki[i]);
+		pstMobs->mobs.keiryoki[i].status = MOB_STAT_IDLE;
+		wsprintf(pstMobs->mobs.keiryoki[i].type, MOB_TYPE_KEIRYOU);
+	}
+	for (int i = 0; i < NUM_OF_SAMPLER; i++) {
+		pstMobs->pmobs[MOB_ID_SAMPLER][i] = &(pstMobs->mobs.sampler[i]);
+		pstMobs->mobs.sampler[i].status = MOB_STAT_IDLE;
+		wsprintf(pstMobs->mobs.sampler[i].type, MOB_TYPE_SAMPLER);
+	}
+
+
+
+
 	///# INIファイル読み込み
 	wchar_t tbuf[32];
 	DWORD	str_num = GetPrivateProfileString(PATH_SECT_OF_INIFILE, PATH_KEY_OF_MOBCSV, L"mob.csv", tbuf, sizeof(tbuf), PATH_OF_INIFILE);
@@ -180,7 +205,8 @@ void CActor::init_task(void* pobj) {
 
 			while (getline(wstream, wstrtmp, L',')) {
 				switch (k) {
-				case 0:pobj->ID = _wtoi(wstrtmp.c_str()); break;
+				//case 0:pobj->ID = _wtoi(wstrtmp.c_str()); break;
+				case 0:pobj->ID = stoi(wstrtmp.c_str(), nullptr, 16); break;
 				case 1:pobj->area.x = _wtoi(wstrtmp.c_str()); break;
 				case 2:pobj->area.y = _wtoi(wstrtmp.c_str()); break;
 				case 3:pobj->area.w = _wtoi(wstrtmp.c_str()); break;
@@ -509,6 +535,166 @@ void CActor::init_task(void* pobj) {
 
 			itype[MOB_ID_SILO]++;
 		}
+		else if (wstrtmp == MOB_TYPE_MAGSEPA) {
+			if (itype[MOB_ID_MAGSEPA] >= NUM_OF_MAGSEPA) continue;
+			int k = 0;
+
+			pstMobs->pmobs[MOB_ID_MAGSEPA][itype[MOB_ID_MAGSEPA]]->exist = ON;
+			while (getline(wstream, wstrtmp, L',')) {
+				CMSeparator * pobj = (CMSeparator  *)(pstMobs->pmobs[MOB_ID_MAGSEPA][itype[MOB_ID_MAGSEPA]]);
+				switch (k) {
+				case 0:pobj->ID = _wtoi(wstrtmp.c_str()); break;
+				case 1:pobj->area.x = _wtoi(wstrtmp.c_str()); break;
+				case 2:pobj->area.y = _wtoi(wstrtmp.c_str()); break;
+				case 3:pobj->area.w = _wtoi(wstrtmp.c_str()); break;
+				case 4:pobj->area.h = _wtoi(wstrtmp.c_str()); break;
+				case 5:
+					for (int j = 0; j < wstrtmp.size(); j++) pobj->name[j] = wstrtmp[j];
+					break;
+				case 6: break;
+				case 7: break;
+				case 8: break;
+				case 9: break;
+				case 10: break;
+				case 11: break;
+				case 12: break;
+				case 13: break;
+				case 14: break;
+				case 15: break;
+				case 16: break;
+				case 17: break;
+				case 18: break;
+				case 19: break;
+				case 20: break;
+				case 21: break;
+				case 22: break;
+				case 23: break;
+				default:break;
+				}
+				k++;
+			}
+			itype[MOB_ID_MAGSEPA]++;
+		}
+		else if (wstrtmp == MOB_TYPE_KEIRYOU) {
+			if (itype[MOB_ID_KEIRYOU] >= NUM_OF_KEIRYOUKI) continue;
+			int k = 0;
+
+			pstMobs->pmobs[MOB_ID_KEIRYOU][itype[MOB_ID_KEIRYOU]]->exist = ON;
+			while (getline(wstream, wstrtmp, L',')) {
+				CMSeparator * pobj = (CMSeparator  *)(pstMobs->pmobs[MOB_ID_KEIRYOU][itype[MOB_ID_KEIRYOU]]);
+				switch (k) {
+				case 0:pobj->ID = _wtoi(wstrtmp.c_str()); break;
+				case 1:pobj->area.x = _wtoi(wstrtmp.c_str()); break;
+				case 2:pobj->area.y = _wtoi(wstrtmp.c_str()); break;
+				case 3:pobj->area.w = _wtoi(wstrtmp.c_str()); break;
+				case 4:pobj->area.h = _wtoi(wstrtmp.c_str()); break;
+				case 5:
+					for (int j = 0; j < wstrtmp.size(); j++) pobj->name[j] = wstrtmp[j];
+					break;
+				case 6: break;
+				case 7: break;
+				case 8: break;
+				case 9: break;
+				case 10: break;
+				case 11: break;
+				case 12: break;
+				case 13: break;
+				case 14: break;
+				case 15: break;
+				case 16: break;
+				case 17: break;
+				case 18: break;
+				case 19: break;
+				case 20: break;
+				case 21: break;
+				case 22: break;
+				case 23: break;
+				default:break;
+				}
+				k++;
+			}
+			itype[MOB_ID_KEIRYOU]++;
+		}
+		else if (wstrtmp == MOB_TYPE_KINKEN) {
+			if (itype[MOB_ID_KINKEN] >= NUM_OF_KINKEN) continue;
+			int k = 0;
+
+			pstMobs->pmobs[MOB_ID_KINKEN][itype[MOB_ID_KINKEN]]->exist = ON;
+			while (getline(wstream, wstrtmp, L',')) {
+				CMSeparator * pobj = (CMSeparator  *)(pstMobs->pmobs[MOB_ID_KINKEN][itype[MOB_ID_KINKEN]]);
+				switch (k) {
+				case 0:pobj->ID = _wtoi(wstrtmp.c_str()); break;
+				case 1:pobj->area.x = _wtoi(wstrtmp.c_str()); break;
+				case 2:pobj->area.y = _wtoi(wstrtmp.c_str()); break;
+				case 3:pobj->area.w = _wtoi(wstrtmp.c_str()); break;
+				case 4:pobj->area.h = _wtoi(wstrtmp.c_str()); break;
+				case 5:
+					for (int j = 0; j < wstrtmp.size(); j++) pobj->name[j] = wstrtmp[j];
+					break;
+				case 6: break;
+				case 7: break;
+				case 8: break;
+				case 9: break;
+				case 10: break;
+				case 11: break;
+				case 12: break;
+				case 13: break;
+				case 14: break;
+				case 15: break;
+				case 16: break;
+				case 17: break;
+				case 18: break;
+				case 19: break;
+				case 20: break;
+				case 21: break;
+				case 22: break;
+				case 23: break;
+				default:break;
+				}
+				k++;
+			}
+			itype[MOB_ID_KINKEN]++;
+		}
+		else if (wstrtmp == MOB_TYPE_SAMPLER) {
+			if (itype[MOB_ID_SAMPLER] >= NUM_OF_SAMPLER) continue;
+			int k = 0;
+
+			pstMobs->pmobs[MOB_ID_SAMPLER][itype[MOB_ID_SAMPLER]]->exist = ON;
+			while (getline(wstream, wstrtmp, L',')) {
+				CMSeparator * pobj = (CMSeparator  *)(pstMobs->pmobs[MOB_ID_SAMPLER][itype[MOB_ID_SAMPLER]]);
+				switch (k) {
+				case 0:pobj->ID = _wtoi(wstrtmp.c_str()); break;
+				case 1:pobj->area.x = _wtoi(wstrtmp.c_str()); break;
+				case 2:pobj->area.y = _wtoi(wstrtmp.c_str()); break;
+				case 3:pobj->area.w = _wtoi(wstrtmp.c_str()); break;
+				case 4:pobj->area.h = _wtoi(wstrtmp.c_str()); break;
+				case 5:
+					for (int j = 0; j < wstrtmp.size(); j++) pobj->name[j] = wstrtmp[j];
+					break;
+				case 6: break;
+				case 7: break;
+				case 8: break;
+				case 9: break;
+				case 10: break;
+				case 11: break;
+				case 12: break;
+				case 13: break;
+				case 14: break;
+				case 15: break;
+				case 16: break;
+				case 17: break;
+				case 18: break;
+				case 19: break;
+				case 20: break;
+				case 21: break;
+				case 22: break;
+				case 23: break;
+				default:break;
+				}
+				k++;
+			}
+			itype[MOB_ID_SAMPLER]++;
+		}
 		else {
 			continue;
 		}
@@ -527,6 +713,9 @@ void CActor::init_task(void* pobj) {
 	load_cul.density = 1000;//密度kg/m3  1000kg/m3
 	load_cul.material = LD_COAL1; //素材成分　
 	load_cul.weight = load_cul.density;//1m当たりの重量kg
+	CCUL::load_base.material = LD_COAL1;
+	CCUL::load_base.density = 1200;//kg/1m3
+	CCUL::load_base.weight = 1200;//kg
 
 	// CMob ポインタマップセット
 	CPublicRelation pr;
@@ -539,8 +728,12 @@ void CActor::routine_work(void *param) {
 
 	//COMMON
 	((P_ST_SMEM_FORMAT)inf.pSmem)->stSmem.simtime_ms = *(inf.psys_counter) * sim_accel_rate * SYSTEM_TICK_ms;
-	ms_dt = ((P_ST_SMEM_FORMAT)inf.pSmem)->stSmem.simtime_ms - ms_lasttime;
-	ws << L"ACTOR work activated!" << *(inf.psys_counter); tweet2owner(ws.str()); ws.str(L""); ws.clear();
+	//ms_dt = ((P_ST_SMEM_FORMAT)inf.pSmem)->stSmem.simtime_ms - ms_lasttime;
+	ms_dt = 100;
+
+	//ws << L"ACTOR work activated!" << *(inf.psys_counter); tweet2owner(ws.str()); ws.str(L""); ws.clear();
+	ws << L"ACTOR work activated!" << ms_lasttime; tweet2owner(ws.str()); ws.str(L""); ws.clear();
+		
 
 	//PANEL
 	for (int i = 0; i < NUM_OF_EROOM; i++) {
@@ -573,7 +766,7 @@ void CActor::routine_work(void *param) {
 	for (int i = 0; i < NUM_OF_CUL; i++) cal_cul(i, load_cul, ms_dt,COM_CUL_IDLE);
 	//SCREEN
 	for (int i = 0; i < NUM_OF_SCREEN; i++) {
-		if (pstMobs->pmobs[MOB_ID_SCREEN][i]->status == MOB_STAT_IDLE);
+		if (pstMobs->pmobs[MOB_ID_SCREEN][i]->command == SCREEN_COM_IDLE) pstMobs->pmobs[MOB_ID_SCREEN][i]->status = MOB_STAT_IDLE;
 		else if (pstMobs->pmobs[MOB_ID_SCREEN][i]->status == MOB_STAT_ACT0)pstMobs->pmobs[MOB_ID_SCREEN][i]->status = MOB_STAT_ACT1;
 		else if (pstMobs->pmobs[MOB_ID_SCREEN][i]->status == MOB_STAT_ACT1)pstMobs->pmobs[MOB_ID_SCREEN][i]->status = MOB_STAT_ACT2;
 		else pstMobs->pmobs[MOB_ID_SCREEN][i]->status = MOB_STAT_ACT0;
@@ -582,7 +775,7 @@ void CActor::routine_work(void *param) {
 	}
 	//CRUSHER
 	for (int i = 0; i < NUM_OF_CRUSH; i++) {
-		if (pstMobs->pmobs[MOB_ID_CRUSH][i]->status == MOB_STAT_IDLE);
+		if (pstMobs->pmobs[MOB_ID_CRUSH][i]->command == CRUSH_COM_IDLE)pstMobs->pmobs[MOB_ID_CRUSH][i]->status = MOB_STAT_IDLE;
 		else if(pstMobs->pmobs[MOB_ID_CRUSH][i]->status == MOB_STAT_ACT0)pstMobs->pmobs[MOB_ID_CRUSH][i]->status = MOB_STAT_ACT1;
 		else if (pstMobs->pmobs[MOB_ID_CRUSH][i]->status == MOB_STAT_ACT1)pstMobs->pmobs[MOB_ID_CRUSH][i]->status = MOB_STAT_ACT2;
 		else pstMobs->pmobs[MOB_ID_CRUSH][i]->status = MOB_STAT_ACT0;
@@ -645,7 +838,7 @@ void CActor::routine_work(void *param) {
 	return;
 };
 
-int CActor::cal_cul(DWORD i, STLOAD load, LONG dt, DWORD com) {
+int CActor::cal_cul(DWORD i, STLOAD load, ULONG dt, DWORD com) {
 	CCUL* pcul =&(pstMobs->mobs.cul[i]);
 	if (pcul->status == MOB_STAT_IDLE);
 	else if (pcul->status == MOB_STAT_ACT0) pcul->status = MOB_STAT_ACT1;
@@ -659,17 +852,28 @@ int CActor::cal_cul(DWORD i, STLOAD load, LONG dt, DWORD com) {
 	return 0;
 };
 
-int CActor::cal_bc(DWORD index, LONG dt, DWORD com) {
+int CActor::cal_bc(DWORD index, ULONG dt, DWORD com) {
 	int line = HIWORD(index);
 	int npos = LOWORD(index);
 	CBC* pobj = &(pstMobs->mobs.bc[line][npos]);
+
+	CBC* pmonbc41a;
+	CBC* pmonbc5b;
+
+	//FOR DBG **************
+	if ((line== LINE_A) && (npos== BC_L4_1)) {
+		pmonbc41a = &(pstMobs->mobs.bc[LINE_A][BC_L4_1]);
+		pmonbc5b = &(pstMobs->mobs.bc[LINE_B][BC_L5]);
+	}
+	//**************FOR DBG 
+
 
 	pobj->conveyor(com, dt);
 
 	return 0;
 };
 
-int CActor::cal_silo(DWORD index, LONG dt, DWORD com) {
+int CActor::cal_silo(DWORD index, ULONG dt, DWORD com) {
 	int line = HIWORD(index);
 	int npos = LOWORD(index);
 	CSilo* pobj = &(pstMobs->mobs.silo[line][npos]);
@@ -688,6 +892,7 @@ int CActor::cal_silo(DWORD index, LONG dt, DWORD com) {
 				if (def1 > pobj->thresh_level) {
 					pobj->column[i].weight -= pobj->thresh_level / 4;
 					pobj->column[i-1].weight += pobj->thresh_level / 4;
+					pobj->column[i - 1].material = pobj->column[i].material;
 				}
 			}
 			else if(i == 0) {
@@ -695,6 +900,7 @@ int CActor::cal_silo(DWORD index, LONG dt, DWORD com) {
 				if (def2 > pobj->thresh_level) {
 					pobj->column[i].weight -= pobj->thresh_level / 4;
 					pobj->column[i+1].weight += pobj->thresh_level / 4;
+					pobj->column[i + 1].material = pobj->column[i].material;
 				}
 			}
 			else {
@@ -705,14 +911,17 @@ int CActor::cal_silo(DWORD index, LONG dt, DWORD com) {
 					pobj->column[i].weight -= pobj->thresh_level / 4;
 					pobj->column[i + 1].weight += pobj->thresh_level / 8;
 					pobj->column[i - 1].weight += pobj->thresh_level / 8;
+					pobj->column[i + 1].material = pobj->column[i - 1].material = pobj->column[i].material;
 				}
 				else if (def2 > pobj->thresh_level) {
 					pobj->column[i].weight -= pobj->thresh_level / 4;
 					pobj->column[i + 1].weight += pobj->thresh_level / 4;
+					pobj->column[i + 1].material = pobj->column[i].material;
 				}
 				else if (def1 > pobj->thresh_level) {
 					pobj->column[i].weight -= pobj->thresh_level / 4;
 					pobj->column[i-1].weight += pobj->thresh_level / 4;
+					pobj->column[i - 1].material = pobj->column[i].material;
 				}
 				else;
 
@@ -721,8 +930,7 @@ int CActor::cal_silo(DWORD index, LONG dt, DWORD com) {
 	}
 	return 0;
 };
-
-int CActor::cal_tripper(DWORD index, LONG dt, DWORD com) {
+int CActor::cal_tripper(DWORD index, ULONG dt, DWORD com) {
 	CTripper* pobj = &(pstMobs->mobs.tripper[index]);
 	int iret = pobj->move(com, dt, pobj->get_target());
 
@@ -737,15 +945,18 @@ int CActor::cal_tripper(DWORD index, LONG dt, DWORD com) {
 
 	return 0;
 };
-int CActor::cal_screen(DWORD index, LONG dt, DWORD com) {
+int CActor::cal_screen(DWORD index, ULONG dt, DWORD com) {
 	CScreen* pobj = &(pstMobs->mobs.screen[index]);
+	if (com & SCREEN_COM_WORK) {
+
+	}
 	return 0;
 };
-int CActor::cal_crusher(DWORD index, LONG dt, DWORD com) {
+int CActor::cal_crusher(DWORD index, ULONG dt, DWORD com) {
 	CCrush* pobj = &(pstMobs->mobs.crusher[index]);
 	return 0;
 };
-int CActor::cal_harai(DWORD index, LONG dt, DWORD com) {
+int CActor::cal_harai(DWORD index, ULONG dt, DWORD com) {
 	CHarai* pobj = &(pstMobs->mobs.haraiki[index]);
 	int iret = pobj->move(com, dt, pobj->get_target());
 
@@ -772,14 +983,14 @@ int CActor::cal_harai(DWORD index, LONG dt, DWORD com) {
 
 	return 0;
 };
-int CActor::cal_harai_bio(DWORD index, LONG dt, DWORD com) {
+int CActor::cal_harai_bio(DWORD index, ULONG dt, DWORD com) {
 	CHaraiBio* pobj = &(pstMobs->mobs.haraikiBio[index]);
 	int iret = pobj->move(com, dt, 0);
 
 	return 0;
 };
 
-int CActor::cal_scraper(DWORD index, LONG dt, DWORD com) {
+int CActor::cal_scraper(DWORD index, ULONG dt, DWORD com) {
 	CScraper* pobj = &(pstMobs->mobs.scraper[index]);
 	
 	int iret = pobj->move(com, dt, pobj->get_target());
@@ -1476,7 +1687,10 @@ void CActor::init_silo() {
 
 	
 				if (psilo->SILOtype == SILO_TYPE_BIO) {
-					for (int k= 0; k < SILO_COLUMN_NUM_BIO; k++) psilo->column[k].weight = psilo->capa1 * 10*(k%4) / 100;
+					for (int k = 0; k < SILO_COLUMN_NUM_BIO; k++) {
+						psilo->column[k].weight = psilo->capa1 * 10 * (k % 4) / 100;
+						psilo->column[k].material |= LD_BIO;
+					}
 				}
 				else if (psilo->SILOtype == SILO_TYPE_BANK) {
 					for (int k = 0; k < SILO_COLUMN_NUM_BANK; k++) psilo->column[k].weight = psilo->capa1* 15 * (k % 3) /100;
@@ -1550,9 +1764,10 @@ void CActor::init_screen() {//SCREEN関連初期設定
 	for (int i = 0; i <	SCREEN_BUF_NUM; i++) {
 		pstMobs->mobs.screen[i].buf_capa[0] = pstMobs->mobs.screen[i].ability*SCREEN_RETIO/100;
 		pstMobs->mobs.screen[i].buf_capa[1] = pstMobs->mobs.screen[i].ability*(100-SCREEN_RETIO)/100;
-
-		pstMobs->mobs.screen[i].buffer[0].weight = pstMobs->mobs.screen[i].buf_capa[0];
-		pstMobs->mobs.screen[i].buffer[1].weight = pstMobs->mobs.screen[i].buf_capa[1];
+		pstMobs->mobs.screen[i].set_command(SCREEN_COM_WORK);
+		pstMobs->mobs.crusher[i].set_command(CRUSH_COM_WORK);
+	//	pstMobs->mobs.screen[i].buffer[0].weight = pstMobs->mobs.screen[i].buf_capa[0];
+	//	pstMobs->mobs.screen[i].buffer[1].weight = pstMobs->mobs.screen[i].buf_capa[1];
 	}
 	return;
 };

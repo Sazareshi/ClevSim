@@ -65,9 +65,6 @@ typedef struct _stPR_DISP
 #define COM_MOBMAP_16B 0x0500
 #define COM_MOBMAP_16C 0x0600
 
-
-
-
 class CPublicRelation :	public CThreadObj
 {
 public:

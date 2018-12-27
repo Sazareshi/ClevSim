@@ -444,7 +444,6 @@ LRESULT CPublicRelation::PrWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 	return 0;
 };
 
-
 LRESULT CPublicRelation::TipWndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 	static TCHAR szBuf[128];
 	HDC hdc_tip;
@@ -1137,7 +1136,9 @@ void CPublicRelation::update_disp() {
 	}
 	
 	//”À‘—Î’Y•`‰æ
-	SelectObject(pPrInst->stdisp.hdc_mem0, GetStockObject(GRAY_BRUSH));
+	SelectObject(pPrInst->stdisp.hdc_mem0, GetStockObject(DC_BRUSH));
+	SetDCBrushColor(pPrInst->stdisp.hdc_mem0, RGB(180, 180, 180));
+//	SelectObject(pPrInst->stdisp.hdc_mem0, GetStockObject(GRAY_BRUSH));
 	SelectObject(pPrInst->stdisp.hdc_mem0, GetStockObject(NULL_PEN));
 	int ptl, ptt, ptr, ptb;
 
@@ -1190,6 +1191,16 @@ void CPublicRelation::update_disp() {
 							ptl = ptr - BC_COAL_DISP_PIXW;
 						}
 					}
+
+					if (pbc->belt[i_accum].material & LD_METAL1) {
+						SetDCBrushColor(pPrInst->stdisp.hdc_mem0, RGB(255, 255, 50));
+					}
+					else if (pbc->belt[i_accum].material  &  LD_BIO) {
+						SetDCBrushColor(pPrInst->stdisp.hdc_mem0, RGB(170, 118, 85));
+					}
+					else {
+						SetDCBrushColor(pPrInst->stdisp.hdc_mem0, RGB(180, 180, 180));
+					}
 					Rectangle(pPrInst->stdisp.hdc_mem0, ptl, ptt, ptr, ptb);
 				}
 
@@ -1208,6 +1219,16 @@ void CPublicRelation::update_disp() {
 						ptl = ptr - (psilo->area.w * psilo->column[k].weight) / psilo->capa1;
 						ptt = psilo->area.y + psilo->pix_columw * k;
 						ptb = ptt + psilo->pix_columw;
+
+						if (psilo->column[k].material & LD_METAL1) {
+							SetDCBrushColor(pPrInst->stdisp.hdc_mem0, RGB(255, 255, 50));
+						}
+						else if (psilo->column[k].material  &  LD_BIO) {
+							SetDCBrushColor(pPrInst->stdisp.hdc_mem0, RGB(170, 118, 85));
+						}
+						else {
+							SetDCBrushColor(pPrInst->stdisp.hdc_mem0, RGB(180, 180, 180));
+						}
 						Rectangle(pPrInst->stdisp.hdc_mem0, ptl, ptt, ptr, ptb);
 					}
 				}
@@ -1217,6 +1238,15 @@ void CPublicRelation::update_disp() {
 						ptl = ptr - (psilo->pix_columw * psilo->column[k].weight) / psilo->capa1;
 						ptt = psilo->area.y;
 						ptb = ptt + psilo->area.h;
+						if (psilo->column[k].material  &  LD_METAL1) {
+							SetDCBrushColor(pPrInst->stdisp.hdc_mem0, RGB(255, 255, 50));
+						}
+						else if (psilo->column[k].material  &  LD_BIO) {
+							SetDCBrushColor(pPrInst->stdisp.hdc_mem0, RGB(170, 118, 85));
+						}
+						else {
+							SetDCBrushColor(pPrInst->stdisp.hdc_mem0, RGB(180, 180, 180));
+						}
 						Rectangle(pPrInst->stdisp.hdc_mem0, ptl, ptt, ptr, ptb);
 					}
 				}
@@ -1226,6 +1256,15 @@ void CPublicRelation::update_disp() {
 						ptl = ptr - (psilo->area.w * psilo->column[k].weight) / psilo->capa1;
 						ptt = psilo->area.y + psilo->pix_columw * k;
 						ptb = ptt + psilo->pix_columw;
+						if (psilo->column[k].material  &  LD_METAL1) {
+							SetDCBrushColor(pPrInst->stdisp.hdc_mem0, RGB(255, 255, 50));
+						}
+						else if (psilo->column[k].material  &  LD_BIO) {
+							SetDCBrushColor(pPrInst->stdisp.hdc_mem0, RGB(170, 118, 85));
+						}
+						else {
+							SetDCBrushColor(pPrInst->stdisp.hdc_mem0, RGB(180, 180, 180));
+						}
 						Rectangle(pPrInst->stdisp.hdc_mem0, ptl, ptt, ptr, ptb);
 					}
 				}
@@ -1241,6 +1280,15 @@ void CPublicRelation::update_disp() {
 			ptr = ptl + pscreen->pix_columw;
 			ptb = pscreen->area.y + pscreen->area.h;
 			ptt = pscreen->area.y + pscreen->area.h - pscreen->area.h * pscreen->buffer[j].weight /pscreen->buf_capa[j];
+			if (pscreen->buffer[j].material  &  LD_METAL1) {
+				SetDCBrushColor(pPrInst->stdisp.hdc_mem0, RGB(255, 255, 50));
+			}
+			else if (pscreen->buffer[j].material  &  LD_BIO) {
+				SetDCBrushColor(pPrInst->stdisp.hdc_mem0, RGB(170, 118, 85));
+			}
+			else {
+				SetDCBrushColor(pPrInst->stdisp.hdc_mem0, RGB(180, 180, 180));
+			}
 			Rectangle(pPrInst->stdisp.hdc_mem0, ptl, ptt, ptr, ptb);
 		}
 	}
@@ -1311,8 +1359,6 @@ void CPublicRelation::update_disp() {
 		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
 	}
 	
-	//#ƒTƒCƒ
-
 
 	//—ÖŠs•`‰æ
 	SelectObject(pPrInst->stdisp.hdc_mem0, GetStockObject(NULL_BRUSH));
@@ -1338,16 +1384,15 @@ void CPublicRelation::update_disp() {
 		}
 	}
 
-
-
 	if (b_infchecked)TransparentBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_inf, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, RGB(255, 255, 255));
 	InvalidateRect(pPrInst->inf.hWnd_work, NULL, FALSE);
 	return;
 };
 LRESULT CPublicRelation::PR_BCPANEL_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
 	PAINTSTRUCT ps;
-	
+	STLOAD* pload_base;
 	static CBC* pbc;
+	pload_base = &(CCUL::load_base);
 
 	switch (msg) {
 	case WM_COMMAND: {
@@ -1377,8 +1422,32 @@ LRESULT CPublicRelation::PR_BCPANEL_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM 
 			}
 
 		}break;
-
-
+		case IDC_BC_MATERIAL_M: {
+			if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_BC_MATERIAL_M)) {
+				CCUL::load_base.material |= LD_METAL1;
+			}
+			else {
+				pload_base->material &= ~LD_METAL1;
+			}
+		}break;
+		case IDC_BC_MATERIAL_B: {
+			if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_BC_MATERIAL_B)) {
+				pload_base->material |= LD_BIO;
+				pload_base->material &= ~LD_COAL1;
+			}
+			else {
+				pload_base->material &= ~LD_BIO;
+			}
+		}break;
+		case IDC_BC_MATERIAL_C: {
+			if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_BC_MATERIAL_C)) {
+				pload_base->material |= LD_COAL1;
+				pload_base->material &= ~LD_BIO;
+			}
+			else {
+				pload_base->material &= ~LD_COAL1;
+			}
+		}break;
 		case IDCANCEL: {
 			EndDialog(hWnd, LOWORD(wp));
 		}break;
@@ -1393,6 +1462,11 @@ LRESULT CPublicRelation::PR_BCPANEL_PROC(HWND hWnd, UINT msg, WPARAM wp, LPARAM 
 
 		if(pbc->put_test_load)SendMessage(GetDlgItem(hWnd, IDC_PR_CHECK_BC_PUTLOAD), BM_SETCHECK, BST_CHECKED, 0L);
 		else SendMessage(GetDlgItem(hWnd, IDC_PR_CHECK_BC_PUTLOAD), BM_SETCHECK, BST_UNCHECKED, 0L);
+
+		if (pload_base->material & LD_METAL1) SendMessage(GetDlgItem(hWnd, IDC_BC_MATERIAL_M), BM_SETCHECK, BST_CHECKED, 0L);
+		else if (pload_base->material & LD_BIO) SendMessage(GetDlgItem(hWnd, IDC_BC_MATERIAL_B), BM_SETCHECK, BST_CHECKED, 0L);
+		else if (pload_base->material & LD_COAL1) SendMessage(GetDlgItem(hWnd, IDC_BC_MATERIAL_C), BM_SETCHECK, BST_CHECKED, 0L);
+
 	}break;
 	case WM_PAINT: {
 		BeginPaint(hWnd, &ps);
@@ -1622,7 +1696,7 @@ LRESULT CPublicRelation::PR_HARAIPANEL_PROC(HWND hWnd, UINT msg, WPARAM wp, LPAR
 					pharaib->set_command(STAT_HARAI_BIO_DISCHARGE, 3);
 				}
 				else {
-					pharaib->reset_command(COM_HARAI_BIO_DISCHARGE4, 3);
+					pharaib->reset_command(STAT_HARAI_BIO_DISCHARGE, 3);
 				}
 			}
 		}break;

@@ -11,6 +11,7 @@ CMob::~CMob(){}
 /* SILO ***************************************************/
 int CSilo::put_load(int pos, STLOAD load) {
 	column[pos].weight += load.weight;
+	if(load.weight >10) column[pos].material = load.material;
 	return 0;
 }
 
@@ -38,6 +39,15 @@ CBC::CBC() {
 CBC::~CBC() {};
 int CBC::put_load_i(int i_pos, STLOAD load) {//PUTは、受け位置のインデックスが引数
 	LONG beltmm;
+	
+	if (BCtype & BC_CRUSH) {//スクリーン　クラッシャ付は強制的にスクリーンへプット
+		pscreen->buffer[SCREEN_BUF_BC].weight += (load.weight*SCREEN_RETIO / 100);
+		pscreen->buffer[SCREEN_BUF_CRUSH].weight += (load.weight*(100 - SCREEN_RETIO) / 100);
+		pscreen->buffer[SCREEN_BUF_BC].material = load.material;
+		pscreen->buffer[SCREEN_BUF_CRUSH].material = load.material;
+		return 0;
+	}
+
 	if (i_pos < BC_RCV_MAX) {
 		beltmm = headpos_mm + pos_rcv[i_pos] * 1000; if (beltmm > l)beltmm -= l;
 	}
@@ -48,8 +58,28 @@ int CBC::put_load_i(int i_pos, STLOAD load) {//PUTは、受け位置のインデックスが引
 	int i_pos_belt = beltmm >> 10;
 
 	belt[i_pos_belt].weight += load.weight;
-	if (belt[i_pos_belt].weight > BC_MAX_W_1m) belt[i_pos_belt].weight= BC_MAX_W_1m;
-	belt[i_pos_belt].material = load.material;
+	if (load.weight > 10) {
+		belt[i_pos_belt].material = load.material;
+		if (i_pos_belt > 1) {
+			belt[i_pos_belt-1].material = belt[i_pos_belt + 1].material = load.material;
+		}
+	}
+
+	//if (belt[i_pos_belt].weight > BC_MAX_W_1m) belt[i_pos_belt].weight= BC_MAX_W_1m;
+	if (belt[i_pos_belt].weight > Kg100perM) {
+		if (i_pos_belt > 1) {
+			belt[i_pos_belt -1].weight += (belt[i_pos_belt].weight - Kg100perM)/2;
+			belt[i_pos_belt + 1].weight += (belt[i_pos_belt].weight - Kg100perM) / 2;
+			belt[i_pos_belt - 1].material = belt[i_pos_belt + 1].material = load.material;
+		}
+		else {
+			belt[i_pos_belt + 1].weight += (belt[i_pos_belt].weight - Kg100perM) ;
+			belt[i_pos_belt + 1].material = load.material;
+		}
+		belt[i_pos_belt].weight = Kg100perM;
+	}
+
+
 	return 0;
 }
 STLOAD CBC::pop_load(int pos, STLOAD load) {//POPは、出し位置のm位置
@@ -67,7 +97,7 @@ STLOAD CBC::pop_load(int pos, STLOAD load) {//POPは、出し位置のm位置
 		belt[i_pos_belt].weight = 0;
 	}
 
-	belt[i_pos_belt].material = load_ret.material = load.material;
+	load_ret.material = belt[i_pos_belt].material;
 	return load_ret;
 }
 STLOAD CBC::put_load(int pos, STLOAD load) {//POPは、出し位置のm位置
@@ -76,21 +106,23 @@ STLOAD CBC::put_load(int pos, STLOAD load) {//POPは、出し位置のm位置
 	LONG beltmm = headpos_mm + pos * 1000; if (beltmm > l)beltmm -= l;
 	int i_pos_belt = beltmm >> 10;
 
-	if (load.weight > Kg100perM)load.weight = Kg100perM;
-	load_ret.weight = load.weight;
+	if (load.weight > Kg100perM)load_ret.weight = Kg100perM;
+	else load_ret.weight = load.weight;
 	load_ret.material = load.material;
+
 	if (BCtype & BC_CRUSH) {
-		pscreen->buffer[SCREEN_BUF_BC].weight += load.weight;
-		pscreen->buffer[SCREEN_BUF_BC].material = load.material;
+		pscreen->buffer[SCREEN_BUF_BC].weight += (load_ret.weight*SCREEN_RETIO/100);
+		pscreen->buffer[SCREEN_BUF_CRUSH].weight += (load_ret.weight*(100-SCREEN_RETIO) / 100);
+		pscreen->buffer[SCREEN_BUF_BC].material = load_ret.material;
 	}
 	else {
-		belt[i_pos_belt].weight += load.weight;
-		belt[i_pos_belt].material = load_ret.material = load.material;
+		belt[i_pos_belt].weight += load_ret.weight;
+		belt[i_pos_belt].material = load_ret.material;
 	}
 	return load_ret;
 }
 
-void CBC::conveyor(DWORD com, LONG dt) {
+void CBC::conveyor(DWORD com, ULONG dt) {
 	spd = base_spd;
 	if ((BCtype & BC_HEAD_DUAL)&&(b_rverse)) {
 		if (com == MOB_COM_UPDATE) {
@@ -167,9 +199,8 @@ void CBC::conveyor(DWORD com, LONG dt) {
 	}
 
 	if (put_test_load) {//put_test_loadは、テストロードを置くiheadからの位置
-		CCUL cul;
 		STLOAD load;
-		load.material = cul.load_base.material;
+		load.material = CCUL::load_base.material;
 		load.weight = ability * dt / 7200;//ability * 1000/3600/1000*dt*0.5(50%)
 		put_load_i(put_test_load, load);
 	}
@@ -180,19 +211,19 @@ void CBC::conveyor(DWORD com, LONG dt) {
 			silolink[0]->put_load(SILO_COLUMN_NUM-1, belt[ihead_last]);
 		}
 		else if (BCtype & BC_SQR) {
-			if (ID == BC_L8) {
+			if ((ID & 0x00ff) == ID_BC_L8) {
 				silolink[0]->put_load(SILO_COLUMN_NUM - 1, belt[ihead_last]);
 			}
-			else if (ID == BC_L9_2) {
+			else if ((ID & 0x00ff) == ID_BC_L9_2) {
 				silolink[0]->put_load(SILO_COLUMN_NUM_BIO - 1, belt[ihead_last]);
 			}
-			else if (ID == BC_L23) {
+			else if ((ID & 0x00ff) == ID_BC_L23) {
 				silolink[0]->put_load(SILO_COLUMN_NUM_BANK - 1, belt[ihead_last]);
 			}
 			else;
 		}
 		else {
-			if (ID == BC_L22) {
+			if ((ID & 0x00ff) == ID_BC_L22) {
 				if (head_unit.pos == BC_22HEAD_BANK) {
 					silolink[0]->put_load(0, belt[ihead_last]);
 				}
@@ -205,6 +236,9 @@ void CBC::conveyor(DWORD com, LONG dt) {
 				bclink[head_unit.pos]->put_load_i(bclink_i[head_unit.pos], belt[ihead_last]);
 			}
 
+	//		if ((ID & 0x0129) && (belt[ihead_last].weight>10)) {
+	//			int gg = 0;
+	//		}
 		}
 		belt[ihead_last].weight = 0;
 //		if(ihead_last > 0)	belt[ihead_last-1].weight = 0;
@@ -216,11 +250,7 @@ void CBC::conveyor(DWORD com, LONG dt) {
 /* CUL ***************************************************/
 CCUL::CCUL() {
 	ability = 250; //荷役能力kg/s
-	load_base.material = LD_COAL1;
-	load_base.density = 1200;//kg/1m3
-	load_base.weight = 1200;//kg
 	for (int i = 0; i < NUM_DROP_POINT_CUL; i++) bclink[i] = nullptr;
-
 };
 CCUL::~CCUL() {};
 STLOAD CCUL::load_base;
@@ -249,13 +279,6 @@ int CCUL::discharge(DWORD com, LONG dt) {
 	else;
 
 	return 0;
-};
-STLOAD CCUL::set_load(WORD material, WORD density, WORD vol, WORD weight) {
-	load_base.material = material;
-	load_base.density = density;
-	load_base.weight = weight;
-
-	return load_base;
 };
 
 /* TRIPPER ***************************************************/

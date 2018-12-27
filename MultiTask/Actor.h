@@ -28,23 +28,21 @@ public:
 	void set_panel_tip_txt();//タブパネルのStaticテキストを設定
 
 private:
-	int cal_cul(DWORD index, STLOAD load, LONG dt, DWORD com);
-	int cal_bc(DWORD index, LONG dt, DWORD com);
-	int cal_silo(DWORD index, LONG dt, DWORD com);
-	int cal_tripper(DWORD index, LONG dt, DWORD com);
-	int cal_screen(DWORD index, LONG dt, DWORD com);
-	int cal_harai(DWORD index, LONG dt, DWORD com);
-	int cal_harai_bio(DWORD index, LONG dt, DWORD com);
-	int cal_scraper(DWORD index, LONG dt, DWORD com);
-	int cal_crusher(DWORD index, LONG dt, DWORD com);
+	int cal_cul(DWORD index, STLOAD load, ULONG dt, DWORD com);
+	int cal_bc(DWORD index, ULONG dt, DWORD com);
+	int cal_silo(DWORD index, ULONG dt, DWORD com);
+	int cal_tripper(DWORD index, ULONG dt, DWORD com);
+	int cal_screen(DWORD index, ULONG dt, DWORD com);
+	int cal_harai(DWORD index, ULONG dt, DWORD com);
+	int cal_harai_bio(DWORD index, ULONG dt, DWORD com);
+	int cal_scraper(DWORD index, ULONG dt, DWORD com);
+	int cal_crusher(DWORD index, ULONG dt, DWORD com);
 	void init_bc();
 	void init_trp();
 	void init_silo();
 	void init_harai();
 	void init_scraper();
 	void init_screen();
-
-
 };
 
 //BCのコード　上位/下位 Wordがpmobsの配列の位置を表す
