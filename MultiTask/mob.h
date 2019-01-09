@@ -104,12 +104,13 @@ typedef struct _stLoad {
 } STLOAD, *LPSTLOAD;
 
 #define BC_DUMPER	0x0001//切替ダンパ有
+#define BC_2WAY		0x0002//2方向
 #define BC_TSHOOT	0x0004//テレスコシュート3port
 #define BC_TSHOOT4	0x0008//テレスコシュート4port
-#define BC_2WAY		0x0002//2方向
-#define BC_2MOTOR	0x0010//2モータ
-#define BC_3MOTOR	0x0020//3モータ
-#define BC_HVOLT	0x0040//高圧モータ
+#define BC_KINKEN	0x0010//金属検知器
+#define BC_KEIRYO	0x0020//計量器
+#define BC_SAMPLE	0x0040//サンプラ
+#define BC_MSEPA	0x0080//マグセパ付
 #define BC_TRP		0x0100//トリッパー付
 #define BC_SQR		0x0200//スクレーパ付
 #define BC_DROP1	0x0400//払出用1号
@@ -232,53 +233,6 @@ private:
 
 };
 
-class CBC : public CMob
-{
-public:
-	CBC();
-	~CBC();
-	DWORD BCtype; 
-	int nrcv;//石炭受け個所数
-	int pos_rcv[BC_RCV_MAX];//石炭受け位置m
-	POINT imgpt_rcv[BC_RCV_MAX];//石炭受け画面位置
-	POINT imgpt_top[3],imgpt_tail;
-
-	DWORD dir;//画面での向き　HIWORD　縦横　0が横　LOWORD　0が正方向
-	LONG l;//長さmm
-	LONG w;//幅mm
-	LONG ability;//定格搬送能力　ton/h
-	int  spd;//現在速度　mm/s
-	int  base_spd;//定格速度　mm/s
-	int  trq;//トルク
-	STLOAD	belt[BC_MAX_LEN];//ベルトは1024mm単位で考える
-	int belt_size;//belt配列のサイズ
-	int	ihead;//ベルトヘッド位置インデックス
-	int	ihead_last;//ベルトヘッド位置前回値
-	LONG	headpos_mm;
-	LONG	headpos_pix;
-	LONG	Kg100perM;//BC1m当たりの定格搬送重量
-	CBCHead head_unit;
-	CMob* ptrp;
-	CScreen* pscreen;
-	CCrush* pcrush;
-	
-	CBC* bclink[BC_LINK_MAX];//排出先BCポインタ
-	CSilo* silolink[BC_SILO_LINK_MAX];//排出先サイロポインタ　トリッパ、スクレーパ付きBCのみ
-	int bclink_i[BC_LINK_MAX];//排出先BCの接続Drop位置インデックス
-	int put_load_i(int i_pos, STLOAD load);//i_pos BC上実位置配列インデックス
-	STLOAD put_load(int pos, STLOAD load);//pos BC上実位置m
-	STLOAD pop_load(int pos, STLOAD load);//pos BC上実位置m
-	void conveyor(DWORD com, ULONG dt);
-	void bc_reset() { headpos_mm = 0; memset(&pos_rcv, 0, sizeof(STLOAD) * BC_MAX_LEN); return; };//ベルトヘッド位置を0リセットして全石炭をクリア
-	CMotor motor[BC_MOTOR_MAX];
-	LONG pix2mm;
-	LONG put_test_load;//0以外でテールポジションからのインデックス位置に重量投入
-
-	BOOL b_rverse;
-private:
-
-};
-
 class CMSeparator : public CMob
 {
 public:
@@ -332,6 +286,53 @@ private:
 
 };
 
+
+class CBC : public CMob
+{
+public:
+	CBC();
+	~CBC();
+	DWORD BCtype; 
+	int nrcv;//石炭受け個所数
+	int pos_rcv[BC_RCV_MAX];//石炭受け位置m
+	POINT imgpt_rcv[BC_RCV_MAX];//石炭受け画面位置
+	POINT imgpt_top[3],imgpt_tail;
+
+	DWORD dir;//画面での向き　HIWORD　縦横　0が横　LOWORD　0が正方向
+	LONG l;//長さmm
+	LONG w;//幅mm
+	LONG ability;//定格搬送能力　ton/h
+	int  spd;//現在速度　mm/s
+	int  base_spd;//定格速度　mm/s
+	int  trq;//トルク
+	STLOAD	belt[BC_MAX_LEN];//ベルトは1024mm単位で考える
+	int belt_size;//belt配列のサイズ
+	int	ihead;//ベルトヘッド位置インデックス
+	int	ihead_last;//ベルトヘッド位置前回値
+	LONG	headpos_mm;
+	LONG	headpos_pix;
+	LONG	Kg100perM;//BC1m当たりの定格搬送重量
+	CBCHead head_unit;
+	CMob* ptrp;
+	CScreen* pscreen;
+	CCrush* pcrush;
+	
+	CBC* bclink[BC_LINK_MAX];//排出先BCポインタ
+	CSilo* silolink[BC_SILO_LINK_MAX];//排出先サイロポインタ　トリッパ、スクレーパ付きBCのみ
+	int bclink_i[BC_LINK_MAX];//排出先BCの接続Drop位置インデックス
+	int put_load_i(int i_pos, STLOAD load);//i_pos BC上実位置配列インデックス
+	STLOAD put_load(int pos, STLOAD load);//pos BC上実位置m
+	STLOAD pop_load(int pos, STLOAD load);//pos BC上実位置m
+	void conveyor(DWORD com, ULONG dt);
+	void bc_reset() { headpos_mm = 0; memset(&pos_rcv, 0, sizeof(STLOAD) * BC_MAX_LEN); return; };//ベルトヘッド位置を0リセットして全石炭をクリア
+	CMotor motor[BC_MOTOR_MAX];
+	LONG pix2mm;
+	LONG put_test_load;//0以外でテールポジションからのインデックス位置に重量投入
+
+	BOOL b_rverse;
+private:
+
+};
 
 
 #define COM_TRP_IDLE	0

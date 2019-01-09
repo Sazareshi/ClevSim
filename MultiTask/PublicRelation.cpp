@@ -1058,33 +1058,33 @@ void CPublicRelation::update_disp() {
 	for (int i = 0; i < BC_LINES; i++) {
 		for (int j = 0; j < BC_LINE_NUM; j++) {
 			if ((pstMobs->pmobs[MOB_ID_BC][i*BC_LINE_NUM + j])->exist == ON) {
-				pbc =(CBC*)( pstMobs->pmobs[MOB_ID_BC][i*BC_LINE_NUM + j]);
-				mobx = pbc->area.x + pbc->headpos_pix;
-				moby = pbc->area.y;
-				if ((pbc->dir) & MASK_DIR_Y) {//縦配置
-					if ((pbc->dir) & MASK_DIR_UP) {//逆向き
-						mobx = pbc->area.x + pbc->area.w ;
-						moby = pbc->area.y + pbc->area.h - pbc->headpos_pix;
-						Ellipse(pPrInst->stdisp.hdc_mem0, mobx, moby, mobx + BC_HEAD_SIZE, moby + BC_HEAD_SIZE);
-					}
-					else {
-						mobx = pbc->area.x + pbc->area.w;
-						moby = pbc->area.y + pbc->headpos_pix;
-						Ellipse(pPrInst->stdisp.hdc_mem0, mobx, moby, mobx + BC_HEAD_SIZE, moby + BC_HEAD_SIZE);
-					}
-				}
-				else {//横配置
-					if ((pbc->dir) & MASK_DIR_LEFT) {//逆向き
-						mobx = pbc->area.x + pbc->area.w - pbc->headpos_pix;
-						moby = pbc->area.y + pbc->area.h;
-						Ellipse(pPrInst->stdisp.hdc_mem0, mobx, moby, mobx + BC_HEAD_SIZE, moby + BC_HEAD_SIZE);
-					}
-					else {
-						mobx = pbc->area.x + pbc->headpos_pix;
-						moby = pbc->area.y;
-						Ellipse(pPrInst->stdisp.hdc_mem0, mobx, moby, mobx - BC_HEAD_SIZE, moby - BC_HEAD_SIZE);
-					}
-				}
+pbc = (CBC*)(pstMobs->pmobs[MOB_ID_BC][i*BC_LINE_NUM + j]);
+mobx = pbc->area.x + pbc->headpos_pix;
+moby = pbc->area.y;
+if ((pbc->dir) & MASK_DIR_Y) {//縦配置
+	if ((pbc->dir) & MASK_DIR_UP) {//逆向き
+		mobx = pbc->area.x + pbc->area.w;
+		moby = pbc->area.y + pbc->area.h - pbc->headpos_pix;
+		Ellipse(pPrInst->stdisp.hdc_mem0, mobx, moby, mobx + BC_HEAD_SIZE, moby + BC_HEAD_SIZE);
+	}
+	else {
+		mobx = pbc->area.x + pbc->area.w;
+		moby = pbc->area.y + pbc->headpos_pix;
+		Ellipse(pPrInst->stdisp.hdc_mem0, mobx, moby, mobx + BC_HEAD_SIZE, moby + BC_HEAD_SIZE);
+	}
+}
+else {//横配置
+	if ((pbc->dir) & MASK_DIR_LEFT) {//逆向き
+		mobx = pbc->area.x + pbc->area.w - pbc->headpos_pix;
+		moby = pbc->area.y + pbc->area.h;
+		Ellipse(pPrInst->stdisp.hdc_mem0, mobx, moby, mobx + BC_HEAD_SIZE, moby + BC_HEAD_SIZE);
+	}
+	else {
+		mobx = pbc->area.x + pbc->headpos_pix;
+		moby = pbc->area.y;
+		Ellipse(pPrInst->stdisp.hdc_mem0, mobx, moby, mobx - BC_HEAD_SIZE, moby - BC_HEAD_SIZE);
+	}
+}
 			}
 		}
 	}
@@ -1098,7 +1098,7 @@ void CPublicRelation::update_disp() {
 	for (int i = 0; i < NUM_OF_CUL; i++) {
 		pcul = &(pstMobs->mobs.cul[i]);
 		if (pcul->exist == ON) {
-			linkpt[0].x = pcul->area.x; linkpt[0].y = pcul->area.y + (pcul->area.h)/2;
+			linkpt[0].x = pcul->area.x; linkpt[0].y = pcul->area.y + (pcul->area.h) / 2;
 			pbc2 = pcul->bclink[pcul->bc_selbc];
 			linkpt[1] = pbc2->imgpt_rcv[pcul->bclink_i[pcul->bc_selbc]];
 			MoveToEx(pPrInst->stdisp.hdc_mem0, linkpt[0].x, linkpt[0].y, NULL);
@@ -1108,10 +1108,10 @@ void CPublicRelation::update_disp() {
 	for (int i = 0; i < BC_LINES; i++) {
 		for (int j = 0; j < BC_LINE_NUM; j++) {
 			pbc = &(pstMobs->mobs.bc[i][j]);
-			if(pbc->exist == ON){
+			if (pbc->exist == ON) {
 				linkpt[0] = pbc->imgpt_top[pbc->head_unit.pos];
 				pbc2 = pbc->bclink[pbc->head_unit.pos];
-				if ((pbc->BCtype & BC_TRP)|| (pbc->BCtype & BC_SQR)) {
+				if ((pbc->BCtype & BC_TRP) || (pbc->BCtype & BC_SQR)) {
 					if (pbc->silolink[0]->dir & MASK_DIR_Y) {
 						linkpt[1].x = pbc->silolink[0]->area.x; linkpt[1].y = pbc->silolink[0]->area.y + pbc->silolink[0]->area.h;
 					}
@@ -1120,7 +1120,7 @@ void CPublicRelation::update_disp() {
 					}
 
 				}
-				else if ((pbc->ID == BC_L22) &&(pbc->head_unit.pos == BC_22HEAD_BANK)){
+				else if ((pbc->ID == BC_L22) && (pbc->head_unit.pos == BC_22HEAD_BANK)) {
 					linkpt[1].x = pbc->silolink[0]->area.x; linkpt[1].y = pbc->silolink[0]->area.y + pbc->silolink[0]->area.h / 2;
 				}
 				else if (pbc2->ID == BC_L21) {
@@ -1134,11 +1134,11 @@ void CPublicRelation::update_disp() {
 			}
 		}
 	}
-	
+
 	//搬送石炭描画
 	SelectObject(pPrInst->stdisp.hdc_mem0, GetStockObject(DC_BRUSH));
 	SetDCBrushColor(pPrInst->stdisp.hdc_mem0, RGB(180, 180, 180));
-//	SelectObject(pPrInst->stdisp.hdc_mem0, GetStockObject(GRAY_BRUSH));
+	//	SelectObject(pPrInst->stdisp.hdc_mem0, GetStockObject(GRAY_BRUSH));
 	SelectObject(pPrInst->stdisp.hdc_mem0, GetStockObject(NULL_PEN));
 	int ptl, ptt, ptr, ptb;
 
@@ -1146,23 +1146,31 @@ void CPublicRelation::update_disp() {
 		for (int j = 0; j < BC_LINE_NUM; j++) {
 			pbc = &(pstMobs->mobs.bc[i][j]);
 			if (pbc->exist == ON) {
-				int num_draw,num_accumlate,i_accum;
-				int level,level100;
+				int num_draw, num_accumlate, i_accum;
+				int level, level100;
 				if ((pbc->dir) & MASK_DIR_Y) num_draw = pbc->area.h / BC_COAL_DISP_PIXW;//縦配置 RECT描画個数
 				else num_draw = pbc->area.w / BC_COAL_DISP_PIXW;//横配置 RECT描画個数
 
 	//			num_accumlate = (pbc->pix2mm*BC_COAL_DISP_PIXW)>>10;//1要素描画の為の積算数　ベルト長さ1024mm単位
-				num_accumlate = pbc->belt_size/num_draw;//1要素描画の為の積算数　ベルト長さ1024mm単位
+				num_accumlate = pbc->belt_size / num_draw+1;//1要素描画の為の積算数　ベルト長さ1024mm単位　端数は切り上げ
 
-				i_accum = pbc->ihead;//計算対象belt配列のインデックス 以降ヘッド位置から描画となる
 				level100 = pbc->Kg100perM * num_accumlate;//ベルト搬送能力による1m辺りの100％荷重量　x　描画で纏めるm数
+
+				/*/for debug****************
+				if( (i == LINE_A) && (j == BC_L18)){
+					int tempdbg =0;
+				}
+				if ((i == LINE_B) && (j == BC_L18)){
+					int tempdbg = 0;
+				}
+				//****************for debug*/
 
 				for (int k = 0; k < num_draw; k++) {
 					//描画範囲の石炭積算重量
 					level = 0;
-					for (int i_sum = 0; i_sum < num_accumlate; i_sum++,i_accum++) {
-					//	int i_cal = i_accum + pbc->ihead; if (i_cal > pbc->belt_size) i_cal -= pbc->belt_size;
-						if (!(i_accum < pbc->belt_size))i_accum = 0;
+					i_accum = pbc->ihead + k * pbc->belt_size / num_draw; //計算対象belt配列のインデックス 以降ヘッド位置から描画となる
+					if (!(i_accum < pbc->belt_size))i_accum -= pbc->belt_size;
+					for (int i_sum = 0; i_sum < num_accumlate; i_sum++, i_accum++) {
 						level += pbc->belt[i_accum].weight;
 					}
 

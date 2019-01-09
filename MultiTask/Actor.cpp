@@ -1693,10 +1693,16 @@ void CActor::init_silo() {
 					}
 				}
 				else if (psilo->SILOtype == SILO_TYPE_BANK) {
-					for (int k = 0; k < SILO_COLUMN_NUM_BANK; k++) psilo->column[k].weight = psilo->capa1* 15 * (k % 3) /100;
+					for (int k = 0; k < SILO_COLUMN_NUM_BANK; k++) {
+						psilo->column[k].weight = psilo->capa1 * 15 * (k % 3) / 100;
+						psilo->column[k].material |= LD_COAL1;
+					}
 				}
 				else {
-					for (int k = 0; k < SILO_COLUMN_NUM; k++) psilo->column[k].weight = psilo->capa1* psilo->ini_stock_percent / 100;
+					for (int k = 0; k < SILO_COLUMN_NUM; k++) {
+						psilo->column[k].weight = psilo->capa1* psilo->ini_stock_percent / 100;
+						psilo->column[k].material |= LD_COAL1;
+					}
 				}
 
 			

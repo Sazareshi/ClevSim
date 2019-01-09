@@ -381,6 +381,8 @@ int CHarai::discharge(DWORD com, LONG dt) {
 	else {
 		load.weight = ability * dt / 1000;
 	}
+	load.material = psilo[i_silo]->column[i_column].material;
+
 	psilo[i_silo]->pop_load(i_column, pbc->put_load(bc_pos_m, load));
 
 	return 1;
