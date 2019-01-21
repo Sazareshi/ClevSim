@@ -177,5 +177,11 @@
     <Image Include="bmp\Screen.bmp">
       <Filter>リソース ファイル</Filter>
     </Image>
+    <Image Include="bmp\mag.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="bmp\Sampler.bmp">
+      <Filter>リソース ファイル</Filter>
+    </Image>
   </ItemGroup>
 </Project>

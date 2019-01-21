@@ -216,6 +216,8 @@
     <Image Include="bmp\harai0.bmp" />
     <Image Include="bmp\harai1.bmp" />
     <Image Include="bmp\harai2.bmp" />
+    <Image Include="bmp\mag.bmp" />
+    <Image Include="bmp\Sampler.bmp" />
     <Image Include="bmp\scraper.bmp" />
     <Image Include="bmp\scraper2.bmp" />
     <Image Include="bmp\Screen.bmp" />

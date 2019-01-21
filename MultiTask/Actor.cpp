@@ -15,7 +15,7 @@ CActor::~CActor(){
 
 CActor * CActor::pActInst;
 //表示用アイコンBitMapのサイズをここでまとめて設定
-int CActor::BMP_WH[MOB_TYPE_NUM][2] = { { 32,32 },{ 16,16 },{ 32,32 } ,{ 48,40 },{16,24 },{ 24,24 },{ 24,24 },{ 16,24 },{ 16,16 },{ 64,24 } };
+int CActor::BMP_WH[MOB_TYPE_NUM][2] = { { 32,32 },{ 16,16 },{ 32,32 } ,{ 48,40 },{16,24 },{ 24,24 },{ 24,24 },{ 16,24 },{ 16,16 },{ 64,24 } ,{ 24,16 },{ 16,16 },{ 8,24 } ,{ 16,16 } };
 
 void CActor::init_task(void* pobj) {
 
@@ -158,29 +158,43 @@ void CActor::init_task(void* pobj) {
 		pstMobs->pmobs[MOB_ID_SCREEN][i]->b_bmp_aline_bottom = FALSE;
 	}
 
-
+	hbmp = (HBITMAP)LoadImage(pActInst->inf.hInstance, TEXT("IDB_MAG"), IMAGE_BITMAP, 0, 0, LR_DEFAULTCOLOR);
 	for (int i = 0; i < NUM_OF_MAGSEPA; i++) {
 		pstMobs->pmobs[MOB_ID_MAGSEPA][i] = &(pstMobs->mobs.magsepa[i]);
 		pstMobs->mobs.magsepa[i].status = MOB_STAT_IDLE;
 		wsprintf(pstMobs->mobs.magsepa[i].type, MOB_TYPE_MAGSEPA);
+		pstMobs->mobs.magsepa[i].hBmp_mob = hbmp;
+		pstMobs->mobs.magsepa[i].bmpw = BMP_WH[MOB_ID_MAGSEPA][0];;
+		pstMobs->mobs.magsepa[i].bmph = BMP_WH[MOB_ID_MAGSEPA][1];
+		pstMobs->mobs.magsepa[i].ptime_now = pSimtime_ms;
 	}
 	for (int i = 0; i < NUM_OF_KINKEN; i++) {
 		pstMobs->pmobs[MOB_ID_KINKEN][i] = &(pstMobs->mobs.kinken[i]);
 		pstMobs->mobs.kinken[i].status = MOB_STAT_IDLE;
 		wsprintf(pstMobs->mobs.kinken[i].type, MOB_TYPE_KINKEN);
+		pstMobs->mobs.kinken[i].bmpw = BMP_WH[MOB_ID_KINKEN][0];;
+		pstMobs->mobs.kinken[i].bmph = BMP_WH[MOB_ID_KINKEN][1];
+		pstMobs->mobs.kinken[i].ptime_now = pSimtime_ms;
 	}
 	for (int i = 0; i < NUM_OF_KEIRYOUKI; i++) {
 		pstMobs->pmobs[MOB_ID_KEIRYOU][i] = &(pstMobs->mobs.keiryoki[i]);
 		pstMobs->mobs.keiryoki[i].status = MOB_STAT_IDLE;
 		wsprintf(pstMobs->mobs.keiryoki[i].type, MOB_TYPE_KEIRYOU);
+		pstMobs->mobs.keiryoki[i].bmpw = BMP_WH[MOB_ID_KEIRYOU][0];;
+		pstMobs->mobs.keiryoki[i].bmph = BMP_WH[MOB_ID_KEIRYOU][1];
+		pstMobs->mobs.keiryoki[i].ptime_now = pSimtime_ms;
 	}
+
+	hbmp = (HBITMAP)LoadImage(pActInst->inf.hInstance, TEXT("IDB_SAMPLER"), IMAGE_BITMAP, 0, 0, LR_DEFAULTCOLOR);
 	for (int i = 0; i < NUM_OF_SAMPLER; i++) {
 		pstMobs->pmobs[MOB_ID_SAMPLER][i] = &(pstMobs->mobs.sampler[i]);
 		pstMobs->mobs.sampler[i].status = MOB_STAT_IDLE;
 		wsprintf(pstMobs->mobs.sampler[i].type, MOB_TYPE_SAMPLER);
+		pstMobs->mobs.sampler[i].bmpw = BMP_WH[MOB_ID_SAMPLER][0];
+		pstMobs->mobs.sampler[i].hBmp_mob = hbmp;;
+		pstMobs->mobs.sampler[i].bmph = BMP_WH[MOB_ID_SAMPLER][1];
+		pstMobs->mobs.sampler[i].ptime_now = pSimtime_ms;
 	}
-
-
 
 
 	///# INIファイル読み込み
@@ -783,7 +797,6 @@ void CActor::routine_work(void *param) {
 		cal_crusher(i, ms_dt, CRUSH_COM_WORK);
 	}
 
-
 	//HARAIDASHIKI
 	for (int i = 0; i < NUM_OF_HARAI; i++) {
 		if (pstMobs->pmobs[MOB_ID_HARAI][i]->command == COM_HARAI_IDLE) pstMobs->pmobs[MOB_ID_HARAI][i]->status = MOB_STAT_IDLE;
@@ -810,8 +823,6 @@ void CActor::routine_work(void *param) {
 		}
 		cal_harai_bio(i, ms_dt, pharaib->command);
 	}
-
-
 	//TRIPPER
 	for (int i = 0; i < NUM_OF_TRIPPER; i++) {
 		if (pstMobs->pmobs[MOB_ID_TRIPPER][i]->command == COM_TRP_IDLE) pstMobs->pmobs[MOB_ID_TRIPPER][i]->status = MOB_STAT_IDLE;
@@ -832,6 +843,42 @@ void CActor::routine_work(void *param) {
 		else pstMobs->pmobs[MOB_ID_SCRAPER][i]->status = MOB_STAT_ACT0;
 		cal_scraper(i, ms_dt, pstMobs->pmobs[MOB_ID_SCRAPER][i]->command);
 	}
+	//MAGSEPA
+	for (int i = 0; i < NUM_OF_MAGSEPA; i++) {
+		if (pstMobs->pmobs[MOB_ID_MAGSEPA][i]->command == COM_MAG_IDLE) pstMobs->pmobs[MOB_ID_MAGSEPA][i]->status = MOB_STAT_IDLE;
+		else if (!(pstMobs->pmobs[MOB_ID_MAGSEPA][i]->command & COM_MAG_DISCHARGE)) pstMobs->pmobs[MOB_ID_MAGSEPA][i]->status = MOB_STAT_ACT0;
+		else if (pstMobs->pmobs[MOB_ID_MAGSEPA][i]->status == MOB_STAT_IDLE) pstMobs->pmobs[MOB_ID_MAGSEPA][i]->status = MOB_STAT_ACT0;
+		else if (pstMobs->pmobs[MOB_ID_MAGSEPA][i]->status == MOB_STAT_ACT0)pstMobs->pmobs[MOB_ID_MAGSEPA][i]->status = MOB_STAT_ACT1;
+		else if (pstMobs->pmobs[MOB_ID_MAGSEPA][i]->status == MOB_STAT_ACT1)pstMobs->pmobs[MOB_ID_MAGSEPA][i]->status = MOB_STAT_ACT2;
+		else pstMobs->pmobs[MOB_ID_MAGSEPA][i]->status = MOB_STAT_ACT0;
+	}
+	//KINKEN
+	for (int i = 0; i < NUM_OF_KINKEN; i++) {
+		if (pstMobs->pmobs[MOB_ID_KINKEN][i]->command == COM_KIN_IDLE) pstMobs->pmobs[MOB_ID_KINKEN][i]->status = MOB_STAT_IDLE;
+		else if (!(pstMobs->pmobs[MOB_ID_KINKEN][i]->command & COM_KIN_ACT)) pstMobs->pmobs[MOB_ID_KINKEN][i]->status = MOB_STAT_ACT0;
+		else if (pstMobs->pmobs[MOB_ID_KINKEN][i]->status == MOB_STAT_IDLE) pstMobs->pmobs[MOB_ID_KINKEN][i]->status = MOB_STAT_ACT0;
+		else if (pstMobs->pmobs[MOB_ID_KINKEN][i]->status == MOB_STAT_ACT0)pstMobs->pmobs[MOB_ID_KINKEN][i]->status = MOB_STAT_ACT1;
+		else if (pstMobs->pmobs[MOB_ID_KINKEN][i]->status == MOB_STAT_ACT1)pstMobs->pmobs[MOB_ID_KINKEN][i]->status = MOB_STAT_ACT2;
+		else pstMobs->pmobs[MOB_ID_KINKEN][i]->status = MOB_STAT_ACT0;
+	}
+	//SAMPLER
+	for (int i = 0; i < NUM_OF_SAMPLER; i++) {
+		if (pstMobs->pmobs[MOB_ID_SAMPLER][i]->command == COM_SAMPLE_IDLE) pstMobs->pmobs[MOB_ID_SAMPLER][i]->status = MOB_STAT_IDLE;
+		else if (!(pstMobs->pmobs[MOB_ID_SAMPLER][i]->command & COM_SAMPLE_ACT)) pstMobs->pmobs[MOB_ID_SAMPLER][i]->status = MOB_STAT_ACT0;
+		else if (pstMobs->pmobs[MOB_ID_SAMPLER][i]->status == MOB_STAT_IDLE) pstMobs->pmobs[MOB_ID_SAMPLER][i]->status = MOB_STAT_ACT0;
+		else if (pstMobs->pmobs[MOB_ID_SAMPLER][i]->status == MOB_STAT_ACT0)pstMobs->pmobs[MOB_ID_SAMPLER][i]->status = MOB_STAT_ACT1;
+		else if (pstMobs->pmobs[MOB_ID_SAMPLER][i]->status == MOB_STAT_ACT1)pstMobs->pmobs[MOB_ID_SAMPLER][i]->status = MOB_STAT_ACT2;
+		else pstMobs->pmobs[MOB_ID_SAMPLER][i]->status = MOB_STAT_ACT0;
+	}
+	//KEIRYO
+	for (int i = 0; i < NUM_OF_KEIRYOUKI; i++) {
+		if (pstMobs->pmobs[MOB_ID_KEIRYOU][i]->command == COM_METER_IDLE) pstMobs->pmobs[MOB_ID_KEIRYOU][i]->status = MOB_STAT_IDLE;
+		else if (!(pstMobs->pmobs[MOB_ID_KEIRYOU][i]->command & COM_METER_ACT)) pstMobs->pmobs[MOB_ID_KEIRYOU][i]->status = MOB_STAT_ACT0;
+		else if (pstMobs->pmobs[MOB_ID_KEIRYOU][i]->status == MOB_STAT_IDLE) pstMobs->pmobs[MOB_ID_KEIRYOU][i]->status = MOB_STAT_ACT0;
+		else if (pstMobs->pmobs[MOB_ID_KEIRYOU][i]->status == MOB_STAT_ACT0)pstMobs->pmobs[MOB_ID_KEIRYOU][i]->status = MOB_STAT_ACT1;
+		else if (pstMobs->pmobs[MOB_ID_KEIRYOU][i]->status == MOB_STAT_ACT1)pstMobs->pmobs[MOB_ID_KEIRYOU][i]->status = MOB_STAT_ACT2;
+		else pstMobs->pmobs[MOB_ID_KEIRYOU][i]->status = MOB_STAT_ACT0;
+	}
 
 	ms_lasttime = ((P_ST_SMEM_FORMAT)inf.pSmem)->stSmem.simtime_ms; //前回シミュレーション時間保持
 
@@ -851,7 +898,6 @@ int CActor::cal_cul(DWORD i, STLOAD load, ULONG dt, DWORD com) {
 	pstMobs->pmobs[MOB_ID_CUL][i]->time_last = *(pstMobs->pmobs[MOB_ID_CUL][i]->ptime_now);
 	return 0;
 };
-
 int CActor::cal_bc(DWORD index, ULONG dt, DWORD com) {
 	int line = HIWORD(index);
 	int npos = LOWORD(index);
@@ -872,7 +918,6 @@ int CActor::cal_bc(DWORD index, ULONG dt, DWORD com) {
 
 	return 0;
 };
-
 int CActor::cal_silo(DWORD index, ULONG dt, DWORD com) {
 	int line = HIWORD(index);
 	int npos = LOWORD(index);
@@ -1264,10 +1309,38 @@ void CActor::init_bc() {//BC関連初期設定
 	(pstMobs->mobs.bc[LINE_A][BC_L23]).ptrp = (CMob*)(&(pstMobs->mobs.scraper[LINE_H_SCR]));
 	(pstMobs->mobs.bc[LINE_B][BC_L23]).ptrp = (CMob*)(&(pstMobs->mobs.scraper[LINE_I_SCR]));
 
+	//スクリーン、スクレーパ紐付け
 	(pstMobs->mobs.bc[LINE_A][BC_L21]).pscreen = &(pstMobs->mobs.screen[LINE_A]);
 	(pstMobs->mobs.bc[LINE_A][BC_L21]).pcrush = &(pstMobs->mobs.crusher[LINE_A]);
 	(pstMobs->mobs.bc[LINE_B][BC_L21]).pscreen = &(pstMobs->mobs.screen[LINE_B]);
 	(pstMobs->mobs.bc[LINE_B][BC_L21]).pcrush = &(pstMobs->mobs.crusher[LINE_B]);
+
+	//マグセパ
+	(pstMobs->mobs.bc[LINE_A][BC_L2]).pmag = &(pstMobs->mobs.magsepa[MAG_BC2A]);
+	(pstMobs->mobs.bc[LINE_B][BC_L2]).pmag = &(pstMobs->mobs.magsepa[MAG_BC2B]);
+	(pstMobs->mobs.bc[LINE_A][BC_L19]).pmag = &(pstMobs->mobs.magsepa[MAG_BC19A]);
+	(pstMobs->mobs.bc[LINE_B][BC_L19]).pmag = &(pstMobs->mobs.magsepa[MAG_BC19B]);
+	(pstMobs->mobs.bc[LINE_C][BC_L19]).pmag = &(pstMobs->mobs.magsepa[MAG_BC19C]);
+
+	//金属検知器
+	(pstMobs->mobs.bc[LINE_A][BC_L19]).pdetect = &(pstMobs->mobs.kinken[MDETECT_BC19A]);
+	(pstMobs->mobs.bc[LINE_B][BC_L19]).pdetect = &(pstMobs->mobs.kinken[MDETECT_BC19B]);
+	(pstMobs->mobs.bc[LINE_C][BC_L19]).pdetect = &(pstMobs->mobs.kinken[MDETECT_BC19C]);
+
+	//計量器
+	(pstMobs->mobs.bc[LINE_A][BC_L2]).pmeter = &(pstMobs->mobs.keiryoki[METER_BC2A]);
+	(pstMobs->mobs.bc[LINE_B][BC_L2]).pmeter = &(pstMobs->mobs.keiryoki[METER_BC2B]);
+	(pstMobs->mobs.bc[LINE_A][BC_L19]).pmeter = &(pstMobs->mobs.keiryoki[METER_BC19A]);
+	(pstMobs->mobs.bc[LINE_B][BC_L19]).pmeter = &(pstMobs->mobs.keiryoki[METER_BC19B]);
+	(pstMobs->mobs.bc[LINE_C][BC_L19]).pmeter = &(pstMobs->mobs.keiryoki[METER_BC19C]);
+	(pstMobs->mobs.bc[LINE_C][BC_L30]).pmeter = &(pstMobs->mobs.keiryoki[METER_BC30]);
+	(pstMobs->mobs.bc[LINE_C][BC_L32]).pmeter = &(pstMobs->mobs.keiryoki[METER_BC32]);
+
+	//サンプラ
+	(pstMobs->mobs.bc[LINE_A][BC_L2]).psample = &(pstMobs->mobs.sampler[SAMPLER_BC2A]);
+	(pstMobs->mobs.bc[LINE_B][BC_L2]).psample = &(pstMobs->mobs.sampler[SAMPLER_BC2B]);
+	(pstMobs->mobs.bc[LINE_A][BC_L21]).psample = &(pstMobs->mobs.sampler[SAMPLER_BC21A]);
+	(pstMobs->mobs.bc[LINE_B][BC_L21]).psample = &(pstMobs->mobs.sampler[SAMPLER_BC21B]);
 	
 	CBC* pbc;
 	for (int i = 0; i < BC_LINES; i++) {

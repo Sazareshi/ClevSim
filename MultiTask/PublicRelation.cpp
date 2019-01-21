@@ -1005,8 +1005,6 @@ void CPublicRelation::update_disp() {
 	CSilo* psilo;
 	CScreen* pscreen;
 
-	//i_img2 += 1; if (i_img2 > 3)i_img2 = 1;
-
 	BitBlt(pPrInst->stdisp.hdc_mem0, 0, 0, pPrInst->stdisp.bgw, pPrInst->stdisp.bgh, pPrInst->stdisp.hdc_mem_bg, 0, 0, SRCCOPY);
 
 	//#BC
@@ -1301,7 +1299,6 @@ else {//横配置
 		}
 	}
 	
-
 	//#払い出し機
 	SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_HARAI][0]->hBmp_mob);
 	for (int i = 0; i < NUM_OF_HARAI; i++) {
@@ -1324,7 +1321,6 @@ else {//横配置
 		}
 	}
 
-
 	//#CUL
 	SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_CUL][0]->hBmp_mob);
 	for (int i = 0; i < NUM_OF_CUL; i++) {
@@ -1345,8 +1341,52 @@ else {//横配置
 		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
 	}
 
-	//#スクレーパー
+	//#マグセパ
+	SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_MAGSEPA][0]->hBmp_mob);
+	for (int i = 0; i < NUM_OF_MAGSEPA; i++) {
+		i_img2 = pstMobs->pmobs[MOB_ID_MAGSEPA][i]->status;
+		mobw = pstMobs->pmobs[MOB_ID_MAGSEPA][i]->bmpw;	mobh = pstMobs->pmobs[MOB_ID_MAGSEPA][i]->bmph;
+		mobx = pstMobs->pmobs[MOB_ID_MAGSEPA][i]->area.x;	moby = pstMobs->pmobs[MOB_ID_MAGSEPA][i]->area.y - mobh;
+		//AlphaBlend(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, pPrInst->stdisp.bf);
+		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
+	}
 
+	//#サンプラ
+	SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_SAMPLER][0]->hBmp_mob);
+	for (int i = 0; i < NUM_OF_SAMPLER; i++) {
+		i_img2 = pstMobs->pmobs[MOB_ID_SAMPLER][i]->status;
+		mobw = pstMobs->pmobs[MOB_ID_SAMPLER][i]->bmpw;	mobh = pstMobs->pmobs[MOB_ID_SAMPLER][i]->bmph;
+		mobx = pstMobs->pmobs[MOB_ID_SAMPLER][i]->area.x;	moby = pstMobs->pmobs[MOB_ID_SAMPLER][i]->area.y - mobh;
+		//AlphaBlend(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, pPrInst->stdisp.bf);
+		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
+	}
+
+	//#金検
+	for (int i = 0; i < NUM_OF_KINKEN; i++) {
+		SelectObject(pPrInst->stdisp.hdc_mem0, GetStockObject(DC_PEN));
+		if (pstMobs->pmobs[MOB_ID_KINKEN][i]->status == MOB_STAT_IDLE) SetDCPenColor(pPrInst->stdisp.hdc_mem0, RGB(100, 100, 100));
+		else if (pstMobs->pmobs[MOB_ID_KINKEN][i]->status == MOB_STAT_ACT0)SetDCPenColor(pPrInst->stdisp.hdc_mem0, RGB(0, 255, 0));
+		else SetDCPenColor(pPrInst->stdisp.hdc_mem0, RGB(0, 0, 255));
+
+		mobw = pstMobs->pmobs[MOB_ID_KINKEN][i]->bmpw;	mobh = pstMobs->pmobs[MOB_ID_KINKEN][i]->bmph;
+		mobx = pstMobs->pmobs[MOB_ID_KINKEN][i]->area.x;	moby = pstMobs->pmobs[MOB_ID_KINKEN][i]->area.y - mobh;
+		Rectangle(pPrInst->stdisp.hdc_mem0, mobx, moby, mobx + mobw, moby + mobh);
+	}
+
+	//#計量器
+	for (int i = 0; i < NUM_OF_KEIRYOUKI; i++) {
+		SelectObject(pPrInst->stdisp.hdc_mem0, GetStockObject(DC_PEN));
+		if (pstMobs->pmobs[MOB_ID_KEIRYOU][i]->status == MOB_STAT_IDLE) SetDCPenColor(pPrInst->stdisp.hdc_mem0, RGB(100, 100, 100));
+		else if (pstMobs->pmobs[MOB_ID_KEIRYOU][i]->status == MOB_STAT_ACT0)SetDCPenColor(pPrInst->stdisp.hdc_mem0, RGB(0, 255, 0));
+		else SetDCPenColor(pPrInst->stdisp.hdc_mem0, RGB(0, 0, 255));
+
+		mobw = pstMobs->pmobs[MOB_ID_KEIRYOU][i]->bmpw;	mobh = pstMobs->pmobs[MOB_ID_KEIRYOU][i]->bmph;
+		mobx = pstMobs->pmobs[MOB_ID_KEIRYOU][i]->area.x;	moby = pstMobs->pmobs[MOB_ID_KEIRYOU][i]->area.y - mobh;
+		Rectangle(pPrInst->stdisp.hdc_mem0, mobx, moby, mobx + mobw, moby + mobh);
+	}
+
+
+	//#スクレーパー
 	for (int i = 0; i < NUM_OF_SCRAPER; i++) {
 		SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_SCRAPER][i]->hBmp_mob);
 		CMob* pobj = pstMobs->pmobs[MOB_ID_SCRAPER][i];
@@ -1356,6 +1396,8 @@ else {//横配置
 		//AlphaBlend(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, pPrInst->stdisp.bf);
 		TransparentBlt(pPrInst->stdisp.hdc_mem0, mobx, moby, mobw, mobh, pPrInst->stdisp.hdc_mem_mob, i_img2 * mobw, 0, mobw, mobh, RGB(255, 255, 255));
 	}
+
+
 
 	//#電気室
 	SelectObject(pPrInst->stdisp.hdc_mem_mob, pstMobs->pmobs[MOB_ID_EROOM][0]->hBmp_mob);

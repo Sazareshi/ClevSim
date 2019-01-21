@@ -233,6 +233,15 @@ private:
 
 };
 
+#define MAG_BC2A	0
+#define MAG_BC2B	1
+#define MAG_BC19A	2
+#define MAG_BC19B	3
+#define MAG_BC19C	4
+#define COM_MAG_IDLE	0
+#define COM_MAG_DISCHARGE	1
+#define COM_MAG_MOVE		2
+
 class CMSeparator : public CMob
 {
 public:
@@ -246,6 +255,12 @@ public:
 private:
 
 };
+
+#define MDETECT_BC19A	0
+#define MDETECT_BC19B	1
+#define MDETECT_BC19C	2
+#define COM_KIN_IDLE	0
+#define COM_KIN_ACT		1
 class CMDetector : public CMob
 {
 public:
@@ -259,6 +274,17 @@ public:
 private:
 
 };
+
+#define METER_BC2A	0
+#define METER_BC2B	1
+#define METER_BC19A	2
+#define METER_BC19B	3
+#define METER_BC19C	4
+#define METER_BC30	3
+#define METER_BC32	4
+#define COM_METER_IDLE	0
+#define COM_METER_ACT	1
+
 class CLoadMeter : public CMob
 {
 public:
@@ -272,6 +298,13 @@ public:
 private:
 
 };
+
+#define SAMPLER_BC2A	0
+#define SAMPLER_BC2B	1
+#define SAMPLER_BC21A	2
+#define SAMPLER_BC21B	3
+#define COM_SAMPLE_IDLE	0
+#define COM_SAMPLE_ACT	1
 class CSampler : public CMob
 {
 public:
@@ -286,7 +319,6 @@ private:
 
 };
 
-
 class CBC : public CMob
 {
 public:
@@ -297,6 +329,13 @@ public:
 	int pos_rcv[BC_RCV_MAX];//石炭受け位置m
 	POINT imgpt_rcv[BC_RCV_MAX];//石炭受け画面位置
 	POINT imgpt_top[3],imgpt_tail;
+
+
+	CMSeparator* pmag;
+	CMDetector* pdetect;
+	CLoadMeter* pmeter;
+	CSampler* psample;
+
 
 	DWORD dir;//画面での向き　HIWORD　縦横　0が横　LOWORD　0が正方向
 	LONG l;//長さmm

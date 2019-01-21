@@ -84,7 +84,9 @@ public:
 	CMotor(void) {;};
 	~CMotor(void) {};
 	DWORD kw;//—e—Ê
-	DWORD status;//—e—Ê
+	DWORD status;//
+	double rps;//‰ñ“]‘¬“xRPS
+	double rated_spd;
 
 	int set_condition(double Vin) { return 0; };
 };
