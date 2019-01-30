@@ -85,10 +85,11 @@ public:
 	~CMotor(void) {};
 	DWORD kw;//容量
 	DWORD status;//
-	double rps;//回転速度RPS
-	double rated_spd;
-
+	CMC* mc_source;
+	int rps;//回転速度Hz
+	int spd;//mm/sec
 	int set_condition(double Vin) { return 0; };
+	int set_HzOut() { set_Hz_out(get_Hz_in()); return 1; }
 };
 
 //#####コンバータ

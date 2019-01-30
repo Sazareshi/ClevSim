@@ -123,7 +123,8 @@ STLOAD CBC::put_load(int pos, STLOAD load) {//POPは、出し位置のm位置
 }
 
 void CBC::conveyor(DWORD com, ULONG dt) {
-	spd = base_spd;
+	//spd = base_spd;
+	spd = calspd();
 	if ((BCtype & BC_HEAD_DUAL)&&(b_rverse)) {
 		if (com == MOB_COM_UPDATE) {
 			headpos_mm -= (dt * spd) / 1000;  if (headpos_mm < 0) headpos_mm += l;

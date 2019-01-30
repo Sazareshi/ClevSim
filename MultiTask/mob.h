@@ -1,5 +1,6 @@
 #pragma once
 #include "EParts.h"
+#include "Panel.h"
 
 #define MOB_TYPE_NUM			32	//Mobのタイプ数
 #define MOB_MAX_NUM				128 //Mobの数
@@ -369,7 +370,12 @@ public:
 	LONG put_test_load;//0以外でテールポジションからのインデックス位置に重量投入
 
 	BOOL b_rverse;
+	int setVperHz() { VperHz = double(base_spd) / 60.0; return 1; }
+	int calspd() { return spd = (int)(motor[0].get_Hz_out()*VperHz); }
+
 private:
+	double VperHz;
+
 
 };
 
@@ -585,14 +591,34 @@ private:
 
 };
 
+#define ER_PANEL_MAX 32
 class CEroom : public CMob
 {
 public:
 	CEroom() {};
 	~CEroom() {};
+
+	CPanel* ppanel[ER_PANEL_MAX];
+	virtual void init_room() {return;};
+
 private:
 
 };
+
+class CEroom_OC : public CEroom
+{
+public:
+	CEroom_OC() {};
+	~CEroom_OC() {};
+
+	void init_room() { return; }
+	MC_OCE_A1 mca1;
+	MC_OCE_B1 mcb1;
+
+private:
+
+};
+
 
 #define BC_LINES	3//BCの系統数A,B,C+循環
 #define BC_LINE_NUM	26//BCの各系統の数
@@ -632,6 +658,7 @@ typedef struct _stMobsBody {
 	CMDetector 	kinken[NUM_OF_KINKEN];
 	CLoadMeter 	keiryoki[NUM_OF_KEIRYOUKI];
 	CSampler	sampler[NUM_OF_SAMPLER];
+	CEroom_OC	erm_outcommon;//
 }STMobsBody, *LPSTMobsBody;
 
 typedef struct _stMobs {

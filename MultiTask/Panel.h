@@ -1,5 +1,5 @@
 #pragma once
-
+#include "EParts.h"
 
 typedef struct _stPowerSupply{
 	double v;
@@ -14,8 +14,15 @@ typedef struct _st_PanelOut{
 	WORD aout[PANEL_AOUT_MAX];
 	LPST_PS pout[PANEL_POUT_MAX];
 } ST_PanelOut, *LPST_PanelOut;
+typedef struct _st_PowerSource {
+	int Hz;
+	int Volt;
+	int Ampare;
+} ST_PSource, *LPST_PSource;
 
 #define PANEL_MAX 128
+#define CITY_POWER_Hz 60
+
 typedef struct _st_PanelOutSmem {//共有メモリ上への配置イメージ
 	ST_PanelOut panel_out[PANEL_MAX];
 } ST_PanelOutSmem, *LPST_PanelOutSmem;
@@ -32,6 +39,7 @@ public:
 	DWORD ID;
 	TCHAR name[16];
 	LPST_PanelOut pout;
+	ST_PSource power_in[3];//入力電源
 public:
 	virtual void init_panel() = 0;
 	virtual void rcv_signal() = 0;
@@ -61,4 +69,28 @@ public:
 	void set_signal() { return; };
 	void update_status() { return; };
 
+};
+
+class MC_OCE_A1:CPanel //メタクラ1期A系
+{
+public:
+	MC_OCE_A1(void) ;
+	~MC_OCE_A1(void);
+	void init_panel() ;
+	void rcv_signal() { return; };
+	void set_signal() { return; };
+	void update_status();
+
+	CMC cb1Apmp, cb1A1, cb1A2, cb2A, cb3A1, cb3A2, cb3A3, cbCUL1, cbaux, cbLC;
+};
+class MC_OCE_B1:CPanel //メタクラ1期B系
+{
+public:
+	MC_OCE_B1(void);
+	~MC_OCE_B1(void);
+	void init_panel();
+	void rcv_signal() { return; };
+	void set_signal() { return; };
+	void update_status();
+	CMC cb1Bpmp, cb2Bpmp, cb1B1, cb1B2, cbBA, cb3B1, cb3B2, cb3B3, cbCUL2, cbCUL3, cbaux, cbLC;
 };

@@ -230,7 +230,11 @@ void CActor::init_task(void* pobj) {
 					break;
 				case 6: pobj->l = _wtol(wstrtmp.c_str()); break;
 				case 7: pobj->w = _wtol(wstrtmp.c_str()); break;
-				case 8: pobj->base_spd = _wtoi(wstrtmp.c_str()); break;
+				case 8: {
+					pobj->base_spd = _wtoi(wstrtmp.c_str());
+					pobj->setVperHz();
+					pobj->motor[0].set_Hz_in(60.0);
+				}break;
 				case 9: pobj->BCtype = stoi(wstrtmp.c_str(), nullptr, 16); break;
 				case 10: pobj->dir = stoi(wstrtmp.c_str(), nullptr, 16); break;
 				case 11: pobj->ability = _wtoi(wstrtmp.c_str()); break;
@@ -742,8 +746,8 @@ void CActor::routine_work(void *param) {
 
 	//COMMON
 	((P_ST_SMEM_FORMAT)inf.pSmem)->stSmem.simtime_ms = *(inf.psys_counter) * sim_accel_rate * SYSTEM_TICK_ms;
-	//ms_dt = ((P_ST_SMEM_FORMAT)inf.pSmem)->stSmem.simtime_ms - ms_lasttime;
-	ms_dt = 100;
+	ms_dt = ((P_ST_SMEM_FORMAT)inf.pSmem)->stSmem.simtime_ms - ms_lasttime;
+	//ms_dt = 100;
 
 	//ws << L"ACTOR work activated!" << *(inf.psys_counter); tweet2owner(ws.str()); ws.str(L""); ws.clear();
 	ws << L"ACTOR work activated!" << ms_lasttime; tweet2owner(ws.str()); ws.str(L""); ws.clear();
@@ -902,19 +906,10 @@ int CActor::cal_bc(DWORD index, ULONG dt, DWORD com) {
 	int line = HIWORD(index);
 	int npos = LOWORD(index);
 	CBC* pobj = &(pstMobs->mobs.bc[line][npos]);
-
-	CBC* pmonbc41a;
-	CBC* pmonbc5b;
-
-	//FOR DBG **************
-	if ((line== LINE_A) && (npos== BC_L4_1)) {
-		pmonbc41a = &(pstMobs->mobs.bc[LINE_A][BC_L4_1]);
-		pmonbc5b = &(pstMobs->mobs.bc[LINE_B][BC_L5]);
+	for (int i = 0; i < BC_MOTOR_MAX; i++) {//モータの出力計算
+		pobj->motor[i].set_HzOut();
 	}
-	//**************FOR DBG 
-
-
-	pobj->conveyor(com, dt);
+	pobj->conveyor(com, dt);//コンベヤ動作計算
 
 	return 0;
 };
