@@ -80,7 +80,7 @@ public:
 	void rcv_signal() { return; };
 	void set_signal() { return; };
 	void update_status();
-
+	CMCCB cb52_1a1, cb52_1a2;
 	CMC cb1Apmp, cb1A1, cb1A2, cb2A, cb3A1, cb3A2, cb3A3, cbCUL1, cbaux, cbLC;
 };
 class MC_OCE_B1:CPanel //ÉÅÉ^ÉNÉâ1ä˙Bån
@@ -92,5 +92,31 @@ public:
 	void rcv_signal() { return; };
 	void set_signal() { return; };
 	void update_status();
+	CMCCB cb52_1b1, cb52_1b2;
 	CMC cb1Bpmp, cb2Bpmp, cb1B1, cb1B2, cbBA, cb3B1, cb3B2, cb3B3, cbCUL2, cbCUL3, cbaux, cbLC;
+};
+
+class CP_OCE_A1 :CPanel //PLCî’1ä˙Aån
+{
+public:
+	CP_OCE_A1(void) {};
+	~CP_OCE_A1(void) {};
+	void init_panel() { return; };
+	void rcv_signal() { return; };
+	void set_signal() { return; };
+	void update_status() { return; };
+	void PLC_scan_proc() { return; };
+};
+
+class CP_OCE_B1 :CPanel //PLCî’1ä˙Aån
+{
+public:
+	CP_OCE_B1(void) {};
+	~CP_OCE_B1(void) {};
+	void init_panel() { return; };
+	void rcv_signal() { return; };
+	void set_signal() { return; };
+	void update_status() { return; };
+	void PLC_scan_proc() { return; };
+
 };

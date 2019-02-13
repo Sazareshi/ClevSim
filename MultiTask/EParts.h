@@ -346,6 +346,7 @@ public:
 //##### DCìdåπ
 
 #define DC24V 24.0
+#define DC110V 110.0
 
 class CDCPower : public CEParts
 
@@ -374,6 +375,28 @@ private:
 public:
 	CDIO64(void) { signal = 0; type = 0xffff; };
 	~CDIO64(void) { ; }
+	int set_bit(int p) { long long mask = 0x00000001; signal = (signal | (mask << p)); return 0; };
+	int clear_bit(int p) {
+		long long mask = 0x00000001;
+		mask = 0xffffffffffffffff ^ (mask << p);
+		signal &= mask;
+		return 0;
+	};
+	int get_bit(int p) { long long mask = 0x00000001; long long temp = (signal&(mask << p)); if (temp)return 1; else return 0; };
+	long long get_signal() { return signal; }; int set_signal(long long status) { signal = status; return 0; };
+	int all_bit_reset() { signal = 0; return 0; };	int all_bit_set() { signal = 0xffffffff; return 0; };
+	int set_type(int data) { type = data; }; int get_type() { return type; };
+};
+
+class CDIO32 : public CEParts
+
+{
+private:
+	long long	signal;
+	int type;
+public:
+	CDIO32(void) { signal = 0; type = 0xffff; };
+	~CDIO32(void) { ; }
 	int set_bit(int p) { long long mask = 0x00000001; signal = (signal | (mask << p)); return 0; };
 	int clear_bit(int p) {
 		long long mask = 0x00000001;
